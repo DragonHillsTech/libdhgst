@@ -43,6 +43,13 @@ TEST_F(ElementTest, RefMethod) {
   EXPECT_EQ(GST_OBJECT_REFCOUNT(element.get()), 2);
 }
 
+TEST_F(ElementTest, GetNameReturnsCorrectName) {
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+
+  // Check that getName returns the correct name
+  EXPECT_EQ(element.getName(), "test_source");
+}
+
 /**
  * @brief Test the setState method.
  */
@@ -127,13 +134,21 @@ TEST_F(ElementTest, LinkAndUnlink) {
 
   Element sink(sinkElement, TransferType::None);
 
+  GstPad* sourcePad = element.getStaticPad("src");
+  ASSERT_NE(sourcePad, nullptr) << "Failed to get sourcePad.";
+
+  GstPad* sinkPad = sink.getStaticPad("sink");
+  ASSERT_NE(sinkPad, nullptr) << "Failed to get sinkPad.";
+
   element.link(sink);
   // Check if elements are linked
-  ASSERT_EQ(gst_element_link(element.get(), sink.get()), TRUE);
+  ASSERT_TRUE(gst_pad_is_linked(sourcePad));
+  ASSERT_TRUE(gst_pad_is_linked(sinkPad));
 
   element.unlink(sink);
   // Check if elements are unlinked
-  ASSERT_EQ(gst_element_link(element.get(), sink.get()), FALSE);
+  ASSERT_FALSE(gst_pad_is_linked(sourcePad));
+  ASSERT_FALSE(gst_pad_is_linked(sinkPad));
 
   gst_object_unref(sinkElement);
 }

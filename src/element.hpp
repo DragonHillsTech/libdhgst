@@ -59,6 +59,14 @@ public:
    */
   GstElement* get();
 
+
+   /**
+   * @brief Gets the name of the GStreamer element.
+   * Retrieves the name of the underlying `GstElement` associated with this `Element`.
+   * @return std::string The name of the `GstElement`.
+   */
+  std::string getName() const;
+
   GstStateChangeReturn setState(GstState newState);
 
  /**
@@ -103,6 +111,7 @@ public:
   * @brief Links this element with another element.
   * @param other (transfer none): The Element to link with.
   * @return Reference to the current Element for chaining.
+  * @throws std::runtime_error if the elements cannot be linked.
   */
  Element& link(Element& other);
 
