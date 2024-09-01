@@ -61,6 +61,15 @@ GstElement* Element::get()
   return prv->gstElement;
 }
 
+std::string Element::getName() const
+{
+  // Get the name from the GstElement
+  const gchar* name = gst_element_get_name(prv->gstElement);
+
+  // Return as std::string; handle null case gracefully
+  return name ? std::string(name) : std::string("unknown");
+}
+
 GstStateChangeReturn Element::setState(GstState newState)
 {
   return gst_element_set_state(prv->gstElement, newState);
@@ -125,7 +134,15 @@ GstPad* Element::getStaticPad(const std::string& name)
 
 Element& Element::link(Element& other)
 {
-  gst_element_link(prv->gstElement, other.prv->gstElement);
+  if (!gst_element_link(prv->gstElement, other.prv->gstElement))
+  {
+    std::string errorMessage = "Failed to link GstElements: ";
+    errorMessage += getName() + " -> " + other.getName();
+
+    // Throw an exception with the detailed error message
+    throw std::runtime_error(errorMessage);
+  }
+
   return *this;
 }
 
