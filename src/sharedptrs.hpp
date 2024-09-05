@@ -51,46 +51,70 @@ template <> struct IsGstObject<GstStructure> : std::false_type {};
  * This deleter is designed to handle various GStreamer types
  * and release resources correctly using appropriate unref functions.
  */
-struct GstObjectDeleter {
+struct GstObjectDeleter
+{
   /**
    * @brief Templated operator() to unref GStreamer objects.
    * @tparam T Type of GStreamer object.
    * @param obj Pointer to the GStreamer object.
    */
   template <typename T>
-  void operator()(T* obj) const {
-    if constexpr (IsGstObject<T>::value) {
+  void operator()(T* obj) const
+  {
+    if constexpr (IsGstObject<T>::value)
+    {
       // For GObject-derived types
-      if (obj) {
+      if(obj)
+      {
         gst_object_unref(GST_OBJECT(obj));
       }
-    } else {
+    }
+    else
+    {
       // Handle non-GObject types specifically
-      if constexpr (std::is_same_v<T, GstCaps>) {
-        if (obj) {
+      if constexpr (std::is_same_v<T, GstCaps>)
+      {
+        if(obj)
+        {
           gst_caps_unref(obj);
         }
-      } else if constexpr (std::is_same_v<T, GstStructure>) {
-        if (obj) {
+      } else if constexpr (std::is_same_v<T, GstStructure>)
+      {
+        if(obj)
+        {
           gst_structure_free(obj);
         }
-      } else if constexpr (std::is_same_v<T, GstBuffer>) {
-        if (obj) {
+      }
+      else if constexpr(std::is_same_v<T, GstBuffer>)
+      {
+        if (obj)
+        {
           gst_buffer_unref(obj);
         }
-      } else if constexpr (std::is_same_v<T, GstEvent>) {
-        if (obj) {
+      }
+      else if constexpr (std::is_same_v<T, GstEvent>)
+      {
+        if(obj)
+        {
           gst_event_unref(obj);
         }
-      } else if constexpr (std::is_same_v<T, GstMessage>) {
-        if (obj) {
+      }
+      else if constexpr(std::is_same_v<T, GstMessage>)
+      {
+        if(obj)
+        {
           gst_message_unref(obj);
         }
-      } else if constexpr (std::is_same_v<T, GstSample>) {
-        if (obj) {
+      }
+      else if constexpr(std::is_same_v<T, GstSample>)
+      {
+        if(obj)
+        {
           gst_sample_unref(obj);
         }
-      } else {
+      }
+      else
+      {
         // Static assert for unhandled types to ensure all cases are covered
         static_assert(!sizeof(T*), "Unhandled GStreamer type in GstObjectDeleter");
       }
@@ -130,12 +154,15 @@ using GstStructureSPtr = std::shared_ptr<GstStructure>;
  */
 template <typename T>
 std::enable_if_t<IsGstObject<T>::value, std::shared_ptr<T>>
-makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full) {
-  if (!obj) {
+makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+{
+  if(!obj)
+  {
     return nullptr; // Handle null objects safely
   }
 
-  switch (transferType) {
+  switch(transferType)
+  {
     case TransferType::Full:
       // Full ownership is transferred; nothing extra to do
       break;
@@ -145,9 +172,12 @@ makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full) {
       break;
     case TransferType::Floating:
       // Handle floating references properly
-      if (g_object_is_floating(G_OBJECT(obj))) {
+      if (g_object_is_floating(G_OBJECT(obj)))
+      {
         g_object_ref_sink(G_OBJECT(obj)); // Sink the floating reference
-      } else {
+      }
+      else
+      {
         gst_object_ref(GST_OBJECT(obj));  // Increase ref count if not floating
       }
       break;
@@ -161,14 +191,18 @@ makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full) {
  */
 template <typename T>
 std::enable_if_t<!IsGstObject<T>::value, std::shared_ptr<T>>
-makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full) {
-  if (!obj) {
+makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+{
+  if(!obj)
+  {
     return nullptr; // Handle null objects safely
   }
 
-  if (transferType == TransferType::None) {
+  if(transferType == TransferType::None)
+  {
     // Increment reference manually for non-GObject types
-    if constexpr (std::is_same_v<T, GstCaps>) {
+    if constexpr(std::is_same_v<T, GstCaps>)
+    {
       gst_caps_ref(obj);
     }
     // For GstStructure and similar types, manual reference management may vary
