@@ -26,25 +26,35 @@ public:
 /**
  * @brief Test creation and destruction of Element.
  */
-TEST_F(ElementTest, CreationAndDestruction) {
-  GstElement* gstElement = gst_element_factory_make("fakesrc", "source");
-  Element element(gstElement, TransferType::Floating);
-  ASSERT_EQ(element.get(), gstElement);
+TEST_F(ElementTest, CreationAndDestruction)
+{
+  Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  ASSERT_EQ(element1.get().use_count(), 2); // +1 for get() which returns shared_ptr copy
+
+  Element element2(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+  ASSERT_EQ(element2.get().use_count(), 2); // +1 for get() which returns shared_ptr copy
 }
 
 /**
  * @brief Test the ref method of Element.
  */
-TEST_F(ElementTest, RefMethod) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, RefMethod)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
   auto refElement = element.ref();
-  // Check if ref increases the reference count
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.get()), 2);
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(element.get()), 2);
+  // Check if ref increases the reference count of shared_ptr only
+  EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.get().get()), 1);
+  EXPECT_EQ(GST_OBJECT_REFCOUNT(element.get().get()), 1);
+
+  // 3 because get() creates a shared_ptr, too
+  EXPECT_EQ(refElement.get().use_count(), 3);
+  EXPECT_EQ(element.get().use_count(), 3);
 }
 
-TEST_F(ElementTest, GetNameReturnsCorrectName) {
-  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+TEST_F(ElementTest, GetNameReturnsCorrectName)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+
 
   // Check that getName returns the correct name
   EXPECT_EQ(element.getName(), "test_source");
@@ -53,8 +63,10 @@ TEST_F(ElementTest, GetNameReturnsCorrectName) {
 /**
  * @brief Test the setState method.
  */
-TEST_F(ElementTest, SetState) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, SetState)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+
   ASSERT_EQ(element.setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   ASSERT_EQ(element.getState(), GST_STATE_PLAYING);
 }
@@ -62,8 +74,10 @@ TEST_F(ElementTest, SetState) {
 /**
  * @brief Test getting all pads.
  */
-TEST_F(ElementTest, GetPads) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, GetPads)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+
   std::vector<GstPad*> pads = element.getPads();
   ASSERT_EQ(pads.size(), 1);  // fakesrc has one "src" pad
 }
@@ -71,8 +85,10 @@ TEST_F(ElementTest, GetPads) {
 /**
  * @brief Test getting sink pads.
  */
-TEST_F(ElementTest, GetSinkPads) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, GetSinkPads)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+
   std::vector<GstPad*> sinkPads = element.getSinkPads();
   ASSERT_EQ(sinkPads.size(), 0);  // fakesrc has no sink pads
 }
@@ -80,8 +96,10 @@ TEST_F(ElementTest, GetSinkPads) {
 /**
  * @brief Test getting source pads.
  */
-TEST_F(ElementTest, GetSrcPads) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, GetSrcPads)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+
   std::vector<GstPad*> srcPads = element.getSrcPads();
   ASSERT_EQ(srcPads.size(), 1);  // fakesrc has one "src" pad
   ASSERT_EQ(gst_pad_get_name(srcPads[0]), std::string("src"));  // Verify the pad name
@@ -90,8 +108,10 @@ TEST_F(ElementTest, GetSrcPads) {
 /**
  * @brief Test getting static pad.
  */
-TEST_F(ElementTest, GetStaticPad) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, GetStaticPad)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+
   GstPad* staticPad = element.getStaticPad("src");
   ASSERT_NE(staticPad, nullptr);  // fakesrc has a "src" pad
   ASSERT_EQ(gst_pad_get_name(staticPad), std::string("src"));  // Verify the pad name
@@ -102,7 +122,7 @@ TEST_F(ElementTest, GetStaticPad) {
  */
 TEST_F(ElementTest, GetCompatiblePad)
 {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
 
   GstPad* sinkPad = gst_pad_new("sink", GST_PAD_SINK);
   // Create capabilities for the sink pad
@@ -126,13 +146,12 @@ TEST_F(ElementTest, GetCompatiblePad)
 /**
  * @brief Test linking and unlinking elements.
  */
-TEST_F(ElementTest, LinkAndUnlink) {
-  Element element(gst_element_factory_make("fakesrc", "source"), TransferType::Floating);
+TEST_F(ElementTest, LinkAndUnlink)
+{
+  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
 
-  GstElement* sinkElement = gst_element_factory_make("fakesink", "sink");
-  ASSERT_NE(sinkElement, nullptr) << "Failed to create GStreamer sink element.";
+  Element sink(makeGstSharedPtr(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating));
 
-  Element sink(sinkElement, TransferType::None);
 
   GstPad* sourcePad = element.getStaticPad("src");
   ASSERT_NE(sourcePad, nullptr) << "Failed to get sourcePad.";
@@ -149,6 +168,4 @@ TEST_F(ElementTest, LinkAndUnlink) {
   // Check if elements are unlinked
   ASSERT_FALSE(gst_pad_is_linked(sourcePad));
   ASSERT_FALSE(gst_pad_is_linked(sinkPad));
-
-  gst_object_unref(sinkElement);
 }

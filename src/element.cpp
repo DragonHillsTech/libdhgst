@@ -16,47 +16,66 @@ namespace dh::gst
 class Element::Private
 {
 public:
-  Private(GstElement* gstElement)
+  Private(GstElementSPtr gstElement)
   : gstElement{gstElement}
   {
   }
 
-  GstElement* gstElement{nullptr};
+  GstElementSPtr gstElement{nullptr};
 };
 
 Element::Element(GstElement* gstElement, TransferType transferType)
-: prv{std::make_unique<Private>(gstElement)}
-{
-  assert(gstElement != nullptr);
-  spdlog::info("Create element from {}, refCnt = {}", static_cast<void*>(gstElement), GST_OBJECT_REFCOUNT(prv->gstElement));
-  if(transferType == TransferType::None)
-  {
-    gst_object_ref(GST_OBJECT(gstElement));
+: prv{
+    std::make_unique<Private>(
+      makeGstSharedPtr(gstElement, transferType)
+    )
   }
+{
+  assert(prv->gstElement != nullptr);
+}
+
+Element::Element(GstElementSPtr gstElement)
+: prv{std::make_unique<Private>(std::move(gstElement))}
+{
+  assert(prv->gstElement != nullptr);
 }
 
 Element::~Element()
 {
   // if last reference, stop it
-  const auto refCnt = GST_OBJECT_REFCOUNT(prv->gstElement);
-  spdlog::info("refCount={}", refCnt);
+
+  // first increase ref cnt, so we can stop in case our shared_ptr was the last one
+  // the delete shared_ptr. If ref cnt is now 1, we know that nobody else has a reference
+  // and we stop the element before really finalising it.
+
+
+  GstElement* rawGstElement = prv->gstElement.get();
+  gst_object_ref(GST_OBJECT(rawGstElement));
+  prv.reset();
+
+  // There may be a multithreading problem:
+  // if ref cnt == 2, another piece of software could see the same ref cnt, both decrease and nobody stops the element
+  // leading to a gstreamer error.
+  // We currently solve it with the ostrich algorithm
+  const auto refCnt = GST_OBJECT_REFCOUNT(rawGstElement);
+  //spdlog::info("refCount={}", refCnt);
   if(refCnt == 1)
   {
-    setState(GST_STATE_NULL);
+    gst_element_set_state(rawGstElement, GST_STATE_NULL);
   }
 
   // Disconnect all GStreamer signals with 'this' as user data
   //g_signal_handlers_disconnect_by_data(prv->gstElement, this);
 
-  gst_object_unref(prv->gstElement);
+  gst_object_unref(rawGstElement);
 }
 
 Element Element::ref()
 {
-  return Element(prv->gstElement, TransferType::None);
+  return Element(prv->gstElement);
 }
 
-GstElement* Element::get()
+GstElementSPtr Element::get()
 {
   return prv->gstElement;
 }
@@ -64,7 +83,7 @@ GstElement* Element::get()
 std::string Element::getName() const
 {
   // Get the name from the GstElement
-  const gchar* name = gst_element_get_name(prv->gstElement);
+  const gchar* name = gst_element_get_name(prv->gstElement.get());
 
   // Return as std::string; handle null case gracefully
   return name ? std::string(name) : std::string("unknown");
@@ -72,14 +91,14 @@ std::string Element::getName() const
 
 GstStateChangeReturn Element::setState(GstState newState)
 {
-  return gst_element_set_state(prv->gstElement, newState);
+  return gst_element_set_state(prv->gstElement.get(), newState);
 }
 
 std::vector<GstPad*> Element::getPads()
 {
   std::vector<GstPad*> pads;
   gst_element_foreach_pad(
-    prv->gstElement,
+    prv->gstElement.get(),
     [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
     {
       auto& pads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
@@ -95,7 +114,7 @@ std::vector<GstPad*> Element::getSinkPads()
 {
   std::vector<GstPad*> sinkPads;
   gst_element_foreach_sink_pad(
-    prv->gstElement, [](GstElement* /*element*/,GstPad* pad, gpointer user_data) ->gboolean
+    prv->gstElement.get(), [](GstElement* /*element*/,GstPad* pad, gpointer user_data) ->gboolean
     {
       auto& sinkPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
       sinkPads.push_back(pad);
@@ -110,7 +129,7 @@ std::vector<GstPad*> Element::getSrcPads()
 {
   std::vector<GstPad*> srcPads;
   gst_element_foreach_src_pad(
-    prv->gstElement,
+    prv->gstElement.get(),
     [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
     {
       auto& srcPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
@@ -124,17 +143,17 @@ std::vector<GstPad*> Element::getSrcPads()
 
 GstPad* Element::getCompatiblePad(GstPad* pad, GstCaps* caps)
 {
-  return gst_element_get_compatible_pad(prv->gstElement, pad, caps);
+  return gst_element_get_compatible_pad(prv->gstElement.get(), pad, caps);
 }
 
 GstPad* Element::getStaticPad(const std::string& name)
 {
-  return gst_element_get_static_pad(prv->gstElement, name.c_str());
+  return gst_element_get_static_pad(prv->gstElement.get(), name.c_str());
 }
 
 Element& Element::link(Element& other)
 {
-  if (!gst_element_link(prv->gstElement, other.prv->gstElement))
+  if (!gst_element_link(prv->gstElement.get(), other.prv->gstElement.get()))
   {
     std::string errorMessage = "Failed to link GstElements: ";
     errorMessage += getName() + " -> " + other.getName();
@@ -148,29 +167,29 @@ Element& Element::link(Element& other)
 
 GstClockTime Element::getStartTime() const
 {
-  return gst_element_get_start_time(prv->gstElement);
+  return gst_element_get_start_time(prv->gstElement.get());
 }
 
 GstState Element::getState() const
 {
   GstState state;
-  gst_element_get_state(prv->gstElement, &state, nullptr, GST_CLOCK_TIME_NONE);
+  gst_element_get_state(prv->gstElement.get(), &state, nullptr, GST_CLOCK_TIME_NONE);
   return state;
 }
 
 void Element::unlink(Element& other)
 {
-  gst_element_unlink(prv->gstElement, other.prv->gstElement);
+  gst_element_unlink(prv->gstElement.get(), other.prv->gstElement.get());
 }
 
 bool Element::syncStateWithParent()
 {
-  return gst_element_sync_state_with_parent(prv->gstElement) ? true : false;
+  return gst_element_sync_state_with_parent(prv->gstElement.get()) ? true : false;
 }
 
 bool Element::signalExists(const std::string& signalName) const
 {
-  return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(prv->gstElement)) != 0;
+  return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(prv->gstElement.get())) != 0;
 }
 
 
