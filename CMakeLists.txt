@@ -30,7 +30,6 @@ add_library(libdhgst SHARED
         src/element.cpp
         src/element.hpp
         src/transfertype.hpp
-        src/dhgst.hpp
         src/sharedptrs.hpp
 )
 
