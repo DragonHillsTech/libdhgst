@@ -2,6 +2,7 @@
 #define DH_GST_ELEMENT_H
 
 // local includes
+#include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
 // boost
@@ -10,11 +11,9 @@
 // std
 #include <memory>
 #include <vector>
-#include <functional>
 
 // C
 #include <gst/gst.h>
-#include <cstdint> // For standard integer types
 
 namespace bs2 = boost::signals2;
 
@@ -35,10 +34,17 @@ public:
 
   /**
    * @brief Create a new Element object thet wraps a GstElement*.
+   * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstElement
-   * @param transferType if None, then increase use count
+   * @param transferType see if None, then increase use count
    */
   Element(GstElement* gstElement, TransferType transferType = TransferType::None);
+
+  /**
+   * @brief Create a new Element object that wraps a GstElementSPtr.
+   * @param gstElement
+   */
+  Element(GstElementSPtr gstElement);
 
   Element(const Element& other) = delete; // we can not simply copy that thing at the moment
 
@@ -54,10 +60,10 @@ public:
   Element ref();
 
   /**
-   * @brief get the GstElement* of the Element
+   * @brief get the GstElementSPtr of the Element
    * @return the internal GstElement. transfer: none
    */
-  GstElement* get();
+  GstElementSPtr get();
 
 
    /**
