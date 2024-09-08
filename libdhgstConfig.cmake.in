@@ -1,0 +1,8 @@
+include(CMakeFindDependencyMacro)
+
+find_dependency(spdlog)
+
+include("${CMAKE_CURRENT_LIST_DIR}/libdhgstTargets.cmake")
+
+set(libdhgst_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../include/dh/gst")
+
