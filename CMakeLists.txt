@@ -43,7 +43,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 set(SOVERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_NAME dh
+        OUTPUT_NAME dhgst
         VERSION ${PROJECT_VERSION}
         SOVERSION ${SOVERSION_MAJOR}
 )
@@ -63,8 +63,43 @@ install(FILES ${HEADERS}
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dh/libdhgst
 )
 
+# Create and install the pkg-config file
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libdhgst.pc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/libdhgst.pc @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libdhgst.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+)
+
+# Export the library for other CMake projects
+install(EXPORT libdhgstTargets
+        FILE libdhgstTargets.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+)
+
+# Add the include directory to the search path
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/libdhgstConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+)
+
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+)
+
 # Add the tests directory if BUILD_TESTS is ON
 if(BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
