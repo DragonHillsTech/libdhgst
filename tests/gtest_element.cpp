@@ -29,10 +29,10 @@ public:
 TEST_F(ElementTest, CreationAndDestruction)
 {
   Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
-  ASSERT_EQ(element1.get().use_count(), 2); // +1 for get() which returns shared_ptr copy
+  ASSERT_EQ(element1.getGstElement().use_count(), 2); // +1 for get() which returns shared_ptr copy
 
   Element element2(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
-  ASSERT_EQ(element2.get().use_count(), 2); // +1 for get() which returns shared_ptr copy
+  ASSERT_EQ(element2.getGstElement().use_count(), 2); // +1 for get() which returns shared_ptr copy
 }
 
 /**
@@ -43,12 +43,12 @@ TEST_F(ElementTest, RefMethod)
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
   auto refElement = element.ref();
   // Check if ref increases the reference count of shared_ptr only
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.get().get()), 1);
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(element.get().get()), 1);
+  EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.getGstElement().get()), 1);
+  EXPECT_EQ(GST_OBJECT_REFCOUNT(element.getGstElement().get()), 1);
 
   // 3 because get() creates a shared_ptr, too
-  EXPECT_EQ(refElement.get().use_count(), 3);
-  EXPECT_EQ(element.get().use_count(), 3);
+  EXPECT_EQ(refElement.getGstElement().use_count(), 3);
+  EXPECT_EQ(element.getGstElement().use_count(), 3);
 }
 
 TEST_F(ElementTest, GetNameReturnsCorrectName)

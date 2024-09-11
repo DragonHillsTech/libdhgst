@@ -1,3 +1,4 @@
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
 
 // local includes
 #include "element.hpp"
@@ -75,7 +76,7 @@ Element Element::ref()
   return Element(prv->gstElement);
 }
 
-GstElementSPtr Element::get()
+GstElementSPtr Element::getGstElement()
 {
   return prv->gstElement;
 }

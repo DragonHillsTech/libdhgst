@@ -1,6 +1,4 @@
-//
-// Created by sandro on 01.09.24.
-//
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
 
 #ifndef DH_GST_SHAREDPTRS_HPP
 #define DH_GST_SHAREDPTRS_HPP
