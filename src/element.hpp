@@ -1,3 +1,5 @@
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
+
 #ifndef DH_GST_ELEMENT_H
 #define DH_GST_ELEMENT_H
 
@@ -5,17 +7,12 @@
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
-// boost
-#include <boost/signals2.hpp>
-
 // std
 #include <memory>
 #include <vector>
 
 // C
 #include <gst/gst.h>
-
-namespace bs2 = boost::signals2;
 
 namespace dh::gst
 {
@@ -33,18 +30,18 @@ public:
   using HandlerId = gulong;
 
   /**
+   * @brief Create a new Element object that wraps a GstElementSPtr.
+   * @param gstElement
+   */
+  Element(GstElementSPtr gstElement);
+
+  /**
    * @brief Create a new Element object thet wraps a GstElement*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstElement
    * @param transferType see if None, then increase use count
    */
   Element(GstElement* gstElement, TransferType transferType = TransferType::None);
-
-  /**
-   * @brief Create a new Element object that wraps a GstElementSPtr.
-   * @param gstElement
-   */
-  Element(GstElementSPtr gstElement);
 
   Element(const Element& other) = delete; // we can not simply copy that thing at the moment
 
@@ -61,9 +58,9 @@ public:
 
   /**
    * @brief get the GstElementSPtr of the Element
-   * @return the internal GstElement. transfer: none
+   * @return the internal GstElement.
    */
-  GstElementSPtr get();
+  GstElementSPtr getGstElement();
 
 
    /**

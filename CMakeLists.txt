@@ -12,12 +12,14 @@ option(BUILD_TESTS "Build the unit tests" ON)
 
 # Set the source and header files
 set(SOURCES
+  src/bin.cpp
   src/element.cpp
 )
 set(HEADERS
+  src/bin.hpp
   src/element.hpp
-  src/transfertype.hpp
   src/sharedptrs.hpp
+  src/transfertype.hpp
 )
 
 # Find required packages
