@@ -121,6 +121,7 @@ struct GstObjectDeleter
 };
 
 // Shared pointer typedefs for common GStreamer types
+using GstObjectSPtr = std::shared_ptr<GstObject>;
 using GstElementSPtr = std::shared_ptr<GstElement>;
 using GstPadSPtr = std::shared_ptr<GstPad>;
 using GstCapsSPtr = std::shared_ptr<GstCaps>;
