@@ -29,6 +29,17 @@ namespace dh::gst
  */
 class Object
 {
+protected:
+ /**
+  * @brief move constructor is protected because the (abstract) GstObject can and shall not be created directly
+  * Just implemented as default. That means, prv of other invalid. Is that okay?
+  */
+ Object(Object&& other) noexcept;
+ Object& operator=(Object&& other) noexcept;
+
+ Object(const Object& other) = delete; // we can not simply copy that thing
+ Object& operator=(const Object&) = delete; // we can not simply copy that thing
+
 public:
   /**
    * @brief Create a new Object that wraps a GstObject
@@ -55,9 +66,17 @@ public:
   /**
    * @brief get the GstObjectSPtr of the Object
    * @return the internal GstObject.
+   * @throws std::logic_error if internal GstObject is empty (moved)
    */
   GstObjectSPtr getGstObject();
+
+  /**
+   * @brief get the GstObjectSPtr of the Object
+   * @return the internal GstObject.
+   * @throws std::logic_error if internal GstObject is empty (moved)
+   */
   const GstObjectSPtr getGstObject() const;
+
   /**
    * @brief Gets the name of the GStreamer object.
    * @return std::string The name of the `GstObject`.
