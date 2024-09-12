@@ -4,11 +4,12 @@
 #define DH_GST_ELEMENT_H
 
 // local includes
+#include "object.hpp"
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
 // std
-#include <memory>
+#include <string>
 #include <vector>
 
 // C
@@ -20,15 +21,12 @@ namespace dh::gst
 /**
  * @class Element
  * @brief A wrapper class for GstElement, providing additional functionalities.
+ * The destruction of the last reference to the GstElement* will
+ * automatically set the state to null by @ref GstObjectDeleter
  */
-class Element
+class Element : public Object
 {
 public:
-  /**
-   * @brief Type alias for signal handler ID to improve code readability.
-   */
-  using HandlerId = gulong;
-
   /**
    * @brief Create a new Element object that wraps a GstElementSPtr.
    * @param gstElement
@@ -36,7 +34,7 @@ public:
   Element(GstElementSPtr gstElement);
 
   /**
-   * @brief Create a new Element object thet wraps a GstElement*.
+   * @brief Create a new Element object that wraps a GstElement.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstElement
    * @param transferType see if None, then increase use count
@@ -44,11 +42,6 @@ public:
   Element(GstElement* gstElement, TransferType transferType = TransferType::None);
 
   Element(const Element& other) = delete; // we can not simply copy that thing at the moment
-
-  /**
-   * @todo checking ref cnt for stopping and unref is not thread safe
-   */
-  virtual ~Element();
 
   /**
    * @brief create a reference to the same Element
@@ -62,13 +55,7 @@ public:
    */
   GstElementSPtr getGstElement();
 
-
-   /**
-   * @brief Gets the name of the GStreamer element.
-   * Retrieves the name of the underlying `GstElement` associated with this `Element`.
-   * @return std::string The name of the `GstElement`.
-   */
-  std::string getName() const;
+  const GstElementSPtr getGstElement() const;
 
   GstStateChangeReturn setState(GstState newState);
 
@@ -150,9 +137,6 @@ public:
    */
   bool signalExists(const std::string& signalName) const;
 
-private:
-    class Private;
-    std::unique_ptr<Private> prv;
 };
 
 

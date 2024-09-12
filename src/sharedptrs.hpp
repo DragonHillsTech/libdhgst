@@ -59,57 +59,46 @@ struct GstObjectDeleter
   template <typename T>
   void operator()(T* obj) const
   {
+    if (!obj)
+    {
+      return;
+    }
+
     if constexpr (IsGstObject<T>::value)
     {
-      // For GObject-derived types
-      if(obj)
+      // Set GstElement state to NULL before unref if it's the last ref to the a GstElement
+      if(GST_IS_ELEMENT(obj) && GST_OBJECT_REFCOUNT(obj) == 1)
       {
-        gst_object_unref(GST_OBJECT(obj));
+        gst_element_set_state(GST_ELEMENT(obj), GST_STATE_NULL);
       }
+
+      gst_object_unref(GST_OBJECT(obj));
     }
     else
     {
       // Handle non-GObject types specifically
       if constexpr (std::is_same_v<T, GstCaps>)
       {
-        if(obj)
-        {
-          gst_caps_unref(obj);
-        }
+        gst_caps_unref(obj);
       } else if constexpr (std::is_same_v<T, GstStructure>)
       {
-        if(obj)
-        {
-          gst_structure_free(obj);
-        }
+        gst_structure_free(obj);
       }
       else if constexpr(std::is_same_v<T, GstBuffer>)
       {
-        if (obj)
-        {
-          gst_buffer_unref(obj);
-        }
+        gst_buffer_unref(obj);
       }
       else if constexpr (std::is_same_v<T, GstEvent>)
       {
-        if(obj)
-        {
-          gst_event_unref(obj);
-        }
+        gst_event_unref(obj);
       }
       else if constexpr(std::is_same_v<T, GstMessage>)
       {
-        if(obj)
-        {
-          gst_message_unref(obj);
-        }
+        gst_message_unref(obj);
       }
       else if constexpr(std::is_same_v<T, GstSample>)
       {
-        if(obj)
-        {
-          gst_sample_unref(obj);
-        }
+        gst_sample_unref(obj);
       }
       else
       {

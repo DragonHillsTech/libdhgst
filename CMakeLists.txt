@@ -14,10 +14,12 @@ option(BUILD_TESTS "Build the unit tests" ON)
 set(SOURCES
   src/bin.cpp
   src/element.cpp
+  src/object.cpp
 )
 set(HEADERS
   src/bin.hpp
   src/element.hpp
+  src/object.hpp
   src/sharedptrs.hpp
   src/transfertype.hpp
 )

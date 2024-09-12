@@ -19,11 +19,9 @@ Bin::Bin(GstBin* gstBin, TransferType transferType)
 {
 }
 
-Bin::~Bin() = default;
-
 GstBinSPtr Bin::getGstBin()
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BIN_CAST(getGstElement().get()), TransferType::None);
+  return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::None);
 }
 } // dh::gst
