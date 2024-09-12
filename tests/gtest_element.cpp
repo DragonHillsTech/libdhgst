@@ -1,6 +1,11 @@
+#include "element.hpp"
+
 #include <gtest/gtest.h>
 #include <gst/gst.h>
-#include "element.hpp"
+
+#include <stdexcept>
+
+#include <cstdlib>
 
 using namespace dh::gst;
 
@@ -13,6 +18,8 @@ public:
   // Setup before first test case
   static void SetUpTestSuite()
   {
+    // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
+    setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
 
@@ -23,23 +30,41 @@ public:
   }
 };
 
-/**
- * @brief Test creation and destruction of Element.
- */
 TEST_F(ElementTest, CreationAndDestruction)
 {
-  Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  // ctor GstElementSPtr
+  Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating));
   ASSERT_EQ(element1.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
   ASSERT_EQ(GST_OBJECT_REFCOUNT(element1.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
 
-  Element element2(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+  //ctor GstElement*
+  Element element2(gst_element_factory_make("fakesrc", "testSource2"), TransferType::Floating);
   ASSERT_EQ(element2.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
   ASSERT_EQ(GST_OBJECT_REFCOUNT(element2.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
 }
 
-/**
- * @brief Test the ref method of Element.
- */
+TEST_F(ElementTest, Move)
+{
+  // ctor GstElementSPtr
+  Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating));
+
+  //move ctor element1 -> element2
+  Element element2(std::move(element1));
+  ASSERT_EQ(element2.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
+  ASSERT_EQ(GST_OBJECT_REFCOUNT(element2.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
+  ASSERT_EQ(element2.getName(), "testSource1");
+  // check if element1 is moved and throws on access
+  EXPECT_THROW(element1.getName(), std::logic_error);
+
+  // move assignment back element2 -> element1
+  element1 = std::move(element2);
+  ASSERT_EQ(element1.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
+  ASSERT_EQ(GST_OBJECT_REFCOUNT(element1.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
+  ASSERT_EQ(element1.getName(), "testSource1");
+  // check if element1 is moved and throws on access
+  EXPECT_THROW(element2.getName(), std::logic_error);
+}
+
 TEST_F(ElementTest, RefMethod)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -62,9 +87,6 @@ TEST_F(ElementTest, GetNameReturnsCorrectName)
   EXPECT_EQ(element.getName(), "test_source");
 }
 
-/**
- * @brief Test the setState method.
- */
 TEST_F(ElementTest, SetState)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -75,9 +97,6 @@ TEST_F(ElementTest, SetState)
   // here we whould get a gstreamer error if the Element is destroyed when state != null.
 }
 
-/**
- * @brief Test getting all pads.
- */
 TEST_F(ElementTest, GetPads)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -86,9 +105,6 @@ TEST_F(ElementTest, GetPads)
   ASSERT_EQ(pads.size(), 1);  // fakesrc has one "src" pad
 }
 
-/**
- * @brief Test getting sink pads.
- */
 TEST_F(ElementTest, GetSinkPads)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -97,9 +113,6 @@ TEST_F(ElementTest, GetSinkPads)
   ASSERT_EQ(sinkPads.size(), 0);  // fakesrc has no sink pads
 }
 
-/**
- * @brief Test getting source pads.
- */
 TEST_F(ElementTest, GetSrcPads)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -109,9 +122,6 @@ TEST_F(ElementTest, GetSrcPads)
   ASSERT_EQ(gst_pad_get_name(srcPads[0]), std::string("src"));  // Verify the pad name
 }
 
-/**
- * @brief Test getting static pad.
- */
 TEST_F(ElementTest, GetStaticPad)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -121,9 +131,6 @@ TEST_F(ElementTest, GetStaticPad)
   ASSERT_EQ(gst_pad_get_name(staticPad), std::string("src"));  // Verify the pad name
 }
 
-/**
- * @brief Test getting compatible pad.
- */
 TEST_F(ElementTest, GetCompatiblePad)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
@@ -146,10 +153,6 @@ TEST_F(ElementTest, GetCompatiblePad)
   gst_caps_unref(caps);  // Unref the caps
 }
 
-
-/**
- * @brief Test linking and unlinking elements.
- */
 TEST_F(ElementTest, LinkAndUnlink)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));

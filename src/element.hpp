@@ -41,7 +41,8 @@ public:
    */
   Element(GstElement* gstElement, TransferType transferType = TransferType::None);
 
-  Element(const Element& other) = delete; // we can not simply copy that thing at the moment
+  Element(Element&& other) noexcept = default;
+  Element& operator=(Element&&) noexcept = default;
 
   /**
    * @brief create a reference to the same Element
