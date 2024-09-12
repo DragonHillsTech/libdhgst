@@ -25,18 +25,12 @@ public:
    */
   Bin(GstBin* gstBin, TransferType transferType = TransferType::None);
 
-  virtual ~Bin();
-
  /**
    * @brief get the GstBinSPtr of the Bin
    * @return the GstBin.
    * @todo use getGstObject instead of getGstElement
    */
   GstBinSPtr getGstBin();
-
-//private:
-//    class Private;
-//    std::unique_ptr<Private> prv;
 };
 
 } // dh::gst

@@ -29,10 +29,12 @@ public:
 TEST_F(ElementTest, CreationAndDestruction)
 {
   Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
-  ASSERT_EQ(element1.getGstElement().use_count(), 2); // +1 for get() which returns shared_ptr copy
+  ASSERT_EQ(element1.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
+  ASSERT_EQ(GST_OBJECT_REFCOUNT(element1.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
 
   Element element2(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
-  ASSERT_EQ(element2.getGstElement().use_count(), 2); // +1 for get() which returns shared_ptr copy
+  ASSERT_EQ(element2.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
+  ASSERT_EQ(GST_OBJECT_REFCOUNT(element2.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
 }
 
 /**
@@ -42,13 +44,13 @@ TEST_F(ElementTest, RefMethod)
 {
   Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
   auto refElement = element.ref();
-  // Check if ref increases the reference count of shared_ptr only
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.getGstElement().get()), 1);
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(element.getGstElement().get()), 1);
 
-  // 3 because get() creates a shared_ptr, too
-  EXPECT_EQ(refElement.getGstElement().use_count(), 3);
-  EXPECT_EQ(element.getGstElement().use_count(), 3);
+  EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.getGstElement().get()), 3); // original, ref and getGstElement
+  EXPECT_EQ(GST_OBJECT_REFCOUNT(element.getGstElement().get()), 3);
+
+  // 1 because we get a new shared_ptr each time
+  EXPECT_EQ(refElement.getGstElement().use_count(), 1);
+  EXPECT_EQ(element.getGstElement().use_count(), 1);
 }
 
 TEST_F(ElementTest, GetNameReturnsCorrectName)
@@ -69,6 +71,8 @@ TEST_F(ElementTest, SetState)
 
   ASSERT_EQ(element.setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   ASSERT_EQ(element.getState(), GST_STATE_PLAYING);
+
+  // here we whould get a gstreamer error if the Element is destroyed when state != null.
 }
 
 /**
