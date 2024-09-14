@@ -1,7 +1,3 @@
-Here is a `README.md` for your CMake-based C++17 library that implements a C++ wrapper for GStreamer:
-
----
-
 # libdhgst
 
 [![Build Status](https://github.com/DragonHillsTech/libdhgst/actions/workflows/ci.yml/badge.svg)](https://github.com/DragonHillsTech/libdhgst/actions)
