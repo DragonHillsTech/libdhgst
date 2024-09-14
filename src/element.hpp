@@ -27,23 +27,23 @@ namespace dh::gst
 class Element : public Object
 {
 public:
- /**
-  * @brief Create a new Element object that wraps a GstElementSPtr.
-  * @param gstElement
-  */
- Element(GstElementSPtr gstElement);
+  /**
+   * @brief Create a new Element object that wraps a GstElementSPtr.
+   * @param gstElement
+   */
+  Element(GstElementSPtr gstElement);
 
- /**
-  * @brief Create a new Element object that wraps a GstElement.
-  * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
-  * @param gstElement
-  * @param transferType see if None, then increase use count
-  */
- Element(GstElement* gstElement, TransferType transferType = TransferType::None);
-
+  /**
+   * @brief Create a new Element object that wraps a GstElement.
+   * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
+   * @param gstElement
+   * @param transferType see if None, then increase use count
+   */
+  Element(GstElement* gstElement, TransferType transferType = TransferType::None);
 
   [[nodiscard ]] Element fromFactory(const std::string& factoryName);
 
+  // bring move semantics back
   Element(Element&& other) noexcept = default;
   Element& operator=(Element&&) noexcept = default;
 

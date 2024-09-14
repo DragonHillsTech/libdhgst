@@ -40,6 +40,7 @@ template <> struct IsGstObject<GstPadTemplate> : std::true_type {};
 template <> struct IsGstObject<GstPipeline> : std::true_type {};
 template <> struct IsGstObject<GstPlugin> : std::true_type {};
 template <> struct IsGstObject<GstSample> : std::true_type {};
+template <> struct IsGstObject<GstPluginFeature> : std::true_type {};
 
 // Custom trait for non-GObject GStreamer types
 template <> struct IsGstObject<GstCaps> : std::false_type {};
@@ -132,7 +133,7 @@ using GstPipelineSPtr = std::shared_ptr<GstPipeline>;
 using GstPluginSPtr = std::shared_ptr<GstPlugin>;
 using GstSampleSPtr = std::shared_ptr<GstSample>;
 using GstStructureSPtr = std::shared_ptr<GstStructure>;
-
+using GstPluginFeatureSPtr = std::shared_ptr<GstPluginFeature>;
 /**
  * @brief Creates a shared_ptr for a GStreamer object with the correct deleter.
  * This function only participates in overload resolution if T is a known GStreamer type.
