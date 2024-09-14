@@ -14,6 +14,7 @@ option(BUILD_TESTS "Build the unit tests" ON)
 set(SOURCES
   src/bin.cpp
   src/element.cpp
+  src/elementfactory.cpp
   src/object.cpp
   src/pluginfeature.cpp
 )
@@ -21,6 +22,7 @@ set(SOURCES
 set(HEADERS
   src/bin.hpp
   src/element.hpp
+  src/elementfactory.hpp
   src/object.hpp
   src/pluginfeature.cpp
   src/sharedptrs.hpp
