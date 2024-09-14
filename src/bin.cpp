@@ -48,6 +48,26 @@ void Bin::addElement(Element& element)
   }
 }
 
+Element Bin::getElementByName(const std::string& name)
+{
+  GstElement* gstElement = gst_bin_get_by_name(GST_BIN(getGstBin().get()), name.c_str());
+  if (!gstElement) {
+    throw std::runtime_error("Element with name '" + name + "' not found.");
+  }
+
+  return Element(makeGstSharedPtr(gstElement, TransferType::Full));
+}
+
+Element Bin::getElementByNameRecurseUp(const std::string& name)
+{
+  GstElement* gstElement = gst_bin_get_by_name_recurse_up(GST_BIN(getGstBin().get()), name.c_str());
+  if (!gstElement) {
+    throw std::runtime_error("Element with name '" + name + "' not found.");
+  }
+
+  return Element(makeGstSharedPtr(gstElement, TransferType::Full));
+}
+
 void Bin::removeElement(GstElementSPtr element)
 {
   if (gst_bin_remove(getGstBin().get(), element.get()) == FALSE)

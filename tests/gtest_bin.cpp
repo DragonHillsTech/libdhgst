@@ -125,3 +125,33 @@ TEST_F(BinTest, AddAndRemoveElementByReference)
   EXPECT_NO_THROW(bin1.removeElement(element1));
   EXPECT_TRUE(gst_bin_get_by_name(bin1.getGstBin().get(), element1.getName().c_str()) == nullptr);
 }
+
+TEST_F(BinTest, GetElementByName)
+{
+  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  Element element1 = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+
+  // find existing
+  bin1.addElement(element1);
+  auto element2 = bin1.getElementByName(element1.getName());
+  EXPECT_EQ(element2.getName(), element1.getName());
+  EXPECT_EQ(element2.getGstElement(), element1.getGstElement());
+
+  // find not existing
+  EXPECT_THROW(bin1.getElementByName("DoesNotExist"), std::runtime_error);
+}
+
+TEST_F(BinTest, GetElementByNameRecurseUp)
+{
+  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  Element element1 = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+
+  // find existing
+  bin1.addElement(element1);
+  auto element2 = bin1.getElementByNameRecurseUp(element1.getName());
+  EXPECT_EQ(element2.getName(), element1.getName());
+  EXPECT_EQ(element2.getGstElement(), element1.getGstElement());
+
+  // find not existing
+  EXPECT_THROW(bin1.getElementByNameRecurseUp("DoesNotExist"), std::runtime_error);
+}
