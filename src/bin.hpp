@@ -15,7 +15,7 @@ public:
    * @brief Create a new Bin object that wraps a GstBinSPtr.
    * @param gstBin
    */
-  Bin(GstBinSPtr gstBin);
+  explicit Bin(GstBinSPtr gstBin);
 
   /**
    * @brief Create a new Bin object that wraps a GstBin*.
@@ -23,7 +23,13 @@ public:
    * @param gstBin
    * @param transferType see if None, then increase use count
    */
-  Bin(GstBin* gstBin, TransferType transferType = TransferType::None);
+  explicit Bin(GstBin* gstBin, TransferType transferType = TransferType::None);
+
+  /**
+  * @brief create a reference to the same Bin
+  * @return the new Bin with the same internal GstBin*
+  */
+  Bin ref();
 
  /**
    * @brief get the GstBinSPtr of the Bin
@@ -31,6 +37,34 @@ public:
    * @todo use getGstObject instead of getGstElement
    */
   GstBinSPtr getGstBin();
+
+  /**
+  * @brief Adds an element to the GstBin using a shared pointer.
+  * @param element The Element to add.
+  * @throws std::runtime_error if the element cannot be added.
+  */
+  void addElement(GstElementSPtr element);
+
+  /**
+   * @brief Adds an element to the GstBin using a reference.
+   * @param element The Element to add.
+   * @throws std::runtime_error if the element cannot be added.
+   */
+  void addElement(Element& element);
+
+  /**
+   * @brief Removes an element from the GstBin using a shared pointer.
+   * @param element The Element to remove.
+   * @throws std::runtime_error if the element cannot be removed.
+   */
+  void removeElement(GstElementSPtr element);
+
+  /**
+   * @brief Removes an element from the GstBin using a reference.
+   * @param element The Element to remove.
+   * @throws std::runtime_error if the element cannot be removed.
+   */
+  void removeElement(Element& element);
 };
 
 } // dh::gst
