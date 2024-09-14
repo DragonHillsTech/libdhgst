@@ -52,6 +52,23 @@ public:
    */
   void addElement(Element& element);
 
+ /**
+  * @brief Retrieves an element by its name. This function recurses into child bins.
+  * @param name The name of the element.
+  * @return The element if found
+  * @throws std::runtime_error if the element cannot be found.
+  */
+  Element getElementByName(const std::string& name);
+
+  /**
+   * @brief Retrieves an element by its name. If the element is not found, a recursion is performed on the parent bin.
+   * @param name
+   * @param name The name of the element.
+   * @return The element if found
+   * @throws std::runtime_error if the element cannot be found.
+   */
+  Element getElementByNameRecurseUp(const std::string& name);
+
   /**
    * @brief Removes an element from the GstBin using a shared pointer.
    * @param element The Element to remove.
