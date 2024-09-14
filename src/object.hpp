@@ -61,31 +61,34 @@ public:
    * @brief create a reference to the same GstObject
    * @return the new Object with the same internal GstObject*
    */
-  Object ref();
+  [[nodiscard]] Object ref();
 
   /**
    * @brief get the GstObjectSPtr of the Object
    * @return the internal GstObject.
    * @throws std::logic_error if internal GstObject is empty (moved)
    */
-  GstObjectSPtr getGstObject();
+  [[nodiscard]] GstObjectSPtr getGstObject();
 
   /**
    * @brief get the GstObjectSPtr of the Object
    * @return the internal GstObject.
    * @throws std::logic_error if internal GstObject is empty (moved)
    */
-  const GstObjectSPtr getGstObject() const;
+  [[nodiscard]] const GstObjectSPtr getGstObject() const;
 
   /**
    * @brief Gets the name of the GStreamer object.
    * @return std::string The name of the `GstObject`.
    */
- std::string getName() const;
+  [[nodiscard]] std::string getName() const;
 
  private:
     class Private;
     std::unique_ptr<Private> prv;
+
+   [[nodiscard]] const GstObject* getRawGstObject() const;
+   [[nodiscard]] GstObject* getRawGstObject();
 };
 
 } // dh::gst

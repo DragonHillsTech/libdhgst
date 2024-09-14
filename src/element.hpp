@@ -27,19 +27,22 @@ namespace dh::gst
 class Element : public Object
 {
 public:
-  /**
-   * @brief Create a new Element object that wraps a GstElementSPtr.
-   * @param gstElement
-   */
-  Element(GstElementSPtr gstElement);
+ /**
+  * @brief Create a new Element object that wraps a GstElementSPtr.
+  * @param gstElement
+  */
+ Element(GstElementSPtr gstElement);
 
-  /**
-   * @brief Create a new Element object that wraps a GstElement.
-   * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
-   * @param gstElement
-   * @param transferType see if None, then increase use count
-   */
-  Element(GstElement* gstElement, TransferType transferType = TransferType::None);
+ /**
+  * @brief Create a new Element object that wraps a GstElement.
+  * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
+  * @param gstElement
+  * @param transferType see if None, then increase use count
+  */
+ Element(GstElement* gstElement, TransferType transferType = TransferType::None);
+
+
+  [[nodiscard ]] Element fromFactory(const std::string& factoryName);
 
   Element(Element&& other) noexcept = default;
   Element& operator=(Element&&) noexcept = default;
@@ -48,15 +51,15 @@ public:
    * @brief create a reference to the same Element
    * @return the new Element with the same internal GstElement*
    */
-  Element ref();
+  [[nodiscard]] Element ref();
 
   /**
    * @brief get the GstElementSPtr of the Element
    * @return the internal GstElement.
    */
-  GstElementSPtr getGstElement();
+  [[nodiscard]] GstElementSPtr getGstElement();
 
-  const GstElementSPtr getGstElement() const;
+  [[nodiscard]] const GstElementSPtr getGstElement() const;
 
   GstStateChangeReturn setState(GstState newState);
 
@@ -65,21 +68,21 @@ public:
   * @return (transfer none): A vector containing pointers to all GstPad objects.
   * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
   */
- std::vector<GstPad*> getPads();
+  [[nodiscard]] std::vector<GstPad*> getPads();
 
  /**
   * @brief Gets all sink pads of the GStreamer element.
   * @return (transfer none): A vector containing pointers to sink GstPad objects.
   * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
   */
- std::vector<GstPad*> getSinkPads();
+  [[nodiscard]] std::vector<GstPad*> getSinkPads();
 
  /**
   * @brief Gets all source pads of the GStreamer element.
   * @return (transfer none): A vector containing pointers to source GstPad objects.
   * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
   */
- std::vector<GstPad*> getSrcPads();
+  [[nodiscard]] std::vector<GstPad*> getSrcPads();
 
  /**
   * @brief Finds a compatible pad for a given pad and caps.
@@ -88,7 +91,7 @@ public:
   * @return (transfer none): A pointer to the compatible GstPad, or nullptr if none found.
   * @note The caller does not own the returned GstPad pointer. Use gst_object_ref() if you need to keep it.
   */
- GstPad* getCompatiblePad(GstPad* pad, GstCaps* caps);
+  [[nodiscard]] GstPad* getCompatiblePad(GstPad* pad, GstCaps* caps);
 
  /**
   * @brief Gets a static pad by name.
@@ -96,27 +99,28 @@ public:
   * @return (transfer none): A pointer to the GstPad if found, nullptr otherwise.
   * @note The caller does not own the returned GstPad pointer. Use gst_object_ref() if you need to keep it.
   */
- GstPad* getStaticPad(const std::string& name);
+  [[nodiscard]] GstPad* getStaticPad(const std::string& name);
 
- /**
-  * @brief Links this element with another element.
-  * @param other (transfer none): The Element to link with.
-  * @return Reference to the current Element for chaining.
-  * @throws std::runtime_error if the elements cannot be linked.
-  */
- Element& link(Element& other);
+  /**
+   * @brief Links this element with another element.
+   * @param other (transfer none): The Element to link with.
+   * @return Reference to the other Element for chaining.
+   * @throws std::runtime_error if the elements cannot be linked.
+   * @todo: add test
+   */
+  Element& link(Element& other);
 
    /**
    * @brief Gets the start time of the element.
    * @return The start time in nanoseconds.
    */
-  GstClockTime getStartTime() const;
+  [[nodiscard]] GstClockTime getStartTime() const;
 
   /**
    * @brief Gets the current state of the element.
    * @return The current GstState of the element.
    */
-  GstState getState() const;
+  [[nodiscard]] GstState getState() const;
 
   /**
    * @brief Unlinks the element from another element.
@@ -127,17 +131,20 @@ public:
   /**
    * @brief Synchronizes the state of the element with its parent.
    * @return true if the synchronization was successful, false otherwise.
-   * @todo throw on error
+   * @throws std::runtime_error if element could not be synced
    */
-  bool syncStateWithParent();
+  void syncStateWithParent();
 
   /**
    * @brief Check if a specific signal exists on the GStreamer element.
    * @param signalName The name of the signal to check.
    * @return true if the signal exists, false otherwise.
    */
-  bool signalExists(const std::string& signalName) const;
+  [[nodiscard]] bool signalExists(const std::string& signalName) const;
 
+private:
+ [[nodiscard]] const GstElement* getRawGstElement() const;
+ [[nodiscard]] GstElement* getRawGstElement();
 };
 
 

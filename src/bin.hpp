@@ -38,14 +38,15 @@ public:
   * @brief create a reference to the same Bin
   * @return the new Bin with the same internal GstBin*
   */
-  Bin ref();
+  [[nodiscard]] Bin ref();
 
  /**
    * @brief get the GstBinSPtr of the Bin
    * @return the GstBin.
    * @todo use getGstObject instead of getGstElement
    */
-  GstBinSPtr getGstBin();
+  [[nodiscard]] GstBinSPtr getGstBin();
+  [[nodiscard]] const GstBinSPtr getGstBin() const;
 
   /**
   * @brief Adds an element to the GstBin using a shared pointer.
@@ -67,7 +68,7 @@ public:
   * @return The element if found
   * @throws std::runtime_error if the element cannot be found.
   */
-  Element getElementByName(const std::string& name);
+  [[nodiscard]] Element getElementByName(const std::string& name);
 
   /**
    * @brief Retrieves an element by its name. If the element is not found, a recursion is performed on the parent bin.
@@ -76,7 +77,7 @@ public:
    * @return The element if found
    * @throws std::runtime_error if the element cannot be found.
    */
-  Element getElementByNameRecurseUp(const std::string& name);
+  [[nodiscard]] Element getElementByNameRecurseUp(const std::string& name);
 
   /**
    * @brief Removes an element from the GstBin using a shared pointer.
@@ -91,6 +92,10 @@ public:
    * @throws std::runtime_error if the element cannot be removed.
    */
   void removeElement(Element& element);
+
+private:
+  [[nodiscard]] const GstBin* getRawGstBin() const;
+  [[nodiscard]] GstBin* getRawGstBin();
 };
 
 } // dh::gst
