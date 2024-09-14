@@ -3,14 +3,15 @@
 #ifndef DH_GST_SHAREDPTRS_HPP
 #define DH_GST_SHAREDPTRS_HPP
 
-#include "transfertype.hpp"            // Include the external header for TransferType
+#include "transfertype.hpp"       // Include the external header for TransferType
 
-#include <gst/app/gstappsink.h>      // For GstAppSink
-#include <gst/app/gstappsrc.h>       // For GstAppSrc
-#include <gst/gst.h>                 // General GStreamer types and functions
+#include <gst/app/gstappsink.h>   // For GstAppSink
+#include <gst/app/gstappsrc.h>    // For GstAppSrc
+#include <gst/gst.h>              // General GStreamer types and functions
+#include <glib.h>                 // For GError, GList, GHashTable, etc.
 
-#include <memory>                    // For std::shared_ptr
-#include <type_traits>               // For std::type_traits
+#include <memory>                 // For std::shared_ptr
+#include <type_traits>            // For std::type_traits
 
 
 namespace dh::gst {
@@ -142,7 +143,7 @@ using GstStructureSPtr = std::shared_ptr<GstStructure>;
  */
 template <typename T>
 std::enable_if_t<IsGstObject<T>::value, std::shared_ptr<T>>
-makeGstSharedPtr(T* obj, TransferType transferType)
+makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
 {
   if(!obj)
   {
@@ -201,6 +202,69 @@ makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
 }
 
 
+// glib types
+/**
+ * @brief Universal Deleter for GLib objects such as GError, GList, and GHashTable.
+ * This deleter ensures the correct freeing of GLib resources.
+ */
+struct GlibDeleter
+{
+  /**
+   * @brief Templated operator() to free GLib objects.
+   * @tparam T Type of the GLib object.
+   * @param obj Pointer to the GLib object.
+   */
+  template <typename T>
+  void operator()(T* obj) const
+  {
+    if (!obj)
+    {
+      return;
+    }
+
+    if constexpr (std::is_same_v<T, GError>)
+    {
+      g_error_free(obj);  // Free GError
+    }
+    else if constexpr (std::is_same_v<T, GList>)
+    {
+      g_list_free(obj);  // Free GList
+    }
+    else if constexpr (std::is_same_v<T, GHashTable>)
+    {
+      g_hash_table_destroy(obj);  // Destroy GHashTable
+    }
+    else
+    {
+      // Static assert for unhandled types to ensure all cases are covered
+      static_assert(!sizeof(T*), "Unhandled GLib type in GlibDeleter");
+    }
+  }
+};
+
+// Shared pointer typedefs for common GLib types
+using GErrorSPtr = std::shared_ptr<GError>;
+using GListSPtr = std::shared_ptr<GList>;
+using GHashTableSPtr = std::shared_ptr<GHashTable>;
+
+/**
+ * @brief Creates a shared_ptr for a GLib object with the correct deleter.
+ * This function only participates in overload resolution if T is a known GLib type.
+ * @tparam T Type of GLib object.
+ * @param obj Raw pointer to the GLib object.
+ * @return std::shared_ptr<T> A shared pointer to the GLib object with a custom deleter.
+ */
+template <typename T>
+std::enable_if_t<std::is_same_v<T, GError> || std::is_same_v<T, GList> || std::is_same_v<T, GHashTable>, std::shared_ptr<T>>
+makeGlibSharedPtr(T* obj)
+{
+  if (!obj)
+  {
+    return nullptr;  // Handle null objects safely
+  }
+
+  return std::shared_ptr<T>(obj, GlibDeleter());
+}
 } // namespace dh::gst
 
 #endif // DH_GST_SHAREDPTRS_HPP
