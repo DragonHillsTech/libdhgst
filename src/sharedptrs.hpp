@@ -142,7 +142,7 @@ using GstStructureSPtr = std::shared_ptr<GstStructure>;
  */
 template <typename T>
 std::enable_if_t<IsGstObject<T>::value, std::shared_ptr<T>>
-makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+makeGstSharedPtr(T* obj, TransferType transferType)
 {
   if(!obj)
   {
