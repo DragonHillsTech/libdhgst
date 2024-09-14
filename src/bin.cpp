@@ -21,6 +21,33 @@ Bin::Bin(GstBin* gstBin, TransferType transferType)
 {
 }
 
+Bin Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
+{
+  GError* error{nullptr};
+
+  // Parse the pipeline description and store error if any occurs
+  GstElement* pipeline = gst_parse_bin_from_description(
+    description.c_str(),
+    ghostUnlinkedPads,
+    &error
+  );
+
+  // Create a smart pointer for the GError if it exists
+  GErrorSPtr errorSPtr(error, GlibDeleter());
+
+  // If parsing fails, throw an exception with the error message
+  if (!pipeline)
+  {
+    std::string errMsg = "Failed to create Bin from description: ";
+    errMsg += errorSPtr ? errorSPtr->message : "Unknown error.";
+    throw std::runtime_error(errMsg);
+  }
+
+  // Return a Bin object created from the parsed pipeline
+  return Bin(makeGstSharedPtr(GST_BIN(pipeline)));
+}
+
+
 Bin Bin::ref()
 {
   return Bin(getGstBin());

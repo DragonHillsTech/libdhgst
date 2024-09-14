@@ -155,3 +155,33 @@ TEST_F(BinTest, GetElementByNameRecurseUp)
   // find not existing
   EXPECT_THROW(bin1.getElementByNameRecurseUp("DoesNotExist"), std::runtime_error);
 }
+
+TEST_F(BinTest, FromDescriptionValidPipeline)
+{
+  const std::string description("fakesrc ! fakesink");
+  EXPECT_NO_THROW(
+    {
+      dh::gst::Bin bin = dh::gst::Bin::fromDescription(description, false);
+    }
+  );
+}
+
+TEST_F(BinTest, FromDescriptionGhostUnlinkedPads)
+{
+  const std::string description("fakesrc name=src ! fakesink");
+  EXPECT_NO_THROW(
+    {
+      dh::gst::Bin bin = dh::gst::Bin::fromDescription(description, true);
+    }
+  );
+}
+
+TEST_F(BinTest, FromDescriptionInvalidPipelineThrows)
+{
+  const std::string invalidDescription("invalidelement ! fakesink");
+  EXPECT_THROW(
+    {
+     dh::gst::Bin bin = dh::gst::Bin::fromDescription(invalidDescription, false);
+    }
+    , std::runtime_error);
+}
