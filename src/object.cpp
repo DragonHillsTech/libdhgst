@@ -65,11 +65,22 @@ const GstObjectSPtr Object::getGstObject() const
 std::string Object::getName() const
 {
   // Get the name from the GstElement
-  const gchar* name = gst_object_get_name(getGstObject().get());
+  const gchar* name = gst_object_get_name(const_cast<GstObject*>(getRawGstObject()));
 
   // Return as std::string; handle null case gracefully
   return name ? std::string(name) : std::string("unknown");
 }
+
+const GstObject* Object::getRawGstObject() const
+{
+  return getGstObject().get();
+}
+
+GstObject* Object::getRawGstObject()
+{
+  return getGstObject().get();
+}
+
 
 
 } // dh::gst

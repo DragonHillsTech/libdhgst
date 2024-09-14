@@ -46,14 +46,14 @@ const GstElementSPtr Element::getGstElement() const
 
 GstStateChangeReturn Element::setState(GstState newState)
 {
-  return gst_element_set_state(getGstElement().get(), newState);
+  return gst_element_set_state(getRawGstElement(), newState);
 }
 
 std::vector<GstPad*> Element::getPads()
 {
   std::vector<GstPad*> pads;
   gst_element_foreach_pad(
-    getGstElement().get(),
+    getRawGstElement(),
     [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
     {
       auto& pads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
@@ -69,7 +69,7 @@ std::vector<GstPad*> Element::getSinkPads()
 {
   std::vector<GstPad*> sinkPads;
   gst_element_foreach_sink_pad(
-    getGstElement().get(), [](GstElement* /*element*/,GstPad* pad, gpointer user_data) ->gboolean
+    getRawGstElement(), [](GstElement* /*element*/,GstPad* pad, gpointer user_data) ->gboolean
     {
       auto& sinkPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
       sinkPads.push_back(pad);
@@ -84,7 +84,7 @@ std::vector<GstPad*> Element::getSrcPads()
 {
   std::vector<GstPad*> srcPads;
   gst_element_foreach_src_pad(
-    getGstElement().get(),
+    getRawGstElement(),
     [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
     {
       auto& srcPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
@@ -98,17 +98,17 @@ std::vector<GstPad*> Element::getSrcPads()
 
 GstPad* Element::getCompatiblePad(GstPad* pad, GstCaps* caps)
 {
-  return gst_element_get_compatible_pad(getGstElement().get(), pad, caps);
+  return gst_element_get_compatible_pad(getRawGstElement(), pad, caps);
 }
 
 GstPad* Element::getStaticPad(const std::string& name)
 {
-  return gst_element_get_static_pad(getGstElement().get(), name.c_str());
+  return gst_element_get_static_pad(getRawGstElement(), name.c_str());
 }
 
 Element& Element::link(Element& other)
 {
-  if (!gst_element_link(getGstElement().get(), other.getGstElement().get()))
+  if (!gst_element_link(getRawGstElement(), other.getRawGstElement()))
   {
     std::string errorMessage = "Failed to link GstElements: ";
     errorMessage += getName() + " -> " + other.getName();
@@ -117,34 +117,48 @@ Element& Element::link(Element& other)
     throw std::runtime_error(errorMessage);
   }
 
-  return *this;
+  return other;
 }
 
 GstClockTime Element::getStartTime() const
 {
-  return gst_element_get_start_time(getGstElement().get());
+  return gst_element_get_start_time(const_cast<GstElement*>(getRawGstElement()));
 }
 
 GstState Element::getState() const
 {
   GstState state;
-  gst_element_get_state(getGstElement().get(), &state, nullptr, GST_CLOCK_TIME_NONE);
+  gst_element_get_state(const_cast<GstElement*>(getRawGstElement()), &state, nullptr, GST_CLOCK_TIME_NONE);
   return state;
 }
 
 void Element::unlink(Element& other)
 {
-  gst_element_unlink(getGstElement().get(), other.getGstElement().get());
+  gst_element_unlink(getRawGstElement(), other.getRawGstElement());
 }
 
-bool Element::syncStateWithParent()
+void Element::syncStateWithParent()
 {
-  return gst_element_sync_state_with_parent(getGstElement().get()) ? true : false;
+  const auto success = gst_element_sync_state_with_parent(getRawGstElement());
+  if(! success)
+  {
+    throw std::runtime_error("Failed to sync Element " + getName() + " with parent");
+  }
 }
 
 bool Element::signalExists(const std::string& signalName) const
 {
-  return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getGstElement().get())) != 0;
+  return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getRawGstElement())) != 0;
+}
+
+const GstElement* Element::getRawGstElement() const
+{
+  return getGstElement().get();
+}
+
+GstElement* Element::getRawGstElement()
+{
+  return getGstElement().get();
 }
 
 
