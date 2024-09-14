@@ -159,7 +159,6 @@ TEST_F(ElementTest, LinkAndUnlink)
 
   Element sink(makeGstSharedPtr(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating));
 
-
   GstPad* sourcePad = element.getStaticPad("src");
   ASSERT_NE(sourcePad, nullptr) << "Failed to get sourcePad.";
 
