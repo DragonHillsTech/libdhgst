@@ -36,6 +36,7 @@ TEST_F(ElementTest, CreationAndDestruction)
   Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating));
   ASSERT_EQ(element1.getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
   ASSERT_EQ(GST_OBJECT_REFCOUNT(element1.getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
+  ASSERT_EQ(element1.getFactoryName(), "fakesrc");
 
   //ctor GstElement*
   Element element2(gst_element_factory_make("fakesrc", "testSource2"), TransferType::Floating);

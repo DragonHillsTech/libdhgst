@@ -2,6 +2,7 @@
 
 // local includes
 #include "element.hpp"
+#include "elementfactory.hpp"
 
 // opther libs
 #include "spdlog/spdlog.h"
@@ -118,6 +119,19 @@ Element& Element::link(Element& other)
   }
 
   return other;
+}
+
+std::string Element::getFactoryName() const
+{
+  auto* gstElementFactoryRawPtr = gst_element_get_factory(
+    const_cast<GstElement*>(getRawGstElement())
+  );
+  if(! gstElementFactoryRawPtr)
+  {
+    return {};
+  }
+  const ElementFactory factory(gstElementFactoryRawPtr, TransferType::None);
+  return factory.getName();
 }
 
 GstClockTime Element::getStartTime() const

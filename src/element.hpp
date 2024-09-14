@@ -110,6 +110,12 @@ public:
    */
   Element& link(Element& other);
 
+  /**
+   * @brief Retrieves the factory that was used to create this element.
+   * @return the factory name or empty string if element has not been registered (static element).
+   */
+  std::string getFactoryName() const;
+
    /**
    * @brief Gets the start time of the element.
    * @return The start time in nanoseconds.
