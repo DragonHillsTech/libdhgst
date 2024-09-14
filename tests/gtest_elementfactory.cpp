@@ -50,16 +50,16 @@ TEST_F(ElementFactoryTest, FromFactoryNameNotFoundTest)
 // Test getMetaData method
 TEST_F(ElementFactoryTest, GetMetaDataTest)
 {
-  auto factory = ElementFactory::fromFactoryName("fakesrc");
+  const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
-  std::string longName = factory.getMetaData("long-name");
+  const std::string longName = factory.getMetaData("long-name");
   ASSERT_FALSE(longName.empty()) << "Long name metadata should not be empty.";
 }
 
 // Test getMetadataKeys method
 TEST_F(ElementFactoryTest, GetMetadataKeysTest)
 {
-  auto factory = ElementFactory::fromFactoryName("fakesrc");
+  const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
   const auto keys = factory.getMetadataKeys();
   ASSERT_FALSE(keys.empty()) << "Metadata keys should not be empty.";
@@ -98,7 +98,7 @@ TEST_F(ElementFactoryTest, RefTest)
 // Test the getElementType method
 TEST_F(ElementFactoryTest, GetElementTypeTest)
 {
-  auto factory = ElementFactory::fromFactoryName("fakesrc");
+  const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
   GType elementType = factory.getElementType();
   ASSERT_NE(elementType, 0) << "Element type should not be 0.";
