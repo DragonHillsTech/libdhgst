@@ -74,10 +74,11 @@ void Pipeline::setPipelineClock(GstClockSPtr clock)
   gst_pipeline_set_clock(getRawGstPipeline(), clock.get());
 }
 
-bool Pipeline::isLive() const
-{
-  return gst_pipeline_is_live(const_cast<GstPipeline*>(getRawGstPipeline()));
-}
+// Does not exist for older gstreamer. Enable when needed
+// bool Pipeline::isLive() const
+// {
+//   return gst_pipeline_is_live(const_cast<GstPipeline*>(getRawGstPipeline()));
+// }
 
 GstPipelineSPtr Pipeline::getGstPipeline()
 {

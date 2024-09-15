@@ -72,13 +72,14 @@ TEST_F(PipelineTest, RefTest)
   EXPECT_EQ(pipeline1.getGstElement().use_count(), 1);
 }
 
-TEST_F(PipelineTest, IsLiveTest) {
-  Pipeline pipeline1("pipeline1");
-
-  // Initially, the pipeline should not be live
-  ASSERT_FALSE(pipeline1.isLive()) << "Pipeline should not be live initially.";
-
-  // Set the pipeline to the PLAYING state and check if it's live
-  pipeline1.setState(GST_STATE_PLAYING);
-  ASSERT_FALSE(pipeline1.isLive()) << "Pipeline should not be live after starting unless configured to be live.";
-}
+// Does not exist for older gstreamer. Enable when needed
+// TEST_F(PipelineTest, IsLiveTest) {
+//   Pipeline pipeline1("pipeline1");
+//
+//   // Initially, the pipeline should not be live
+//   ASSERT_FALSE(pipeline1.isLive()) << "Pipeline should not be live initially.";
+//
+//   // Set the pipeline to the PLAYING state and check if it's live
+//   pipeline1.setState(GST_STATE_PLAYING);
+//   ASSERT_FALSE(pipeline1.isLive()) << "Pipeline should not be live after starting unless configured to be live.";
+// }

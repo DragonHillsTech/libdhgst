@@ -71,11 +71,12 @@ public:
    */
   void setPipelineClock(GstClockSPtr clock);
 
-  /**
-   * @brief Check if pipeline is live.
-   * @return true if pipeline is live, false if not or if it did not reach the PAUSED state yet
-   */
-  [[nodiscard]] bool isLive() const;
+  // Does not exist for older gstreamer. Enable when needed
+  // /**
+  //  * @brief Check if pipeline is live.
+  //  * @return true if pipeline is live, false if not or if it did not reach the PAUSED state yet
+  //  */
+  // [[nodiscard]] bool isLive() const;
 
   /**
    * @brief Get the GstPipelineSPtr of the Pipeline.
