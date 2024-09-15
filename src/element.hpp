@@ -31,7 +31,7 @@ public:
    * @brief Create a new Element object that wraps a GstElementSPtr.
    * @param gstElement
    */
-  Element(GstElementSPtr gstElement);
+  explicit Element(GstElementSPtr gstElement);
 
   /**
    * @brief Create a new Element object that wraps a GstElement.
@@ -40,8 +40,6 @@ public:
    * @param transferType see if None, then increase use count
    */
   Element(GstElement* gstElement, TransferType transferType = TransferType::None);
-
-  [[nodiscard ]] Element fromFactory(const std::string& factoryName);
 
   // bring move semantics back
   Element(Element&& other) noexcept = default;
@@ -115,6 +113,14 @@ public:
    * @return the factory name or empty string if element has not been registered (static element).
    */
   std::string getFactoryName() const;
+
+  /**
+   * @brief Gets the currently configured clock of the element.
+   * This is the clock as was last set.
+   * Elements in a pipeline will only have their clock set when the pipeline is in the PLAYING state.
+   * @return the clock of the Element or empty ptr
+   */
+  GstClockSPtr getElementClock() const;
 
    /**
    * @brief Gets the start time of the element.

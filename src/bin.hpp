@@ -23,16 +23,22 @@ public:
    * @param gstBin
    * @param transferType see if None, then increase use count
    */
-  explicit Bin(GstBin* gstBin, TransferType transferType = TransferType::None);
+  Bin(GstBin* gstBin, TransferType transferType);
 
- /**
- * @brief Creates a Bin object from a pipeline description.
- * @param description The GStreamer pipeline description.
- * @param ghostUnlinkedPads whether to automatically create ghost pads for unlinked source or sink pads within the bin
- * @return A Bin object created from the description.
- * @throws std::runtime_error if the description is invalid or parsing fails.
- */
- [[nodiscard]] static Bin fromDescription(const std::string& description, bool ghostUnlinkedPads = false);
+  /**
+  * @brief create an empty Bin with the given name
+  * @param name the name of the Bin
+  */
+  explicit Bin(const std::string& name);
+
+  /**
+  * @brief Creates a Bin object from a pipeline description.
+  * @param description The GStreamer pipeline description.
+  * @param ghostUnlinkedPads whether to automatically create ghost pads for unlinked source or sink pads within the bin
+  * @return A Bin object created from the description.
+  * @throws std::runtime_error if the description is invalid or parsing fails.
+  */
+  [[nodiscard]] static Bin fromDescription(const std::string& description, bool ghostUnlinkedPads = false);
 
   /**
   * @brief create a reference to the same Bin

@@ -83,12 +83,21 @@ public:
    */
   [[nodiscard]] std::string getName() const;
 
+ /**
+  * @brief sets a new name for the Object
+  * @param name the new name. If empty, set a unique name.
+  * @throws std::logic_error if the name can not be set (if Object has a parent)
+  */
+ void setName(const std::string& name);
+
+protected:
+ [[nodiscard]] const GstObject* getRawGstObject() const;
+ [[nodiscard]] GstObject* getRawGstObject();
+
  private:
     class Private;
     std::unique_ptr<Private> prv;
 
-   [[nodiscard]] const GstObject* getRawGstObject() const;
-   [[nodiscard]] GstObject* getRawGstObject();
 };
 
 } // dh::gst

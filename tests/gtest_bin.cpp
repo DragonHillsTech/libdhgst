@@ -1,3 +1,4 @@
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 #include "bin.hpp"
 
 #include <gtest/gtest.h>
@@ -41,12 +42,16 @@ TEST_F(BinTest, CreationAndDestruction)
   Bin bin2(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin2")), TransferType::Floating));
   ASSERT_EQ(bin2.getGstBin().use_count(), 1); // getGstBin creates a new shared_ptr, so the count must be 1
   ASSERT_EQ(GST_OBJECT_REFCOUNT(bin2.getGstBin().get()), 2); // getGstBin creates a new shared_ptr, so the GstObject must have increased
+
+  //ctor name
+  const std::string bin3Name("bin3");
+  Bin bin3(bin3Name);
+  ASSERT_EQ(bin3.getName(), bin3Name);
 }
 
 TEST_F(BinTest, Move)
 {
-  // ctor GstElementSPtr
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  Bin bin1("bin1");
 
   //move ctor bin1 -> bin2
   Bin bin2(std::move(bin1));
@@ -67,7 +72,7 @@ TEST_F(BinTest, Move)
 
 TEST_F(BinTest, RefMethod)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  Bin bin1("bin1");
   auto bin1Ref = bin1.ref();
 
   EXPECT_EQ(GST_OBJECT_REFCOUNT(bin1Ref.getGstElement().get()), 3); // original, ref and getGstElement
@@ -80,8 +85,7 @@ TEST_F(BinTest, RefMethod)
 
 TEST_F(BinTest, GetNameReturnsCorrectName)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
-
+  Bin bin1("bin1");
 
   // Check that getName returns the correct name
   EXPECT_EQ(bin1.getName(), "bin1");
@@ -89,7 +93,7 @@ TEST_F(BinTest, GetNameReturnsCorrectName)
 
 TEST_F(BinTest, SetState)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  Bin bin1("bin1");
 
   ASSERT_EQ(bin1.setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   ASSERT_EQ(bin1.getState(), GST_STATE_PLAYING);
@@ -99,7 +103,7 @@ TEST_F(BinTest, SetState)
 
 TEST_F(BinTest, AddAndRemoveElementSharedPtr)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  Bin bin1("bin1");
   auto element1SPtr = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // add
@@ -114,8 +118,11 @@ TEST_F(BinTest, AddAndRemoveElementSharedPtr)
 
 TEST_F(BinTest, AddAndRemoveElementByReference)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
-  Element element1 = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+  Bin bin1("bin1");
+  Element element1(
+    gst_element_factory_make("fakesrc", "element1"),
+    TransferType::Floating
+  );
 
   // add
   EXPECT_NO_THROW(bin1.addElement(element1));
@@ -128,8 +135,8 @@ TEST_F(BinTest, AddAndRemoveElementByReference)
 
 TEST_F(BinTest, GetElementByName)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
-  Element element1 = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+  Bin bin1("bin1");
+  Element element1(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // find existing
   bin1.addElement(element1);
@@ -143,8 +150,8 @@ TEST_F(BinTest, GetElementByName)
 
 TEST_F(BinTest, GetElementByNameRecurseUp)
 {
-  Bin bin1(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
-  Element element1 = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+  Bin bin1("bin1");
+  Element element1(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // find existing
   bin1.addElement(element1);

@@ -23,7 +23,7 @@ Element::Element(GstElement* gstElement, TransferType transferType)
 }
 
 Element::Element(GstElementSPtr gstElement)
-: Object(makeGstSharedPtr(GST_OBJECT_CAST(gstElement.get()), TransferType::None)) // no pointer_cast because C inheritance
+: Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
 {
   assert(getGstElement() != nullptr);
 }
@@ -134,6 +134,14 @@ std::string Element::getFactoryName() const
   return factory.getName();
 }
 
+GstClockSPtr Element::getElementClock() const
+{
+  return makeGstSharedPtr(
+    gst_element_get_clock(const_cast<GstElement*>(getRawGstElement())),
+      TransferType::Full
+    );
+}
+
 GstClockTime Element::getStartTime() const
 {
   return gst_element_get_start_time(const_cast<GstElement*>(getRawGstElement()));
@@ -167,12 +175,12 @@ bool Element::signalExists(const std::string& signalName) const
 
 const GstElement* Element::getRawGstElement() const
 {
-  return getGstElement().get();
+  return GST_ELEMENT_CAST(getRawGstObject());
 }
 
 GstElement* Element::getRawGstElement()
 {
-  return getGstElement().get();
+  return GST_ELEMENT_CAST(getRawGstObject());
 }
 
 

@@ -16,7 +16,7 @@ ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferTyp
 }
 
 ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
-: PluginFeature(makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()), TransferType::None)) // No pointer_cast due to C inheritance
+: PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
   assert(getRawGstElementFactory() != nullptr);
 }
@@ -119,12 +119,12 @@ const GstElementFactorySPtr ElementFactory::getGstElementFactory() const
 
 GstElementFactory* ElementFactory::getRawGstElementFactory()
 {
-  return (getGstElementFactory().get());
+  return GST_ELEMENT_FACTORY_CAST(getRawGstObject());
 }
 
 const GstElementFactory* ElementFactory::getRawGstElementFactory() const
 {
-  return (getGstElementFactory().get());
+  return GST_ELEMENT_FACTORY_CAST(getRawGstObject());
 }
 
 } // namespace dh::gst

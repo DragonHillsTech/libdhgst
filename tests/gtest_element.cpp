@@ -47,7 +47,7 @@ TEST_F(ElementTest, CreationAndDestruction)
 TEST_F(ElementTest, Move)
 {
   // ctor GstElementSPtr
-  Element element1(makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating));
+  Element element1(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating);
 
   //move ctor element1 -> element2
   Element element2(std::move(element1));
@@ -68,7 +68,7 @@ TEST_F(ElementTest, Move)
 
 TEST_F(ElementTest, RefMethod)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
   auto refElement = element.ref();
 
   EXPECT_EQ(GST_OBJECT_REFCOUNT(refElement.getGstElement().get()), 3); // original, ref and getGstElement
@@ -81,7 +81,7 @@ TEST_F(ElementTest, RefMethod)
 
 TEST_F(ElementTest, GetNameReturnsCorrectName)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
 
   // Check that getName returns the correct name
@@ -90,17 +90,17 @@ TEST_F(ElementTest, GetNameReturnsCorrectName)
 
 TEST_F(ElementTest, SetState)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   ASSERT_EQ(element.setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   ASSERT_EQ(element.getState(), GST_STATE_PLAYING);
 
-  // here we whould get a gstreamer error if the Element is destroyed when state != null.
+  // here we would get a gstreamer error if the Element is destroyed when state != null.
 }
 
 TEST_F(ElementTest, GetPads)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   std::vector<GstPad*> pads = element.getPads();
   ASSERT_EQ(pads.size(), 1);  // fakesrc has one "src" pad
@@ -108,7 +108,7 @@ TEST_F(ElementTest, GetPads)
 
 TEST_F(ElementTest, GetSinkPads)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   std::vector<GstPad*> sinkPads = element.getSinkPads();
   ASSERT_EQ(sinkPads.size(), 0);  // fakesrc has no sink pads
@@ -116,7 +116,7 @@ TEST_F(ElementTest, GetSinkPads)
 
 TEST_F(ElementTest, GetSrcPads)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   std::vector<GstPad*> srcPads = element.getSrcPads();
   ASSERT_EQ(srcPads.size(), 1);  // fakesrc has one "src" pad
@@ -125,7 +125,7 @@ TEST_F(ElementTest, GetSrcPads)
 
 TEST_F(ElementTest, GetStaticPad)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   GstPad* staticPad = element.getStaticPad("src");
   ASSERT_NE(staticPad, nullptr);  // fakesrc has a "src" pad
@@ -134,7 +134,7 @@ TEST_F(ElementTest, GetStaticPad)
 
 TEST_F(ElementTest, GetCompatiblePad)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   GstPad* sinkPad = gst_pad_new("sink", GST_PAD_SINK);
   // Create capabilities for the sink pad
@@ -156,9 +156,9 @@ TEST_F(ElementTest, GetCompatiblePad)
 
 TEST_F(ElementTest, LinkAndUnlink)
 {
-  Element element(makeGstSharedPtr(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating));
+  Element element(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  Element sink(makeGstSharedPtr(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating));
+  Element sink(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating);
 
   GstPad* sourcePad = element.getStaticPad("src");
   ASSERT_NE(sourcePad, nullptr) << "Failed to get sourcePad.";
@@ -175,4 +175,13 @@ TEST_F(ElementTest, LinkAndUnlink)
   // Check if elements are unlinked
   ASSERT_FALSE(gst_pad_is_linked(sourcePad));
   ASSERT_FALSE(gst_pad_is_linked(sinkPad));
+}
+
+TEST_F(ElementTest, SetName)
+{
+  Element element(gst_element_factory_make("fakesrc", "firstName"), TransferType::Floating);
+  ASSERT_EQ(element.getName(), "firstName");
+
+  ASSERT_NO_THROW(element.setName("secondName"));
+  EXPECT_EQ(element.getName(), "secondName");
 }
