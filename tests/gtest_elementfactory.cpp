@@ -100,6 +100,6 @@ TEST_F(ElementFactoryTest, GetElementTypeTest)
 {
   const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
-  GType elementType = factory.getElementType();
+  const GType elementType = factory.getElementType();
   ASSERT_NE(elementType, 0) << "Element type should not be 0.";
 }

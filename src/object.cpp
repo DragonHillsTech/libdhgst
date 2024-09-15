@@ -30,11 +30,19 @@ Object& Object::operator=(Object&& other) noexcept = default;
 Object::Object(GstObjectSPtr gstObject)
 : prv{std::make_unique<Private>(std::move(gstObject))}
 {
+  if (! prv->gstObject)
+  {
+    throw std::runtime_error("No GstObject");
+  }
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
 : prv{std::make_unique<Private>(makeGstSharedPtr(gstObject, transferType))}
 {
+  if (! prv->gstObject)
+  {
+    throw std::runtime_error("No GstObject");
+  }
 }
 
 Object::~Object() = default;
@@ -69,6 +77,18 @@ std::string Object::getName() const
 
   // Return as std::string; handle null case gracefully
   return name ? std::string(name) : std::string("unknown");
+}
+
+void Object::setName(const std::string& name)
+{
+  const bool success = gst_object_set_name(
+    getRawGstObject(),
+    name.empty() ? nullptr : name.c_str()
+  );
+  if(! success)
+  {
+    throw std::logic_error("Failed to set name (Object may have parent)");
+  }
 }
 
 const GstObject* Object::getRawGstObject() const

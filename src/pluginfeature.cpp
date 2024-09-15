@@ -16,7 +16,7 @@ PluginFeature::PluginFeature(GstPluginFeature* gstPluginFeature, TransferType tr
 }
 
 PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
-: Object(makeGstSharedPtr(GST_OBJECT_CAST(gstPluginFeature.get()), TransferType::None)) // No pointer_cast due to C inheritance
+: Object(GST_OBJECT_CAST(gstPluginFeature.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
   assert(getGstPluginFeature() != nullptr);
 }
@@ -48,12 +48,12 @@ void PluginFeature::setRank(int rank)
 
 const GstPluginFeature* PluginFeature::getRawGstPluginFeature() const
 {
-  return getGstPluginFeature().get();
+  return GST_PLUGIN_FEATURE_CAST(getRawGstObject());
 }
 
 GstPluginFeature* PluginFeature::getRawGstPluginFeature()
 {
-  return getGstPluginFeature().get();
+  return GST_PLUGIN_FEATURE_CAST(getRawGstObject());
 }
 
 

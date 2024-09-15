@@ -12,7 +12,7 @@ namespace dh::gst
 {
 
 Bin::Bin(GstBinSPtr gstBin)
-: Element(makeGstSharedPtr(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)) // no pointer_cast because C inheritance
+: Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
 {
 }
 
@@ -21,12 +21,20 @@ Bin::Bin(GstBin* gstBin, TransferType transferType)
 {
 }
 
+Bin::Bin(const std::string& name)
+: Element(
+    GST_ELEMENT_CAST(gst_bin_new(name.c_str())),
+    TransferType::Floating
+  )
+{
+}
+
 Bin Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
 {
   GError* error{nullptr};
 
   // Parse the pipeline description and store error if any occurs
-  GstElement* pipeline = gst_parse_bin_from_description(
+  GstElement* gstElement = gst_parse_bin_from_description(
     description.c_str(),
     ghostUnlinkedPads,
     &error
@@ -36,7 +44,7 @@ Bin Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
   GErrorSPtr errorSPtr(error, GlibDeleter());
 
   // If parsing fails, throw an exception with the error message
-  if (!pipeline)
+  if(!gstElement)
   {
     std::string errMsg = "Failed to create Bin from description: ";
     errMsg += errorSPtr ? errorSPtr->message : "Unknown error.";
@@ -44,7 +52,7 @@ Bin Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
   }
 
   // Return a Bin object created from the parsed pipeline
-  return Bin(makeGstSharedPtr(GST_BIN(pipeline)));
+  return Bin(GST_BIN_CAST(gstElement), TransferType::Floating);
 }
 
 
@@ -118,11 +126,11 @@ void Bin::removeElement(Element& element)
 
 const GstBin* Bin::getRawGstBin() const
 {
-  return getGstBin().get();
+  return GST_BIN_CAST(getRawGstObject());
 }
 
 GstBin* Bin::getRawGstBin()
 {
-  return getGstBin().get();
+  return GST_BIN_CAST(getRawGstObject());
 }
 } // dh::gst

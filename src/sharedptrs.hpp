@@ -11,6 +11,7 @@
 #include <glib.h>                 // For GError, GList, GHashTable, etc.
 
 #include <memory>                 // For std::shared_ptr
+#include <stdexcept>
 #include <type_traits>            // For std::type_traits
 
 
@@ -144,7 +145,7 @@ using GstPluginFeatureSPtr = std::shared_ptr<GstPluginFeature>;
  */
 template <typename T>
 std::enable_if_t<IsGstObject<T>::value, std::shared_ptr<T>>
-makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+makeGstSharedPtr(T* obj, TransferType transferType)
 {
   if(!obj)
   {
@@ -181,7 +182,7 @@ makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
  */
 template <typename T>
 std::enable_if_t<!IsGstObject<T>::value, std::shared_ptr<T>>
-makeGstSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+makeGstSharedPtr(T* obj, TransferType transferType)
 {
   if(!obj)
   {
@@ -254,16 +255,29 @@ using GHashTableSPtr = std::shared_ptr<GHashTable>;
  * @tparam T Type of GLib object.
  * @param obj Raw pointer to the GLib object.
  * @return std::shared_ptr<T> A shared pointer to the GLib object with a custom deleter.
+ * @todo: test
  */
 template <typename T>
 std::enable_if_t<std::is_same_v<T, GError> || std::is_same_v<T, GList> || std::is_same_v<T, GHashTable>, std::shared_ptr<T>>
-makeGlibSharedPtr(T* obj)
+makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::Full)
 {
   if (!obj)
   {
     return nullptr;  // Handle null objects safely
   }
 
+  switch(transferType)
+  {
+    case TransferType::Full:
+      // Full ownership is transferred; nothing extra to do
+        break;
+    case TransferType::None:
+      // No ownership is transferred; we need to increase the ref count
+      object_ref(obj);
+      break;
+    default:
+      throw std::invalid_argument("makeGlibSharedPtr: Unsupoported transfer type for GObject");
+  }
   return std::shared_ptr<T>(obj, GlibDeleter());
 }
 } // namespace dh::gst
