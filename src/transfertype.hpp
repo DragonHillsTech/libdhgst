@@ -5,10 +5,11 @@
  * @date 2024-09-14
  */
 
-#ifndef TRANSFERTYPE_HPP
-#define TRANSFERTYPE_HPP
+#ifndef DH_GST_TRANSFERTYPE_HPP
+#define DH_GST_TRANSFERTYPE_HPP
 
-namespace dh::gst {
+namespace dh::gst
+{
 
 enum class TransferType
 {
@@ -19,4 +20,4 @@ enum class TransferType
 
 } // dh::gst
 
-#endif //TRANSFERTYPE_HPP
+#endif //DH_GST_TRANSFERTYPE_HPP
