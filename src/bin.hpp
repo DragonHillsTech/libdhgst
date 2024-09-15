@@ -54,7 +54,6 @@ public:
  /**
    * @brief get the GstBinSPtr of the Bin
    * @return the GstBin.
-   * @todo use getGstObject instead of getGstElement
    */
   [[nodiscard]] GstBinSPtr getGstBin();
   [[nodiscard]] const GstBinSPtr getGstBin() const;
