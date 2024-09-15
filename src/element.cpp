@@ -1,5 +1,11 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
 
+/**
+ * @file element.cpp
+ * @author Sandro Stiller
+ * @date 2024-09-01
+ */
+
 // local includes
 #include "element.hpp"
 #include "elementfactory.hpp"

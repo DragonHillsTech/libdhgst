@@ -1,4 +1,9 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
+/**
+ * @file element.hpp
+ * @author Sandro Stiller
+ * @date 2024-09-01
+ */
 
 #ifndef DH_GST_ELEMENT_H
 #define DH_GST_ELEMENT_H
