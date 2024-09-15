@@ -174,11 +174,6 @@ void Element::syncStateWithParent()
   }
 }
 
-bool Element::signalExists(const std::string& signalName) const
-{
-  return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getRawGstElement())) != 0;
-}
-
 const GstElement* Element::getRawGstElement() const
 {
   return GST_ELEMENT_CAST(getRawGstObject());

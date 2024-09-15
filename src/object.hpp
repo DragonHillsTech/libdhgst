@@ -90,6 +90,13 @@ public:
    */
   void setName(const std::string& name);
 
+  /**
+   * @brief Check if a specific signal exists on the GStreamer element.
+   * @param signalName The name of the signal to check.
+   * @return true if the signal exists, false otherwise.
+   */
+  [[nodiscard]] bool signalExists(const std::string& signalName) const;
+
   template<typename ValueType>
   [[nodiscard]] inline ValueType getProperty(const std::string& name) const;
 

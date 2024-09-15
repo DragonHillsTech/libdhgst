@@ -152,13 +152,6 @@ public:
    */
   void syncStateWithParent();
 
-  /**
-   * @brief Check if a specific signal exists on the GStreamer element.
-   * @param signalName The name of the signal to check.
-   * @return true if the signal exists, false otherwise.
-   */
-  [[nodiscard]] bool signalExists(const std::string& signalName) const;
-
 private:
  [[nodiscard]] const GstElement* getRawGstElement() const;
  [[nodiscard]] GstElement* getRawGstElement();
