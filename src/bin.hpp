@@ -1,4 +1,9 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
+/**
+ * @file bin.hpp
+ * @author Sandro Stiller
+ * @date 2024-09-11
+ */
 
 #ifndef DH_GST_BIN_HPP
 #define DH_GST_BIN_HPP

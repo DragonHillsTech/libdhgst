@@ -18,7 +18,7 @@
 
 // C
 #include <gst/gst.h>
-
+#include <spdlog/spdlog.h>
 
 namespace dh::gst
 {
@@ -83,12 +83,18 @@ public:
    */
   [[nodiscard]] std::string getName() const;
 
- /**
-  * @brief sets a new name for the Object
-  * @param name the new name. If empty, set a unique name.
-  * @throws std::logic_error if the name can not be set (if Object has a parent)
-  */
- void setName(const std::string& name);
+  /**
+   * @brief sets a new name for the Object
+   * @param name the new name. If empty, set a unique name.
+   * @throws std::logic_error if the name can not be set (if Object has a parent)
+   */
+  void setName(const std::string& name);
+
+  template<typename ValueType>
+  [[nodiscard]] inline ValueType getProperty(const std::string& name) const;
+
+  template<typename ValueType>
+  inline void setProperty(const std::string& name, const ValueType& value);
 
 protected:
  [[nodiscard]] const GstObject* getRawGstObject() const;
@@ -97,9 +103,78 @@ protected:
  private:
     class Private;
     std::unique_ptr<Private> prv;
-
 };
 
+// implemetation template functions
+template<typename ValueType>
+[[nodiscard]] inline ValueType Object::getProperty(const std::string& name) const
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("empty property name");
+  }
+
+  ValueType value{};
+  g_object_get(
+    G_OBJECT(getRawGstObject()),
+    name.c_str(),
+    &value,
+    nullptr
+  );
+  return value;
+}
+
+template<>
+[[nodiscard]] inline std::string Object::getProperty<std::string>(const std::string& name) const
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("empty property name");
+  }
+  gchar* value{nullptr};
+  g_object_get(
+    G_OBJECT(getRawGstObject()),
+    name.c_str(),
+    &value,
+    nullptr
+  );
+  std::string result(value ? value : "");
+  if(value)
+  {
+    g_free(value);
+  }
+}
+
+template<typename ValueType>
+  inline void Object::setProperty(const std::string& name, const ValueType& value)
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("empty property name");
+  }
+
+  g_object_set(
+    G_OBJECT(getRawGstObject()),
+    name.c_str(),
+    value,
+    nullptr
+  );
+}
+
+template<>
+inline void Object::setProperty<std::string>(const std::string& name, const std::string& value)
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("Property 'name' must not be empty");
+  }
+
+  g_object_set(
+    const_cast<char*>(name.c_str()),
+    value.c_str(),
+    nullptr
+  );
+}
 } // dh::gst
 
 #endif //OBJECT_HPP

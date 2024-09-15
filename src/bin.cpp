@@ -1,7 +1,8 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
 /**
- * @file bin.hpp
+ * @file bin.cpp
  * @author Sandro Stiller
+ * @date 2024-09-11
  */
 
 #include "bin.hpp"

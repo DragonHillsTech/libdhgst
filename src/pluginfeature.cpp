@@ -1,4 +1,9 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
+/**
+ * @file pluginfeature.cpp
+ * @author Sandro Stiller
+ * @date 2024-09-14
+ */
 
 // local includes
 #include "pluginfeature.hpp"
