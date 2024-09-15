@@ -17,6 +17,7 @@ set(SOURCES
   src/elementfactory.cpp
   src/object.cpp
   src/pluginfeature.cpp
+  src/pipeline.cpp
 )
 
 set(HEADERS
@@ -27,6 +28,7 @@ set(HEADERS
   src/pluginfeature.cpp
   src/sharedptrs.hpp
   src/transfertype.hpp
+  src/pipeline.hpp
 )
 
 # Find required packages
