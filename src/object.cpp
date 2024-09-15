@@ -91,6 +91,11 @@ void Object::setName(const std::string& name)
   }
 }
 
+bool Object::signalExists(const std::string& signalName) const
+{
+  return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getRawGstObject())) != 0;
+}
+
 const GstObject* Object::getRawGstObject() const
 {
   return getGstObject().get();
