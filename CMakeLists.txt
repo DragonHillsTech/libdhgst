@@ -26,10 +26,11 @@ set(HEADERS
   src/element.hpp
   src/elementfactory.hpp
   src/object.hpp
+  src/pipeline.hpp
   src/pluginfeature.cpp
   src/sharedptrs.hpp
   src/transfertype.hpp
-  src/pipeline.hpp
+  src/typetraits.hpp
 )
 
 # Find required packages
