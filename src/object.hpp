@@ -12,6 +12,9 @@
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
+// boost
+#include <boost/signals2.hpp>
+
 // std
 #include <memory>
 #include <string>
@@ -22,6 +25,85 @@
 
 namespace dh::gst
 {
+
+// free functions & type traits, TODO: move somewhere else (header or so)
+
+// Type conversion traits
+template<typename GlibType, typename = void>
+struct ConvertToGlibType
+{
+  using type = GlibType; // Default: no conversion
+};
+template<> struct ConvertToGlibType<std::string>
+{
+  using type = const gchar*;
+};
+
+template<typename GlibType>
+struct ConvertToGlibType<std::shared_ptr<GlibType>, std::enable_if_t<IsGstObject<GlibType>::value>>
+{
+  // Static assertion to produce a compilation error if GlibType is a pointer to a GstObject
+  static_assert(
+    !(std::is_pointer<GlibType>::value && IsGstObject<std::remove_pointer_t<GlibType>>::value),
+    "GlibType cannot be a raw pointer to a GstObject."
+  );
+  using type = GlibType*;
+};
+
+
+template<typename GlibType, typename = void>
+struct ConvertToCppType
+{
+  using type = GlibType; // Default: no conversion
+};
+
+template<> struct ConvertToCppType<gchar*>
+{
+  using type = std::string;
+};
+
+template<> struct ConvertToCppType<const gchar*>
+{
+  using type = std::string;
+};
+
+template<typename GlibType>
+struct ConvertToCppType<GlibType*, std::enable_if_t<IsGstObject<GlibType>::value>>
+{
+  using type = std::shared_ptr<GlibType>;
+};
+
+
+// General case: For types not needing special handling
+template<typename T>
+typename std::enable_if<
+  !IsGObjectType<typename std::remove_pointer<T>::type>::value
+   && !IsRefCountedType<typename std::remove_pointer<T>::type>::value
+  ,T>::type
+convertParamToCppType(T value)
+{
+  return value;
+}
+
+// Overload for gchar* (null-terminated C strings)
+inline std::string convertParamToCppType(gchar* value)
+{
+  return value ? std::string(value) : std::string();
+}
+
+// Overload for const gchar*
+inline std::string convertParamToCppType(const gchar* value)
+{
+  return value ? std::string(value) : std::string();
+}
+
+template<typename GstType>
+inline std::enable_if_t<IsGstObject<GstType>::value, std::shared_ptr<GstType>>
+convertParamToCppType(GstType* value)
+{
+  return makeGstSharedPtr(value, TransferType::None);
+}
+
 
 /**
  * @class Object
@@ -94,10 +176,19 @@ public:
    * @brief Check if a specific signal exists on the GStreamer element.
    * @param signalName The name of the signal to check.
    * @return true if the signal exists, false otherwise.
+   * @throws std::invalid_argument if the signal name is empty.
    */
   [[nodiscard]] bool signalExists(const std::string& signalName) const;
 
-  template<typename ValueType>
+  /**
+   * @brief Checks if a property with the given name exists on the GObject.
+   * @param name The name of the property to check.
+   * @return true if the property exists, false otherwise.
+   * @throws std::invalid_argument if the property name is empty.
+   */
+  [[nodiscard]] bool propertyExists(const std::string& name) const;
+
+ template<typename ValueType>
   [[nodiscard]] inline ValueType getProperty(const std::string& name) const;
 
   template<typename ValueType>
@@ -107,18 +198,51 @@ protected:
  [[nodiscard]] const GstObject* getRawGstObject() const;
  [[nodiscard]] GstObject* getRawGstObject();
 
- private:
-    class Private;
-    std::unique_ptr<Private> prv;
+/**
+* @brief create boost::signals2 signal which is connected to the GObject signal with the matching name
+* @throws std::runtime_error if signal could not be connected
+*/
+template<typename... Args>
+boost::signals2::signal<void(Args...)>& connectGobjectSignal(const std::string& signalName) const;
+
+private:
+  class Private;
+  std::unique_ptr<Private> prv;
+
+  // SignalConnector to hold Boost.Signals2 signal
+  template<typename... Args>
+  struct SignalConnector
+  {
+    using ConvertedArgs = boost::signals2::signal<void(typename ConvertToCppType<Args>::type...)>;
+    ConvertedArgs signal;
+    //boost::signals2::signal<void(Args...)> signal;
+  };
+
+  // SignalHandler to define the callback function
+  template<typename... Args>
+  struct SignalHandler
+  {
+    static void callback(GObject* /*object*/, Args... args, gpointer user_data)
+    {
+      SignalConnector<Args...>* connector = static_cast<SignalConnector<Args...>*>(user_data);
+      if(connector)
+      {
+        connector->signal(convertParamToCppType(args)...);
+      }
+    }
+  };
 };
 
-// implemetation template functions
 template<typename ValueType>
 [[nodiscard]] inline ValueType Object::getProperty(const std::string& name) const
 {
   if(name.empty())
   {
     throw std::invalid_argument("empty property name");
+  }
+  if(! propertyExists(name))
+  {
+    throw std::invalid_argument("No property with name " + name);
   }
 
   ValueType value{};
@@ -138,6 +262,11 @@ template<>
   {
     throw std::invalid_argument("empty property name");
   }
+  if(! propertyExists(name))
+  {
+    throw std::invalid_argument("No property with name " + name);
+  }
+
   gchar* value{nullptr};
   g_object_get(
     G_OBJECT(getRawGstObject()),
@@ -159,6 +288,10 @@ template<typename ValueType>
   {
     throw std::invalid_argument("empty property name");
   }
+  if(! propertyExists(name))
+  {
+    throw std::invalid_argument("No property with name " + name);
+  }
 
   g_object_set(
     G_OBJECT(getRawGstObject()),
@@ -166,6 +299,52 @@ template<typename ValueType>
     value,
     nullptr
   );
+}
+
+/** Create a boost.signals2 signal to connect to a gobject signal.
+  * @tparam Args types you want to use. GstObject* types are not allowed, use shared_ptr instead.
+  * @param signalName the name of the signal
+  * @throws std::invalid_argument if signal name invalid or signal with the name not found.
+  * @see Object::signalExists
+  */
+template<typename ... Args>
+boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::string& signalName) const
+{
+  static_assert(
+    (... && (! (std::is_pointer<Args>::value && IsGstObject<std::remove_pointer_t<Args>>::value))),
+    "Error: Template arguments cannot be of type GstObject*. Use shared_ptr instead, see sharedptrs.hpp"
+  );
+  if(signalName.empty())
+  {
+    throw std::invalid_argument("empty signal name");
+  }
+  if(! signalExists(signalName))
+  {
+    throw std::invalid_argument("No signal with name " + signalName);
+  }
+
+  // Create a new SignalConnector
+  auto* connector = new SignalConnector<Args...>();
+
+  // Connect the signal
+  const auto connectionId = g_signal_connect_data(
+    const_cast<GstObject*>(getRawGstObject()),
+    signalName.c_str(),
+    reinterpret_cast<GCallback>(SignalHandler<typename ConvertToGlibType<Args>::type...>::callback),
+    connector,
+    [](gpointer data, GClosure* /*closure*/)
+    {
+      delete static_cast<SignalConnector<Args...>*>(data);
+    },
+    G_CONNECT_AFTER
+  );
+
+  if(! connectionId)
+  {
+    throw std::runtime_error("failed to connect signal " + signalName);
+  }
+  // Return the Boost.Signals2 signal reference
+  return connector->signal;
 }
 
 template<>
@@ -182,6 +361,7 @@ inline void Object::setProperty<std::string>(const std::string& name, const std:
     nullptr
   );
 }
+
 } // dh::gst
 
 #endif //OBJECT_HPP

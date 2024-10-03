@@ -75,24 +75,26 @@ const GstBinSPtr Bin::getGstBin() const
 
 void Bin::addElement(GstElementSPtr element)
 {
-  if (gst_bin_add(getRawGstBin(), element.get()) == FALSE)
+  // gst_bin_add: transfer: full
+  auto* refIncreasedRawPtr = GST_ELEMENT(gst_object_ref(GST_OBJECT(element.get())));
+  if(gst_bin_add(getRawGstBin(), refIncreasedRawPtr) == FALSE)
   {
+    gst_object_unref(refIncreasedRawPtr);
     throw std::runtime_error("Failed to add element to GstBin.");
   }
 }
 
 void Bin::addElement(Element& element)
 {
-  if (gst_bin_add(getRawGstBin(), element.getGstElement().get()) == FALSE)
-  {
-    throw std::runtime_error("Failed to add element to GstBin.");
-  }
+  addElement(element.getGstElement());
 }
 
 Element Bin::getElementByName(const std::string& name)
 {
+  // gst_bin_get_by_name: transfer:full, nullable
   GstElement* gstElement = gst_bin_get_by_name(GST_BIN(getRawGstBin()), name.c_str());
-  if (!gstElement) {
+  if(!gstElement)
+  {
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
 
@@ -101,8 +103,11 @@ Element Bin::getElementByName(const std::string& name)
 
 Element Bin::getElementByNameRecurseUp(const std::string& name)
 {
+  // gst_bin_get_by_name_recurse_up: transfer:full, nullable
+
   GstElement* gstElement = gst_bin_get_by_name_recurse_up(GST_BIN(getRawGstBin()), name.c_str());
-  if (!gstElement) {
+  if (!gstElement)
+  {
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
 
@@ -123,6 +128,11 @@ void Bin::removeElement(Element& element)
   {
     throw std::runtime_error("Failed to remove element from GstBin.");
   }
+}
+
+bs2::signal<void(GstElementSPtr)>& Bin::elementAddedSignal() const
+{
+  return connectGobjectSignal<GstElementSPtr>("element-added");
 }
 
 const GstBin* Bin::getRawGstBin() const

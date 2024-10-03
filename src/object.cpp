@@ -93,7 +93,23 @@ void Object::setName(const std::string& name)
 
 bool Object::signalExists(const std::string& signalName) const
 {
+  if (signalName.empty())
+  {
+    throw std::invalid_argument("empty signal name");
+  }
   return g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getRawGstObject())) != 0;
+}
+
+bool Object::propertyExists(const std::string& name) const
+{
+  if (name.empty())
+  {
+    throw std::invalid_argument("empty property name");
+  }
+
+  const auto* propertySpec = g_object_class_find_property(G_OBJECT_GET_CLASS(getRawGstObject()), name.c_str());
+
+  return propertySpec != nullptr;
 }
 
 const GstObject* Object::getRawGstObject() const

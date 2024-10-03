@@ -18,6 +18,7 @@
 
 // C
 #include <cassert>
+#include <unordered_set>
 
 namespace dh::gst
 {
@@ -27,6 +28,11 @@ Element::Element(GstElement* gstElement, TransferType transferType)
 {
   assert(getGstElement() != nullptr);
 }
+
+//TODO: move to header?
+Element::~Element() = default;
+Element::Element(Element&& other) noexcept = default;
+Element& Element::operator=(Element&&) noexcept = default;
 
 Element::Element(GstElementSPtr gstElement)
 : Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
@@ -172,6 +178,21 @@ void Element::syncStateWithParent()
   {
     throw std::runtime_error("Failed to sync Element " + getName() + " with parent");
   }
+}
+
+bs2::signal<void()>& Element::noMorePadsSignal() const
+{
+  return connectGobjectSignal<>("no-more-pads");
+}
+
+bs2::signal<void(GstPadSPtr)>& Element::padAddedSignal() const
+{
+  return connectGobjectSignal<GstPadSPtr>("pad-added");
+}
+
+bs2::signal<void(GstPadSPtr)>& Element::padRemovedSignal() const
+{
+  return connectGobjectSignal<GstPadSPtr>("pad-removed");
 }
 
 const GstElement* Element::getRawGstElement() const

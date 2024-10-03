@@ -32,6 +32,7 @@ Pipeline::Pipeline(const std::string& name)
 
 Pipeline Pipeline::fromDescription(const std::string& description)
 {
+  // gst_parse_launch: transfer:floating
   GError* error = nullptr;
   GstElement* pipeline = gst_parse_launch(description.c_str(), &error);
 
