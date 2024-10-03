@@ -11,8 +11,8 @@
 #include "transfertype.hpp"       // Include the external header for TransferType
 #include "typetraits.hpp"
 
-#include <gst/gst.h>              // General GStreamer types and functions
 #include <glib.h>                 // For GError, GList, GHashTable, etc.
+#include <gst/gst.h>              // General GStreamer types and functions
 
 #include <memory>                 // For std::shared_ptr
 #include <stdexcept>
@@ -41,7 +41,9 @@ struct GstObjectDeleter
 
     if constexpr (IsGstObject<T>::value)
     {
-      // Set GstElement state to NULL before unref if it's the last ref to the a GstElement
+      // Set GstElement state to NULL before unref if it's the last ref to the GstElement
+      // This does not work always because setting a pipeline to "playing" increases ref counts.
+      // But it is a layer of safety.
       if(GST_IS_ELEMENT(obj) && GST_OBJECT_REFCOUNT(obj) == 1)
       {
         gst_element_set_state(GST_ELEMENT(obj), GST_STATE_NULL);
@@ -107,6 +109,7 @@ using GstPluginSPtr = std::shared_ptr<GstPlugin>;
 using GstSampleSPtr = std::shared_ptr<GstSample>;
 using GstStructureSPtr = std::shared_ptr<GstStructure>;
 using GstPluginFeatureSPtr = std::shared_ptr<GstPluginFeature>;
+
 /**
  * @brief Creates a shared_ptr for a GStreamer object with the correct deleter.
  * This function only participates in overload resolution if T is a known GStreamer type.

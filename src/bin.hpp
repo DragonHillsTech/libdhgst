@@ -103,6 +103,14 @@ public:
    */
   void removeElement(Element& element);
 
+  [[nodiscard]] bs2::signal<void(GstElementSPtr)>& elementAddedSignal() const;
+ /* TODO: add signals
+  * element-removed
+  * deep-element-added
+  * deep-element-removed
+  * do-latency
+  */
+
 private:
   [[nodiscard]] const GstBin* getRawGstBin() const;
   [[nodiscard]] GstBin* getRawGstBin();

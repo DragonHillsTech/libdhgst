@@ -62,5 +62,17 @@ struct IsGObjectType : std::integral_constant<bool,
   struct IsGObjectType<GtkWidget> : std::true_type {};
 */
 
+
+// Type trait to determine if a type is a ref-counted type (non-GObject)
+template<typename T>
+struct IsRefCountedType : std::false_type {};
+
+// Specialization for GstCaps
+template<>
+struct IsRefCountedType<GstCaps> : std::true_type {};
+
+// Add specializations for other ref-counted types as needed
+
+
 } // dt::gst
 #endif //DH_GST_TYPETRAITS_HPP

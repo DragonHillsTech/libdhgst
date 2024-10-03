@@ -13,12 +13,17 @@
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
+// boost
+#include <boost/signals2.hpp>
+
 // std
 #include <string>
 #include <vector>
 
 // C
 #include <gst/gst.h>
+
+namespace bs2 = boost::signals2;
 
 namespace dh::gst
 {
@@ -46,9 +51,11 @@ public:
    */
   Element(GstElement* gstElement, TransferType transferType = TransferType::None);
 
+  ~Element() override;
+
   // bring move semantics back
-  Element(Element&& other) noexcept = default;
-  Element& operator=(Element&&) noexcept = default;
+  Element(Element&& other) noexcept;
+  Element& operator=(Element&&) noexcept;
 
   /**
    * @brief create a reference to the same Element
@@ -152,9 +159,35 @@ public:
    */
   void syncStateWithParent();
 
+  // signals
+  /**
+   * @brief This signals that the element will not generate more dynamic pads.
+   * Note that this signal will usually be emitted from the context of the streaming thread.
+   * Also keep in mind that if you add new elements to the pipeline in the signal handler
+   * you will need to set them to the desired target state with gst_element_set_state or
+   * gst_element_sync_state_with_parent.
+   * @todo Calling this function creates a new glib signal connection. no matter if that was already done. This could be improved by keeping track of bs2 signals (in pimpl)
+   */
+  [[nodiscard]] bs2::signal<void()>& noMorePadsSignal() const;
+
+  /**
+   * @brief a new GstPad has been added to the element.
+   * Note that this signal will usually be emitted from the context of the streaming thread.
+   * Also keep in mind that if you add new elements to the pipeline in the signal handler
+   * you will need to set them to the desired target state with gst_element_set_state or
+   * gst_element_sync_state_with_parent.
+   * @todo Calling this function creates a new glib signal connection. no matter if that was already done. This could be improved by keeping track of bs2 signals (in pimpl)
+   */
+  [[nodiscard]] bs2::signal<void(GstPadSPtr)>& padAddedSignal() const;
+
+  /**
+   * @brief a GstPad has been removed from the element
+   */
+  [[nodiscard]] bs2::signal<void(GstPadSPtr)>& padRemovedSignal() const;
+
 private:
- [[nodiscard]] const GstElement* getRawGstElement() const;
- [[nodiscard]] GstElement* getRawGstElement();
+  [[nodiscard]] const GstElement* getRawGstElement() const;
+  [[nodiscard]] GstElement* getRawGstElement();
 };
 
 
