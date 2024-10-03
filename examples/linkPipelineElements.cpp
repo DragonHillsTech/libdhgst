@@ -16,23 +16,23 @@ int main(const int argc, const char **argv)
 
   using namespace dh::gst;
 
-  Pipeline pipeline("TestPipeline");
+  auto pipeline = Pipeline::create("TestPipeline");
   auto srcElement = ElementFactory::makeElement("videotestsrc", "srcElement");
-  pipeline.addElement(srcElement);
+  pipeline->addElement(srcElement);
 
   auto rotateElement = ElementFactory::makeElement("rotate", "rotateElement");
-  rotateElement.setProperty("angle", .7854); // 45 degrees
-  pipeline.addElement(rotateElement);
+  rotateElement->setProperty("angle", .7854); // 45 degrees
+  pipeline->addElement(rotateElement);
 
   auto convertElement = ElementFactory::makeElement("videoconvert", "convertElement");
-  pipeline.addElement(convertElement);
+  pipeline->addElement(convertElement);
 
   auto dstElement = ElementFactory::makeElement("fpsdisplaysink", "dstElement");
-  pipeline.addElement(dstElement);
+  pipeline->addElement(dstElement);
 
-  srcElement.link(rotateElement).link(convertElement).link(dstElement);
+  srcElement->link(rotateElement)->link(convertElement)->link(dstElement);
 
-  pipeline.setState(GST_STATE_PLAYING);
+  pipeline->setState(GST_STATE_PLAYING);
 
   gst_deinit(); // hangs :-) That's good because we currently have no main loop
   return 0;

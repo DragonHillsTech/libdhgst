@@ -36,7 +36,7 @@ namespace dh::gst
  */
 class Element : public Object
 {
-public:
+protected:
   /**
    * @brief Create a new Element object that wraps a GstElementSPtr.
    * @param gstElement
@@ -49,19 +49,11 @@ public:
    * @param gstElement
    * @param transferType see if None, then increase use count
    */
-  Element(GstElement* gstElement, TransferType transferType = TransferType::None);
+  Element(GstElement* gstElement, TransferType transferType);
 
-  ~Element() override;
-
-  // bring move semantics back
-  Element(Element&& other) noexcept;
-  Element& operator=(Element&&) noexcept;
-
-  /**
-   * @brief create a reference to the same Element
-   * @return the new Element with the same internal GstElement*
-   */
-  [[nodiscard]] Element ref();
+ public:
+ [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
+ [[nodiscard]] static std::shared_ptr<Element> create(GstElement* gstElement, TransferType transferType);
 
   /**
    * @brief get the GstElementSPtr of the Element
@@ -118,7 +110,8 @@ public:
    * @throws std::runtime_error if the elements cannot be linked.
    * @todo: add test
    */
-  Element& link(Element& other);
+ std::shared_ptr<Element>& link(std::shared_ptr<Element>& other);
+
 
   /**
    * @brief Retrieves the factory that was used to create this element.
@@ -150,7 +143,7 @@ public:
    * @brief Unlinks the element from another element.
    * @param other The Element to unlink from.
    */
-  void unlink(Element& other);
+  void unlink(std::shared_ptr<Element>& other);
 
   /**
    * @brief Synchronizes the state of the element with its parent.

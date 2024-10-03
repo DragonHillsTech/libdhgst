@@ -27,7 +27,6 @@ public:
   }
 };
 
-
 TEST_F(ObjectTest, TestConnectGobjectSignal_PadAdded)
 {
   auto pipeline = Pipeline::fromDescription("videotestsrc ! decodebin name=test-decodebin");
@@ -37,7 +36,7 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_PadAdded)
   // Connect to the "pad-added" signal
   bool signalEmitted = false;
   std::shared_ptr<GstPad> capturedPad;
-  decodeBinElement.padAddedSignal().connect(
+  decodeBinElement->padAddedSignal().connect(
   [&](std::shared_ptr<GstPad> pad)
     {
       signalEmitted = true;
@@ -65,31 +64,101 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_PadAdded)
 
 TEST_F(ObjectTest, TestConnectGobjectSignal_ElementAdded)
 {
-  {
-    // Create a GstBin
-    Bin bin("test-bin");
+  // Create a GstBin
+  auto bin = Bin::create("test-bin");
 
-    bool signalEmitted = false;
-    GstElementSPtr capturedElement;
-    bin.elementAddedSignal().connect(
-      [&](std::shared_ptr<GstElement> element)
-      {
-        signalEmitted = true;
-        capturedElement = element;
-      }
-    );
+  bool signalEmitted = false;
+  GstElementSPtr capturedElement;
+  bin->elementAddedSignal().connect(
+    [&](std::shared_ptr<GstElement> element)
+    {
+      signalEmitted = true;
+      capturedElement = element;
+    }
+  );
 
-    auto element = ElementFactory::makeElement("fakesrc", "test-source");
+  auto element = ElementFactory::makeElement("fakesrc", "test-source");
 
-    bin.addElement(element);
+  bin->addElement(element);
 
-    // Wait for the main loop to process events
-    GMainContext* context = g_main_context_default();
-    g_main_context_iteration(context, FALSE);
+  // Wait for the main loop to process events
+  GMainContext* context = g_main_context_default();
+  g_main_context_iteration(context, FALSE);
 
-    // Check that the signal was emitted and the element was captured
-    EXPECT_TRUE(signalEmitted);
-    ASSERT_NE(capturedElement, nullptr);
-    EXPECT_EQ(capturedElement, element.getGstElement());
-  }
+  // Check that the signal was emitted and the element was captured
+  EXPECT_TRUE(signalEmitted);
+  ASSERT_NE(capturedElement, nullptr);
+  EXPECT_EQ(capturedElement, element->getGstElement());
+}
+
+//TODO:
+
+TEST_F(ObjectTest, TestConnectGobjectSignal_deleteWhileCallbackActive)
+{
+  /* TODO:
+   * This works find, BUT
+   * *
+   */
+
+  // Create a GstBin
+  auto bin = Bin::create("test-bin");
+
+  bool signalEmitted = false;
+  GstElementSPtr capturedElement;
+  bin->elementAddedSignal().connect(
+    [&](std::shared_ptr<GstElement> element)
+    {
+      signalEmitted = true;
+      capturedElement = element;
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+  );
+
+  auto element = ElementFactory::makeElement("fakesrc", "test-source");
+
+  ASSERT_EQ(bin.use_count(), 1);
+
+  std::thread thread(
+    // Keep a copy to the objects when using threads. "&" is dangerous!.
+    [bin, element]()
+    {
+      bin->addElement(element);
+    }
+  );
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // the callback should have increased until finished
+  // And another one in the thread capture
+  ASSERT_EQ(bin.use_count(), 3);
+
+  // does not increase gstBinSPtr.use_count because a new one is created from the raw ptr
+  GstBin* gstBinPtr = bin->getGstBin().get();
+  ASSERT_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
+
+  std::weak_ptr<Bin> weakBin = bin;
+  bin.reset();
+
+  // the Bin element must still exist. after deleting the local pointer. Copy in callback inside Object
+  ASSERT_NE(weakBin.lock(), nullptr);
+  // and of course the internal object
+  ASSERT_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
+
+
+  // Wait for the main loop to process events
+  GMainContext* context = g_main_context_default();
+  g_main_context_iteration(context, FALSE);
+
+  // Check that the signal was emitted and the element was captured
+  EXPECT_TRUE(signalEmitted);
+  ASSERT_NE(capturedElement, nullptr);
+  EXPECT_EQ(capturedElement, element->getGstElement());
+
+  // the Bin element must still exist.
+  ASSERT_NE(weakBin.lock(), nullptr);
+  ASSERT_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
+
+  thread.join();
+
+  // Now everything should be deleted
+  ASSERT_EQ(weakBin.lock(), nullptr);
 }

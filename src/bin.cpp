@@ -30,7 +30,22 @@ Bin::Bin(const std::string& name)
 {
 }
 
-Bin Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
+std::shared_ptr<Bin> Bin::create(GstBinSPtr gstBin)
+{
+  return std::shared_ptr<Bin>(new Bin(gstBin));
+}
+
+std::shared_ptr<Bin> Bin::create(GstBin* gstBin, TransferType transferType)
+{
+  return std::shared_ptr<Bin>(new Bin(gstBin, transferType));
+}
+
+std::shared_ptr<Bin> Bin::create(const std::string& name)
+{
+  return std::shared_ptr<Bin>(new Bin(name));
+}
+
+std::shared_ptr<Bin> Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
 {
   GError* error{nullptr};
 
@@ -53,13 +68,7 @@ Bin Bin::fromDescription(const std::string& description, bool ghostUnlinkedPads)
   }
 
   // Return a Bin object created from the parsed pipeline
-  return Bin(GST_BIN_CAST(gstElement), TransferType::Floating);
-}
-
-
-Bin Bin::ref()
-{
-  return Bin(getGstBin());
+  return create(GST_BIN_CAST(gstElement), TransferType::Floating);
 }
 
 GstBinSPtr Bin::getGstBin()
@@ -84,12 +93,12 @@ void Bin::addElement(GstElementSPtr element)
   }
 }
 
-void Bin::addElement(Element& element)
+void Bin::addElement(std::shared_ptr<Element> element)
 {
-  addElement(element.getGstElement());
+  addElement(element->getGstElement());
 }
 
-Element Bin::getElementByName(const std::string& name)
+std::shared_ptr<Element> Bin::getElementByName(const std::string& name)
 {
   // gst_bin_get_by_name: transfer:full, nullable
   GstElement* gstElement = gst_bin_get_by_name(GST_BIN(getRawGstBin()), name.c_str());
@@ -98,10 +107,10 @@ Element Bin::getElementByName(const std::string& name)
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
 
-  return Element(makeGstSharedPtr(gstElement, TransferType::Full));
+  return Element::create(gstElement, TransferType::Full);
 }
 
-Element Bin::getElementByNameRecurseUp(const std::string& name)
+std::shared_ptr<Element> Bin::getElementByNameRecurseUp(const std::string& name)
 {
   // gst_bin_get_by_name_recurse_up: transfer:full, nullable
 
@@ -111,7 +120,7 @@ Element Bin::getElementByNameRecurseUp(const std::string& name)
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
 
-  return Element(makeGstSharedPtr(gstElement, TransferType::Full));
+  return Element::create(gstElement, TransferType::Full);
 }
 
 void Bin::removeElement(GstElementSPtr element)
@@ -122,9 +131,9 @@ void Bin::removeElement(GstElementSPtr element)
   }
 }
 
-void Bin::removeElement(Element& element)
+void Bin::removeElement(const std::shared_ptr<Element>& element)
 {
-  if (gst_bin_remove(getRawGstBin(), element.getGstElement().get()) == FALSE)
+  if(gst_bin_remove(getRawGstBin(), element->getGstElement().get()) == FALSE)
   {
     throw std::runtime_error("Failed to remove element from GstBin.");
   }

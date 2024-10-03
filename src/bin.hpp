@@ -15,7 +15,7 @@ namespace dh::gst
 {
 class Bin : public Element
 {
-public:
+protected:
   /**
    * @brief Create a new Bin object that wraps a GstBinSPtr.
    * @param gstBin
@@ -36,6 +36,10 @@ public:
   */
   explicit Bin(const std::string& name);
 
+public:
+  [[nodiscard]] static std::shared_ptr<Bin> create(GstBinSPtr gstBin);
+  [[nodiscard]] static std::shared_ptr<Bin> create(GstBin* gstBin, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<Bin> create(const std::string& name);
   /**
   * @brief Creates a Bin object from a pipeline description.
   * @param description The GStreamer pipeline description.
@@ -43,13 +47,7 @@ public:
   * @return A Bin object created from the description.
   * @throws std::runtime_error if the description is invalid or parsing fails.
   */
-  [[nodiscard]] static Bin fromDescription(const std::string& description, bool ghostUnlinkedPads = false);
-
-  /**
-  * @brief create a reference to the same Bin
-  * @return the new Bin with the same internal GstBin*
-  */
-  [[nodiscard]] Bin ref();
+  [[nodiscard]] static std::shared_ptr<Bin> fromDescription(const std::string& description, bool ghostUnlinkedPads = false);
 
  /**
    * @brief get the GstBinSPtr of the Bin
@@ -70,7 +68,7 @@ public:
    * @param element The Element to add.
    * @throws std::runtime_error if the element cannot be added.
    */
-  void addElement(Element& element);
+  void addElement(std::shared_ptr<Element> element);
 
  /**
   * @brief Retrieves an element by its name. This function recurses into child bins.
@@ -78,7 +76,7 @@ public:
   * @return The element if found
   * @throws std::runtime_error if the element cannot be found.
   */
-  [[nodiscard]] Element getElementByName(const std::string& name);
+  [[nodiscard]] std::shared_ptr<Element> getElementByName(const std::string& name);
 
   /**
    * @brief Retrieves an element by its name. If the element is not found, a recursion is performed on the parent bin.
@@ -87,7 +85,7 @@ public:
    * @return The element if found
    * @throws std::runtime_error if the element cannot be found.
    */
-  [[nodiscard]] Element getElementByNameRecurseUp(const std::string& name);
+  [[nodiscard]] std::shared_ptr<Element> getElementByNameRecurseUp(const std::string& name);
 
   /**
    * @brief Removes an element from the GstBin using a shared pointer.
@@ -101,7 +99,7 @@ public:
    * @param element The Element to remove.
    * @throws std::runtime_error if the element cannot be removed.
    */
-  void removeElement(Element& element);
+  void removeElement(const std::shared_ptr<Element>& element);
 
   [[nodiscard]] bs2::signal<void(GstElementSPtr)>& elementAddedSignal() const;
  /* TODO: add signals

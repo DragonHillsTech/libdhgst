@@ -109,20 +109,15 @@ convertParamToCppType(GstType* value)
  * @class Object
  * @brief A wrapper class for GstObject, providing additional functionalities.
  */
-class Object
+class Object : public std::enable_shared_from_this<Object>
 {
-protected:
- /**
-  * @brief move constructor is protected because the (abstract) GstObject can and shall not be created directly
-  * Just implemented as default. That means, prv of other invalid. Is that okay?
-  */
- Object(Object&& other) noexcept;
- Object& operator=(Object&& other) noexcept;
+ Object(Object&& other) = delete;
+ Object& operator=(Object&& other) = delete;
 
  Object(const Object& other) = delete; // we can not simply copy that thing
  Object& operator=(const Object&) = delete; // we can not simply copy that thing
 
-public:
+protected:
   /**
    * @brief Create a new Object that wraps a GstObject
    * @param gstObject
@@ -135,15 +130,10 @@ public:
    * @param gstObject
    * @param transferType see if None, then increase use count
    */
-  Object(GstObject* gstObject, TransferType transferType = TransferType::None);
+  Object(GstObject* gstObject, TransferType transferType);
 
+public:
   virtual ~Object();
-
-  /**
-   * @brief create a reference to the same GstObject
-   * @return the new Object with the same internal GstObject*
-   */
-  [[nodiscard]] Object ref();
 
   /**
    * @brief get the GstObjectSPtr of the Object
@@ -215,7 +205,15 @@ private:
   {
     using ConvertedArgs = boost::signals2::signal<void(typename ConvertToCppType<Args>::type...)>;
     ConvertedArgs signal;
-    //boost::signals2::signal<void(Args...)> signal;
+    // the weak_ptr is used to make sure that the Object is alive while the callback runs.
+    // When finishing the CB, it is still possible that the GstObject is deleted before the complete signal processing is finished.
+    // whoever emits a signal must make sure that the GstObject stays alive.
+    std::weak_ptr<const Object> weakSelf;
+    SignalConnector(std::weak_ptr<const Object> weakSelf)
+    : weakSelf(weakSelf)
+    {
+    }
+
   };
 
   // SignalHandler to define the callback function
@@ -227,7 +225,12 @@ private:
       SignalConnector<Args...>* connector = static_cast<SignalConnector<Args...>*>(user_data);
       if(connector)
       {
-        connector->signal(convertParamToCppType(args)...);
+        const auto self = connector->weakSelf.lock();
+        //TODO: else print warning message?
+        if(self)
+        {
+          connector->signal(convertParamToCppType(args)...);
+        }
       }
     }
   };
@@ -301,6 +304,21 @@ template<typename ValueType>
   );
 }
 
+template<>
+inline void Object::setProperty<std::string>(const std::string& name, const std::string& value)
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("Property 'name' must not be empty");
+  }
+
+  g_object_set(
+    const_cast<char*>(name.c_str()),
+    value.c_str(),
+    nullptr
+  );
+}
+
 /** Create a boost.signals2 signal to connect to a gobject signal.
   * @tparam Args types you want to use. GstObject* types are not allowed, use shared_ptr instead.
   * @param signalName the name of the signal
@@ -322,9 +340,10 @@ boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::
   {
     throw std::invalid_argument("No signal with name " + signalName);
   }
-
   // Create a new SignalConnector
-  auto* connector = new SignalConnector<Args...>();
+  auto self = shared_from_this();
+  //TODO: in c++17 we can use weak_from_this
+  auto* connector = new SignalConnector<Args...>(shared_from_this());
 
   // Connect the signal
   const auto connectionId = g_signal_connect_data(
@@ -345,21 +364,6 @@ boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::
   }
   // Return the Boost.Signals2 signal reference
   return connector->signal;
-}
-
-template<>
-inline void Object::setProperty<std::string>(const std::string& name, const std::string& value)
-{
-  if(name.empty())
-  {
-    throw std::invalid_argument("Property 'name' must not be empty");
-  }
-
-  g_object_set(
-    const_cast<char*>(name.c_str()),
-    value.c_str(),
-    nullptr
-  );
 }
 
 } // dh::gst

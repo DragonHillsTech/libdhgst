@@ -26,9 +26,14 @@ PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
   assert(getGstPluginFeature() != nullptr);
 }
 
-PluginFeature PluginFeature::ref()
+std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferType)
 {
-  return PluginFeature(getGstPluginFeature());
+  return std::shared_ptr<PluginFeature>(new PluginFeature(gstPluginFeature, transferType));
+}
+
+std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeatureSPtr gstPluginFeature)
+{
+  return std::shared_ptr<PluginFeature>(new PluginFeature(gstPluginFeature));
 }
 
 GstPluginFeatureSPtr PluginFeature::getGstPluginFeature()

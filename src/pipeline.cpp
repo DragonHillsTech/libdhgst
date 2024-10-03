@@ -30,6 +30,21 @@ Pipeline::Pipeline(const std::string& name)
 {
 }
 
+std::shared_ptr<Pipeline> Pipeline::create(GstPipelineSPtr gstPipeline)
+{
+  return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline));
+}
+
+std::shared_ptr<Pipeline> Pipeline::create(const std::string& name)
+{
+  return std::shared_ptr<Pipeline>(new Pipeline(name));
+}
+
+std::shared_ptr<Pipeline> Pipeline::create(GstPipeline* gstPipeline, TransferType transferType)
+{
+  return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline, transferType));
+}
+
 Pipeline Pipeline::fromDescription(const std::string& description)
 {
   // gst_parse_launch: transfer:floating
@@ -54,11 +69,6 @@ Pipeline Pipeline::fromDescription(const std::string& description)
   }
 
   return Pipeline(GST_PIPELINE(pipeline), TransferType::Floating);
-}
-
-Pipeline Pipeline::ref()
-{
-  return Pipeline(getGstPipeline());
 }
 
 GstClockSPtr Pipeline::getPipelineClock() const

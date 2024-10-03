@@ -29,7 +29,7 @@ namespace dh::gst
  */
 class PluginFeature : public Object
 {
-public:
+protected:
   /**
    * @brief Constructs a PluginFeature from a GstPluginFeature pointer
    * @param gstPluginFeature The GStreamer plugin feature pointer
@@ -43,11 +43,9 @@ public:
    */
   explicit PluginFeature(GstPluginFeatureSPtr gstPluginFeature);
 
-  /**
-   * @brief Creates a reference of this PluginFeature
-   * @return A new PluginFeature object sharing the same underlying GstPluginFeature
-   */
-  [[nodiscard]] PluginFeature ref();
+ public:
+  [[nodiscard]] static std::shared_ptr<PluginFeature> create(GstPluginFeature* gstPluginFeature, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<PluginFeature> create(GstPluginFeatureSPtr gstPluginFeature);
 
   /**
    * @brief Gets the underlying GstPluginFeature object

@@ -76,7 +76,7 @@ TEST_F(ElementFactoryTest, CreateElementTest)
   const auto element = factory.createElement(elementName);
 
   // Check the type of the created element
-  EXPECT_EQ(element.getName(), elementName);
+  EXPECT_EQ(element->getName(), elementName);
 }
 
 TEST_F(ElementFactoryTest, makeElementTest)
@@ -85,15 +85,7 @@ TEST_F(ElementFactoryTest, makeElementTest)
   const auto element = ElementFactory::makeElement("fakesrc", elementName);
 
   // Ensure the element was created
-  EXPECT_EQ(element.getName(), elementName);
-}
-
-TEST_F(ElementFactoryTest, RefTest)
-{
-  auto factory = ElementFactory::fromFactoryName("fakesrc");
-
-  ElementFactory refFactory = factory.ref();
-  ASSERT_EQ(refFactory.getGstElementFactory().get(), factory.getGstElementFactory().get()) << "Reference to factory is incorrect.";
+  EXPECT_EQ(element->getName(), elementName);
 }
 
 // Test the getElementType method
