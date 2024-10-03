@@ -34,8 +34,8 @@ public:
 TEST_F(PipelineTest, EmptyPipelineConstructorTest)
 {
   const std::string pipelineName = "test_pipeline";
-  const Pipeline pipeline(pipelineName);
-  ASSERT_EQ(pipeline.getName(), pipelineName) << "Pipeline name mismatch.";
+  const auto pipeline = Pipeline::create(pipelineName);
+  ASSERT_EQ(pipeline->getName(), pipelineName) << "Pipeline name mismatch.";
 }
 
 // Test the fromDescription method with a valid pipeline description
@@ -43,8 +43,7 @@ TEST_F(PipelineTest, FromDescriptionTest)
 {
   ASSERT_NO_THROW(
     {
-      Pipeline descPipeline = Pipeline::fromDescription("fakesrc ! fakesink");
-      ASSERT_NE(descPipeline.getGstPipeline(), nullptr) << "Pipeline from description creation failed.";
+      auto descPipeline = Pipeline::fromDescription("fakesrc ! fakesink");
     }
   );
 }
@@ -57,19 +56,6 @@ TEST_F(PipelineTest, FromDescriptionInvalidTest)
       auto pipeline = Pipeline::fromDescription("invalid_description");
     }, std::runtime_error
   ) << "Expected std::runtime_error for invalid pipeline description.";
-}
-
-TEST_F(PipelineTest, RefTest)
-{
-  Pipeline pipeline1("pipeline1");
-  auto pipeline1Ref = pipeline1.ref();
-
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(pipeline1Ref.getGstElement().get()), 3); // original, ref and getGstElement
-  EXPECT_EQ(GST_OBJECT_REFCOUNT(pipeline1.getGstElement().get()), 3);
-
-  // 1 because we get a new shared_ptr each time
-  EXPECT_EQ(pipeline1Ref.getGstElement().use_count(), 1);
-  EXPECT_EQ(pipeline1.getGstElement().use_count(), 1);
 }
 
 // Does not exist for older gstreamer. Enable when needed

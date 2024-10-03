@@ -23,10 +23,6 @@ public:
   GstObjectSPtr gstObject;
 };
 
-Object::Object(Object&& other) noexcept = default;
-
-Object& Object::operator=(Object&& other) noexcept = default;
-
 Object::Object(GstObjectSPtr gstObject)
 : prv{std::make_unique<Private>(std::move(gstObject))}
 {
@@ -46,11 +42,6 @@ Object::Object(GstObject* gstObject, TransferType transferType)
 }
 
 Object::~Object() = default;
-
-Object Object::ref()
-{
-  return Object(getGstObject());
-}
 
 GstObjectSPtr Object::getGstObject()
 {

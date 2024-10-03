@@ -29,20 +29,20 @@ Element::Element(GstElement* gstElement, TransferType transferType)
   assert(getGstElement() != nullptr);
 }
 
-//TODO: move to header?
-Element::~Element() = default;
-Element::Element(Element&& other) noexcept = default;
-Element& Element::operator=(Element&&) noexcept = default;
+std::shared_ptr<Element> Element::create(GstElementSPtr gstElement)
+{
+  return std::shared_ptr<Element>(new Element(gstElement));
+}
+
+std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType transferType)
+{
+  return std::shared_ptr<Element>(new Element(gstElement, transferType));
+}
 
 Element::Element(GstElementSPtr gstElement)
 : Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
 {
   assert(getGstElement() != nullptr);
-}
-
-Element Element::ref()
-{
-  return Element(getGstElement());
 }
 
 GstElementSPtr Element::getGstElement()
@@ -119,12 +119,12 @@ GstPad* Element::getStaticPad(const std::string& name)
   return gst_element_get_static_pad(getRawGstElement(), name.c_str());
 }
 
-Element& Element::link(Element& other)
+std::shared_ptr<Element>& Element::link(std::shared_ptr<Element>& other)
 {
-  if (!gst_element_link(getRawGstElement(), other.getRawGstElement()))
+  if (!gst_element_link(getRawGstElement(), other->getRawGstElement()))
   {
     std::string errorMessage = "Failed to link GstElements: ";
-    errorMessage += getName() + " -> " + other.getName();
+    errorMessage += getName() + " -> " + other->getName();
 
     // Throw an exception with the detailed error message
     throw std::runtime_error(errorMessage);
@@ -142,8 +142,8 @@ std::string Element::getFactoryName() const
   {
     return {};
   }
-  const ElementFactory factory(gstElementFactoryRawPtr, TransferType::None);
-  return factory.getName();
+  const auto factory = ElementFactory::create(gstElementFactoryRawPtr, TransferType::None);
+  return factory->getName();
 }
 
 GstClockSPtr Element::getElementClock() const
@@ -166,9 +166,9 @@ GstState Element::getState() const
   return state;
 }
 
-void Element::unlink(Element& other)
+void Element::unlink(std::shared_ptr<Element>& other)
 {
-  gst_element_unlink(getRawGstElement(), other.getRawGstElement());
+  gst_element_unlink(getRawGstElement(), other->getRawGstElement());
 }
 
 void Element::syncStateWithParent()

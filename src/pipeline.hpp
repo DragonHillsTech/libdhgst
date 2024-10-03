@@ -20,7 +20,7 @@ namespace dh::gst
 
 class Pipeline final : public Bin
 {
-public:
+protected:
   /**
    * @brief Create a new Pipeline object that wraps a GstPipelineSPtr.
    * @param gstPipeline
@@ -40,6 +40,10 @@ public:
   * @param name the name of the Pipeline
   */
   explicit Pipeline(const std::string& name);
+public:
+  [[nodiscard]] static std::shared_ptr<Pipeline> create(GstPipelineSPtr gstPipeline);
+  [[nodiscard]] static std::shared_ptr<Pipeline> create(const std::string& name);
+  [[nodiscard]] static std::shared_ptr<Pipeline> create(GstPipeline* gstPipeline, TransferType transferType);
 
   /**
    * @brief Create a new Pipeline object from a pipeline description string.
@@ -51,13 +55,7 @@ public:
    */
   [[nodiscard]] static Pipeline fromDescription(const std::string& description);
 
-  /**
-   * @brief Create a reference to the same Pipeline.
-   * @return A new Pipeline object that shares the internal GstPipeline*.
-   */
-  [[nodiscard]] Pipeline ref();
-
-  /**
+ /**
    * @brief Gets the current clock used by the pipeline.
    * Unlike @ref getClock, this function will always return a clock, even if the pipeline is not in the PLAYING state.
    * @return The current clock.

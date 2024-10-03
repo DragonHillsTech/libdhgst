@@ -26,6 +26,16 @@ ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
   assert(getRawGstElementFactory() != nullptr);
 }
 
+std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transferType)
+{
+  return std::shared_ptr<ElementFactory>(new ElementFactory(gstElementFactory, transferType));
+}
+
+std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactorySPtr gstElementFactory)
+{
+  return std::shared_ptr<ElementFactory>(new ElementFactory(gstElementFactory));
+}
+
 ElementFactory ElementFactory::fromFactoryName(const std::string& factoryName)
 {
   GstElementFactory* factory = gst_element_factory_find(factoryName.c_str());
@@ -37,12 +47,7 @@ ElementFactory ElementFactory::fromFactoryName(const std::string& factoryName)
   return ElementFactory(factory, TransferType::Full);
 }
 
-ElementFactory ElementFactory::ref()
-{
-  return ElementFactory(getGstElementFactory());
-}
-
-Element ElementFactory::createElement(const std::string& elementName) const
+std::shared_ptr<Element> ElementFactory::createElement(const std::string& elementName) const
 {
   auto* gstElementRaw = gst_element_factory_create(
     const_cast<GstElementFactory*>(getRawGstElementFactory()),
@@ -53,10 +58,10 @@ Element ElementFactory::createElement(const std::string& elementName) const
   {
     throw std::runtime_error("Failed to create element: " + elementName);
   }
-  return Element(gstElementRaw, TransferType::Floating);
+  return Element::create(gstElementRaw, TransferType::Floating);
 }
 
-Element ElementFactory::makeElement(const std::string& factoryName, const std::string& elementName)
+std::shared_ptr<Element> ElementFactory::makeElement(const std::string& factoryName, const std::string& elementName)
 {
   // static version
   assert(! factoryName.empty());
@@ -71,7 +76,7 @@ Element ElementFactory::makeElement(const std::string& factoryName, const std::s
     throw std::runtime_error("Failed to create element '" + elementName + "' from factory '" + factoryName + "'");
   }
 
-  return Element(gstElement, TransferType::Floating);
+  return Element::create(gstElement, TransferType::Floating);
 }
 
 std::string ElementFactory::getMetaData(const std::string& key) const

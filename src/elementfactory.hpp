@@ -27,7 +27,7 @@ namespace dh::gst
 
 class ElementFactory : public PluginFeature
 {
-public:
+protected:
   /**
    * @brief Constructs an ElementFactory from a GstElementFactory pointer
    * @param gstElementFactory The GStreamer element factory pointer
@@ -41,6 +41,10 @@ public:
    */
   ElementFactory(GstElementFactorySPtr gstElementFactory);
 
+public:
+  [[nodiscard]] static std::shared_ptr<ElementFactory> create(GstElementFactory* gstElementFactory, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<ElementFactory> create(GstElementFactorySPtr gstElementFactory);
+
   /**
   * @brief Creates an ElementFactory from the factory name
   * @param factoryName The name of the element factory
@@ -51,13 +55,6 @@ public:
   // bring move semantics back
   ElementFactory(ElementFactory&& other) noexcept = default;
   ElementFactory& operator=(ElementFactory&&) noexcept = default;
-
-  /**
-   * @brief Creates a reference of this ElementFactory
-   * @return A new ElementFactory object sharing the same underlying GstElementFactory
-   * @todo add a const version?
-   */
-  [[nodiscard]] ElementFactory ref();
 
   /**
    * @brief Retrieves metadata of the element factory for a given key
@@ -77,7 +74,7 @@ public:
   * @param name The name to assign to the created element
   * @return A pointer to the created element
   */
-  [[nodiscard]] Element createElement(const std::string& elementName) const;
+  [[nodiscard]] std::shared_ptr<Element> createElement(const std::string& elementName) const;
 
   /**
    * @brief Creates an Element from a factory name and optional element name
@@ -85,7 +82,7 @@ public:
    * @param elementName The name of the element to create (optional)
    * @return An Element instance wrapping the created GstElement
    */
-  [[nodiscard]] static Element makeElement(const std::string& factoryName, const std::string& elementName = "");
+  [[nodiscard]] static std::shared_ptr<Element> makeElement(const std::string& factoryName, const std::string& elementName = "");
 
   /**
    * @brief Gets the type of the element factory
