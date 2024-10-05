@@ -1,10 +1,14 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
 
-#include <elementfactory.hpp>
-#include <gtest/gtest.h>
+#include "elementfactory.hpp"
 #include "pipeline.hpp"
 #include "element.hpp"
+
+#include <gtest/gtest.h>
+
 #include <gst/gst.h>
+
+#include <thread>
 #include <vector>
 
 using namespace dh::gst;
