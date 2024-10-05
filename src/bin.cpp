@@ -153,4 +153,5 @@ GstBin* Bin::getRawGstBin()
 {
   return GST_BIN_CAST(getRawGstObject());
 }
+
 } // dh::gst
