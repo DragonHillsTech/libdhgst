@@ -121,6 +121,10 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_deleteWhileCallbackActive)
   auto element = ElementFactory::makeElement("fakesrc", "test-source");
 
   ASSERT_EQ(bin.use_count(), 1);
+  // does not increase gstBinSPtr.use_count because a new one is created from the raw ptr
+  GstBin* gstBinPtr = bin->getGstBin().get();
+
+  ASSERT_EQ(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
 
   std::thread thread(
     // Keep a copy to the objects when using threads. "&" is dangerous!.
@@ -131,22 +135,20 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_deleteWhileCallbackActive)
   );
 
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  // the callback should have increased until finished
-  // And another one in the thread capture
-  ASSERT_EQ(bin.use_count(), 3);
+  // the callback should have increased in the thread capture
+  ASSERT_EQ(bin.use_count(), 2);
 
-  // does not increase gstBinSPtr.use_count because a new one is created from the raw ptr
-  GstBin* gstBinPtr = bin->getGstBin().get();
-  ASSERT_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
+  // one in Bin, one in  callback
+  const auto currentGObjectRefCnt = GST_OBJECT_REFCOUNT(gstBinPtr);
+  ASSERT_GE(currentGObjectRefCnt, 2);
 
   std::weak_ptr<Bin> weakBin = bin;
   bin.reset();
 
-  // the Bin element must still exist. after deleting the local pointer. Copy in callback inside Object
+  // the Bin element must still exist. after deleting the local pointer. Copy in thread capture
   ASSERT_NE(weakBin.lock(), nullptr);
   // and of course the internal object
-  ASSERT_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
-
+  ASSERT_EQ(GST_OBJECT_REFCOUNT(gstBinPtr), currentGObjectRefCnt);
 
   // Wait for the main loop to process events
   GMainContext* context = g_main_context_default();

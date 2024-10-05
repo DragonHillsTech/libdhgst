@@ -205,15 +205,20 @@ private:
   {
     using ConvertedArgs = boost::signals2::signal<void(typename ConvertToCppType<Args>::type...)>;
     ConvertedArgs signal;
-    // the weak_ptr is used to make sure that the Object is alive while the callback runs.
+    // the weak ptr is used to make sure that the Object is alive while the callback runs.
     // When finishing the CB, it is still possible that the GstObject is deleted before the complete signal processing is finished.
     // whoever emits a signal must make sure that the GstObject stays alive.
-    std::weak_ptr<const Object> weakSelf;
-    SignalConnector(std::weak_ptr<const Object> weakSelf)
-    : weakSelf(weakSelf)
+    GWeakRef weakSignalSource;
+
+    SignalConnector(const GstObject* gstObject)
     {
+      g_weak_ref_init(&weakSignalSource, const_cast<GstObject*>(gstObject));
     }
 
+    ~SignalConnector()
+    {
+      g_weak_ref_clear(&weakSignalSource);
+    }
   };
 
   // SignalHandler to define the callback function
@@ -225,9 +230,9 @@ private:
       SignalConnector<Args...>* connector = static_cast<SignalConnector<Args...>*>(user_data);
       if(connector)
       {
-        const auto self = connector->weakSelf.lock();
+        const auto* signalSource = g_weak_ref_get(&connector->weakSignalSource);
         //TODO: else print warning message?
-        if(self)
+        if(signalSource)
         {
           connector->signal(convertParamToCppType(args)...);
         }
@@ -342,8 +347,8 @@ boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::
   }
   // Create a new SignalConnector
   auto self = shared_from_this();
-  //TODO: in c++17 we can use weak_from_this
-  auto* connector = new SignalConnector<Args...>(shared_from_this());
+
+  auto* connector = new SignalConnector<Args...>(getRawGstObject());
 
   // Connect the signal
   const auto connectionId = g_signal_connect_data(
