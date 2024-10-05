@@ -17,7 +17,13 @@
 #include <memory>                 // For std::shared_ptr
 #include <stdexcept>
 
-namespace dh::gst {
+
+/* TODO: use gst_mini_object_ref (GST_MINI_OBJECT_CAST (msg)) for GstMiniObjects
+ * TODO: also add unref in deleter
+ */
+
+namespace dh::gst
+{
 
 /**
  * @brief Universal Deleter for GStreamer objects.
@@ -171,13 +177,16 @@ makeGstSharedPtr(T* obj, TransferType transferType)
     {
       gst_caps_ref(obj);
     }
-    // For GstStructure and similar types, manual reference management may vary
+    else if constexpr(std::is_same_v<T, GstMessage>)
+    {
+      gst_message_ref(obj);
+    }
+    // Add more special cases if necessary, e.g., GstStructure
   }
 
   // Return a shared pointer with a custom deleter
   return std::shared_ptr<T>(obj, GstObjectDeleter());
 }
-
 
 // glib types
 /**

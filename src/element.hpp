@@ -159,7 +159,7 @@ protected:
    * Also keep in mind that if you add new elements to the pipeline in the signal handler
    * you will need to set them to the desired target state with gst_element_set_state or
    * gst_element_sync_state_with_parent.
-   * @todo Calling this function creates a new glib signal connection. no matter if that was already done. This could be improved by keeping track of bs2 signals (in pimpl)
+   * @todo Calling this function creates a new glib signal connection. no matter if that was already done. This could be improved by keeping track of bs2 signals (in GObject data)
    */
   [[nodiscard]] bs2::signal<void()>& noMorePadsSignal() const;
 
@@ -169,7 +169,8 @@ protected:
    * Also keep in mind that if you add new elements to the pipeline in the signal handler
    * you will need to set them to the desired target state with gst_element_set_state or
    * gst_element_sync_state_with_parent.
-   * @todo Calling this function creates a new glib signal connection. no matter if that was already done. This could be improved by keeping track of bs2 signals (in pimpl)
+   * @todo Calling this function creates a new glib signal connection, no matter if that was already done.
+   *       This could be improved by keeping track of bs2 signals (in GObject data)
    */
   [[nodiscard]] bs2::signal<void(GstPadSPtr)>& padAddedSignal() const;
 

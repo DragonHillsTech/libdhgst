@@ -40,7 +40,12 @@ template<> struct ConvertToGlibType<std::string>
 };
 
 template<typename GlibType>
-struct ConvertToGlibType<std::shared_ptr<GlibType>, std::enable_if_t<IsGstObject<GlibType>::value>>
+struct ConvertToGlibType<std::shared_ptr<GlibType>,
+                          std::enable_if_t<
+                            IsGstObject<GlibType>::value
+                            || IsGstMiniObject<GlibType>::value
+                          >
+                        >
 {
   // Static assertion to produce a compilation error if GlibType is a pointer to a GstObject
   static_assert(
@@ -68,7 +73,7 @@ template<> struct ConvertToCppType<const gchar*>
 };
 
 template<typename GlibType>
-struct ConvertToCppType<GlibType*, std::enable_if_t<IsGstObject<GlibType>::value>>
+struct ConvertToCppType<GlibType*, std::enable_if_t<IsGstObject<GlibType>::value || IsGstMiniObject<GlibType>::value>>
 {
   using type = std::shared_ptr<GlibType>;
 };
@@ -78,7 +83,7 @@ struct ConvertToCppType<GlibType*, std::enable_if_t<IsGstObject<GlibType>::value
 template<typename T>
 typename std::enable_if<
   !IsGObjectType<typename std::remove_pointer<T>::type>::value
-   && !IsRefCountedType<typename std::remove_pointer<T>::type>::value
+   && !IsGstMiniObject<typename std::remove_pointer<T>::type>::value
   ,T>::type
 convertParamToCppType(T value)
 {
@@ -98,7 +103,7 @@ inline std::string convertParamToCppType(const gchar* value)
 }
 
 template<typename GstType>
-inline std::enable_if_t<IsGstObject<GstType>::value, std::shared_ptr<GstType>>
+inline std::enable_if_t<IsGstObject<GstType>::value || IsGstMiniObject<GstType>::value, std::shared_ptr<GstType>>
 convertParamToCppType(GstType* value)
 {
   return makeGstSharedPtr(value, TransferType::None);
