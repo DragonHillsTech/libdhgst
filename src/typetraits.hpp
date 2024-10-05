@@ -30,8 +30,6 @@ template <> struct IsGstObject<GstObject> : std::true_type {};
 template <> struct IsGstObject<GstElement> : std::true_type {};
 template <> struct IsGstObject<GstPad> : std::true_type {};
 template <> struct IsGstObject<GstBuffer> : std::true_type {};
-template <> struct IsGstObject<GstEvent> : std::true_type {};
-template <> struct IsGstObject<GstMessage> : std::true_type {};
 template <> struct IsGstObject<GstAppSink> : std::true_type {};
 template <> struct IsGstObject<GstAppSrc> : std::true_type {};
 template <> struct IsGstObject<GstBin> : std::true_type {};
@@ -40,17 +38,19 @@ template <> struct IsGstObject<GstClock> : std::true_type {};
 template <> struct IsGstObject<GstDeviceMonitor> : std::true_type {};
 template <> struct IsGstObject<GstDevice> : std::true_type {};
 template <> struct IsGstObject<GstElementFactory> : std::true_type {};
-template <> struct IsGstObject<GstIterator> : std::true_type {};
 template <> struct IsGstObject<GstPadTemplate> : std::true_type {};
 template <> struct IsGstObject<GstPipeline> : std::true_type {};
 template <> struct IsGstObject<GstPlugin> : std::true_type {};
-template <> struct IsGstObject<GstSample> : std::true_type {};
 template <> struct IsGstObject<GstPluginFeature> : std::true_type {};
 
-// Custom trait for non-GObject GStreamer types
-template <> struct IsGstObject<GstCaps> : std::false_type {};
-template <> struct IsGstObject<GstStructure> : std::false_type {};
+// Type traits to check for GstMiniObject
+template <typename T>
+struct IsGstMiniObject : std::false_type {};
 
+// Specializations for GObject-based GStreamer types
+template <> struct IsGstMiniObject<GstMessage> : std::true_type {};
+template <> struct IsGstMiniObject<GstEvent> : std::true_type {};
+template <> struct IsGstMiniObject<GstCaps> : std::true_type {};
 
 // Type trait to determine if a type is a GObject-derived type
 template<typename T>
@@ -61,18 +61,6 @@ struct IsGObjectType : std::integral_constant<bool,
 /*template<>
   struct IsGObjectType<GtkWidget> : std::true_type {};
 */
-
-
-// Type trait to determine if a type is a ref-counted type (non-GObject)
-template<typename T>
-struct IsRefCountedType : std::false_type {};
-
-// Specialization for GstCaps
-template<>
-struct IsRefCountedType<GstCaps> : std::true_type {};
-
-// Add specializations for other ref-counted types as needed
-
 
 } // dt::gst
 #endif //DH_GST_TYPETRAITS_HPP
