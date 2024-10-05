@@ -14,6 +14,7 @@ option(BUILD_EXAMPLES "Build example programs" ON)
 # Set the source and header files
 set(SOURCES
   src/bin.cpp
+  src/bus.cpp
   src/element.cpp
   src/elementfactory.cpp
   src/object.cpp
@@ -23,6 +24,7 @@ set(SOURCES
 
 set(HEADERS
   src/bin.hpp
+  src/bus.hpp
   src/element.hpp
   src/elementfactory.hpp
   src/object.hpp

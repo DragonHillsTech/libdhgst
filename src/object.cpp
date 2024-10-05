@@ -35,7 +35,7 @@ Object::Object(GstObjectSPtr gstObject)
 Object::Object(GstObject* gstObject, TransferType transferType)
 : prv{std::make_unique<Private>(makeGstSharedPtr(gstObject, transferType))}
 {
-  if (! prv->gstObject)
+  if(! prv->gstObject)
   {
     throw std::runtime_error("No GstObject");
   }

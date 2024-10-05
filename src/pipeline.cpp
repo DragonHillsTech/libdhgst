@@ -101,6 +101,12 @@ const GstPipelineSPtr Pipeline::getGstPipeline() const
   return makeGstSharedPtr(GST_PIPELINE_CAST(getGstObject().get()), TransferType::None);
 }
 
+std::shared_ptr<Bus> Pipeline::getBus() const
+{
+  // gst_pipeline_get_bus returns  transfer::full
+  return Bus::create(gst_pipeline_get_bus(const_cast<GstPipeline*>(getRawGstPipeline())), TransferType::Full);
+}
+
 GstPipeline* Pipeline::getRawGstPipeline()
 {
   return GST_PIPELINE_CAST(getRawGstObject());

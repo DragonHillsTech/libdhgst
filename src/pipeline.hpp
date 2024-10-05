@@ -10,6 +10,7 @@
 
 // local includes
 #include "bin.hpp"
+#include "bus.hpp"
 #include "sharedptrs.hpp"
 
 // gstreamer
@@ -82,6 +83,8 @@ public:
    */
   [[nodiscard]] GstPipelineSPtr getGstPipeline();
   [[nodiscard]] const GstPipelineSPtr getGstPipeline() const;
+
+  [[nodiscard]] std::shared_ptr<Bus> getBus() const;
 
 private:
   [[nodiscard]] GstPipeline* getRawGstPipeline();
