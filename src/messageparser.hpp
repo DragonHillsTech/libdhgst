@@ -28,17 +28,46 @@ private:
  MessageParser();
 public:
   [[nodiscard]] static std::shared_ptr<MessageParser> create();
-  virtual ~MessageParser();
+
+  using AsyncHandler = std::function<void(std::function<void()>)>;
+ /**
+  * @brief Sets a custom asynchronous handler for parse().
+  * @param handler A function that takes a callable and posts it to the desired main loop.
+  * Example boost.asio:
+  * @code
+  * create[&ioContext](auto task){boost::asio::post(ioContext, std::move(task));});
+  * @endcode
+  * Example glib:
+  * @code
+  * create(
+  *   [](auto task)
+  *   {
+  *     // Use g_main_context_invoke to post the task to the default main context.
+  *     g_main_context_invoke(nullptr, [](gpointer userData) -> gboolean
+  *     {
+  *       auto taskPtr = static_cast<std::function<void()>*>(userData);
+  *       (*taskPtr)(); // Call the task
+  *       delete taskPtr; // Clean up
+  *       return G_SOURCE_REMOVE; // Remove the source after it's executed
+  *     },
+  *     new std::function<void()>(std::move(task)));
+  *   }
+  * );
+  * @endcode
+  */
+  [[nodiscard]] static std::shared_ptr<MessageParser> create(AsyncHandler handler);
+
+  ~MessageParser();
 
   /**
    * @brief Parses a GStreamer message and emits corresponding signals based on its type.
-   * This function is virtual to enable users to create their own implementation for posting the parsing to a main loop.
+   * If no async handler is set, the the message is processed synchronously.
    * @param message The GStreamer message to parse.
    */
-  virtual void parse(const GstMessage& message);
+  void parse(const GstMessage& message);
 
-protected:
- void parseSync(const GstMessage& message);
+private:
+  void parseSync(const GstMessage& message);
 
 public:
 
@@ -116,6 +145,8 @@ public:
 
 private:
   std::string getSourceName(const GstMessage& message) const;
+  class Private;
+  std::unique_ptr<Private> prv;
 };
 
 } // dh::gst
