@@ -11,13 +11,40 @@
 namespace dh::gst
 {
 
-MessageParser::MessageParser() = default;
+class MessageParser::Private
+{
+public:
+  MessageParser::AsyncHandler asyncHandler;
+};
+
+MessageParser::MessageParser()
+: prv{std::make_unique<Private>()}
+{
+}
+
 MessageParser::~MessageParser() = default;
 
 void MessageParser::parse(const GstMessage& message)
 {
+  if(prv->asyncHandler)
+  {
+    // keep the message alive until processed
+    gst_message_ref(const_cast<GstMessage*>(&message));
+    prv->asyncHandler(
+      [this, &message]()
+      {
+        parseSync(message);
+        gst_message_unref(const_cast<GstMessage*>(&message));
+      }
+    );
+  }
+  else
+  {
+    parseSync(message);
+  }
   parseSync(message);
 }
+
 
 void MessageParser::parseSync(const GstMessage& message)
 {
@@ -121,6 +148,13 @@ void MessageParser::parseSync(const GstMessage& message)
 std::shared_ptr<MessageParser> MessageParser::create()
 {
   return std::shared_ptr<MessageParser>(new MessageParser());
+}
+
+std::shared_ptr<MessageParser> MessageParser::create(AsyncHandler handler)
+{
+  auto ret =  std::shared_ptr<MessageParser>(new MessageParser());
+  ret->prv->asyncHandler = std::move(handler);
+  return ret;
 }
 
 std::string MessageParser::getSourceName(const GstMessage& message) const
