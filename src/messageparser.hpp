@@ -19,15 +19,28 @@ namespace bs2 = boost::signals2;
 namespace dh::gst
 {
 
+/**
+ * @brief parser for GstMessages. After parsing, the matching signal is emitted.
+ */
 class MessageParser
 {
+private:
+ MessageParser();
 public:
+  [[nodiscard]] static std::shared_ptr<MessageParser> create();
+  virtual ~MessageParser();
+
   /**
    * @brief Parses a GStreamer message and emits corresponding signals based on its type.
+   * This function is virtual to enable users to create their own implementation for posting the parsing to a main loop.
    * @param message The GStreamer message to parse.
-   * @throws std::runtime_error if the message type is unsupported.
    */
-  void parse(const GstMessage& message);
+  virtual void parse(const GstMessage& message);
+
+protected:
+ void parseSync(const GstMessage& message);
+
+public:
 
   /**
    * @brief Signal emitted when an End-Of-Stream (EOS) message is received.
@@ -73,6 +86,33 @@ public:
    * @param debugInfo Additional debug information.
    */
   bs2::signal<void(const std::string& sourceName, const std::string& infoMessage, const std::string& debugInfo)> infoSignal;
+
+  /**
+   * @brief Signal emitted when a stream status message is received.
+   * @param sourceName The name of the element that generated the message.
+   * @param statusType The stream status type.
+   * @param ownerName The owner element of the message source.
+   */
+  bs2::signal<void(const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)> streamStatusSignal;
+
+ /**
+  * @brief Signal emitted when a stream has started
+  * @param sourceName The name of the element that generated the message.
+  */
+  bs2::signal<void(const std::string& sourceName)> streamStartSignal;
+
+  /**
+   * @brief an element specific message was received.
+   */
+  bs2::signal<void(const std::string& sourceName, const GstStructure* structure)> elementMessageSignal;
+
+  /**
+   * @brief Signal emitted when an ASYNC_DONE message is received.
+   * @param sourceName The name of the element that generated the message.
+   * @param runningTime The running time associated with the async done message (in nanoseconds).
+   */
+  bs2::signal<void(const std::string& sourceName, GstClockTime runningTime)> asyncDoneSignal;
+
 
 private:
   std::string getSourceName(const GstMessage& message) const;
