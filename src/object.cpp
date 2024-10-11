@@ -13,61 +13,39 @@
 namespace dh::gst
 {
 
-class Object::Private
-{
-public:
-  Private(GstObjectSPtr gstObject)
-  : gstObject{std::move(gstObject)}
-  {
-  }
-  GstObjectSPtr gstObject;
-};
-
 Object::Object(GstObjectSPtr gstObject)
-: prv{std::make_unique<Private>(std::move(gstObject))}
+: gstObject{std::move(gstObject)}
 {
-  if (! prv->gstObject)
+  if (! this->gstObject)
   {
     throw std::runtime_error("No GstObject");
   }
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
-: prv{std::make_unique<Private>(makeGstSharedPtr(gstObject, transferType))}
+: Object{makeGstSharedPtr(gstObject, transferType)}
 {
-  if(! prv->gstObject)
-  {
-    throw std::runtime_error("No GstObject");
-  }
 }
 
 Object::~Object() = default;
 
 GstObjectSPtr Object::getGstObject()
 {
-  if(! prv)
-  {
-    throw std::logic_error("No valid Object.prv (moved?)");
-  }
-  return prv->gstObject;
+  return gstObject;
 }
 
 const GstObjectSPtr Object::getGstObject() const
 {
-  if(! prv)
-  {
-    throw std::logic_error("No valid GstObject (moved?)");
-  }
-  return prv->gstObject;
+  return gstObject;
 }
 
 std::string Object::getName() const
 {
   // Get the name from the GstElement
-  const gchar* name = gst_object_get_name(const_cast<GstObject*>(getRawGstObject()));
-
-  // Return as std::string; handle null case gracefully
-  return name ? std::string(name) : std::string("unknown");
+  gchar* name = gst_object_get_name(const_cast<GstObject*>(getRawGstObject()));
+  std::string ret = name ? name : "";
+  g_free(name);
+  return ret;
 }
 
 void Object::setName(const std::string& name)
@@ -105,14 +83,12 @@ bool Object::propertyExists(const std::string& name) const
 
 const GstObject* Object::getRawGstObject() const
 {
-  return getGstObject().get();
+  return gstObject.get();
 }
 
 GstObject* Object::getRawGstObject()
 {
-  return getGstObject().get();
+  return gstObject.get();
 }
-
-
 
 } // dh::gst
