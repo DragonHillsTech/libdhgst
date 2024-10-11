@@ -11,7 +11,7 @@
 using namespace dh::gst;
 
 /**
- * @brief Test fixture for setting up and tearing down the test environment for Element class.
+ * @brief Test fixture for setting up and tearing down the test environment
  */
 class BusTest : public ::testing::Test
 {
@@ -19,7 +19,7 @@ public:
  // Setup before first test case
  static void SetUpTestSuite()
  {
-  // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
+  // Set G_DEBUG to fatal_warnings to make warnings crash the program
   setenv("G_DEBUG", "fatal_warnings", 1);
   gst_init(nullptr, nullptr);  // Initialize GStreamer
  }
