@@ -6,11 +6,20 @@
  */
 
 #include "messageparser.hpp"
+#include <spdlog/spdlog.h>
 
 namespace dh::gst
 {
 
+MessageParser::MessageParser() = default;
+MessageParser::~MessageParser() = default;
+
 void MessageParser::parse(const GstMessage& message)
+{
+  parseSync(message);
+}
+
+void MessageParser::parseSync(const GstMessage& message)
 {
   const std::string sourceName = getSourceName(message);
   auto* messagePtr = const_cast<GstMessage*>(&message);
@@ -70,11 +79,48 @@ void MessageParser::parse(const GstMessage& message)
       break;
     }
 
+    case GST_MESSAGE_STREAM_STATUS:
+    {
+      GstStreamStatusType statusType;
+      GstElement* ownerElement;
+      gst_message_parse_stream_status(messagePtr, &statusType, &ownerElement);
+      std::string ownerName = ownerElement ? GST_OBJECT_NAME(ownerElement) : "unknown";
+      streamStatusSignal(sourceName, statusType, ownerName);
+      break;
+    }
+
+    case GST_MESSAGE_STREAM_START:
+    {
+      streamStartSignal(sourceName);
+      break;
+    }
+
+    case GST_MESSAGE_ELEMENT:
+    {
+      const GstStructure* structure = gst_message_get_structure(messagePtr);
+      elementMessageSignal(sourceName, structure);
+      break;
+    }
+
+    case GST_MESSAGE_ASYNC_DONE:
+    {
+      GstClockTime runningTime;
+      gst_message_parse_async_done(messagePtr, &runningTime);
+      asyncDoneSignal(sourceName, runningTime);
+      break;
+    }
+
     // Add more message types as needed...
 
     default:
-      throw std::runtime_error("Unsupported message type: " + std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
+      spdlog::warn("MessageParser: Unhandled message type '{}'", std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
+      //throw std::runtime_error("Unsupported message type: " + std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
   }
+}
+
+std::shared_ptr<MessageParser> MessageParser::create()
+{
+  return std::shared_ptr<MessageParser>(new MessageParser());
 }
 
 std::string MessageParser::getSourceName(const GstMessage& message) const

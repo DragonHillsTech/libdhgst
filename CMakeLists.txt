@@ -17,6 +17,7 @@ set(SOURCES
     src/bus.cpp
     src/element.cpp
     src/elementfactory.cpp
+    src/helpers.cpp
     src/messageparser.cpp
     src/object.cpp
     src/pluginfeature.cpp
@@ -28,6 +29,7 @@ set(HEADERS
     src/bus.hpp
     src/element.hpp
     src/elementfactory.hpp
+    src/helpers.hpp
     src/object.hpp
     src/objecttraits.hpp
     src/messageparser.hpp
