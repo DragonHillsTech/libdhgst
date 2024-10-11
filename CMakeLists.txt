@@ -13,27 +13,29 @@ option(BUILD_EXAMPLES "Build example programs" ON)
 
 # Set the source and header files
 set(SOURCES
-  src/bin.cpp
-  src/bus.cpp
-  src/element.cpp
-  src/elementfactory.cpp
-  src/object.cpp
-  src/pluginfeature.cpp
-  src/pipeline.cpp
+    src/bin.cpp
+    src/bus.cpp
+    src/element.cpp
+    src/elementfactory.cpp
+    src/messageparser.cpp
+    src/object.cpp
+    src/pluginfeature.cpp
+    src/pipeline.cpp
 )
 
 set(HEADERS
-  src/bin.hpp
-  src/bus.hpp
-  src/element.hpp
-  src/elementfactory.hpp
-  src/object.hpp
-        src/objecttraits.hpp
-  src/pipeline.hpp
-  src/pluginfeature.cpp
-  src/sharedptrs.hpp
-  src/transfertype.hpp
-  src/typetraits.hpp
+    src/bin.hpp
+    src/bus.hpp
+    src/element.hpp
+    src/elementfactory.hpp
+    src/object.hpp
+    src/objecttraits.hpp
+    src/messageparser.hpp
+    src/pipeline.hpp
+    src/pluginfeature.cpp
+    src/sharedptrs.hpp
+    src/transfertype.hpp
+    src/typetraits.hpp
 )
 
 # Find required packages
