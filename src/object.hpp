@@ -9,6 +9,7 @@
 #define DH_GST_OBJECT_HPP
 
 // local includes
+#include "objecttraits.hpp"
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
@@ -25,90 +26,6 @@
 
 namespace dh::gst
 {
-
-// free functions & type traits, TODO: move somewhere else (header or so)
-
-// Type conversion traits
-template<typename GlibType, typename = void>
-struct ConvertToGlibType
-{
-  using type = GlibType; // Default: no conversion
-};
-template<> struct ConvertToGlibType<std::string>
-{
-  using type = const gchar*;
-};
-
-template<typename GlibType>
-struct ConvertToGlibType<std::shared_ptr<GlibType>,
-                          std::enable_if_t<
-                            IsGstObject<GlibType>::value
-                            || IsGstMiniObject<GlibType>::value
-                          >
-                        >
-{
-  // Static assertion to produce a compilation error if GlibType is a pointer to a GstObject
-  static_assert(
-    !(std::is_pointer<GlibType>::value && IsGstObject<std::remove_pointer_t<GlibType>>::value),
-    "GlibType cannot be a raw pointer to a GstObject."
-  );
-  using type = GlibType*;
-};
-
-
-template<typename GlibType, typename = void>
-struct ConvertToCppType
-{
-  using type = GlibType; // Default: no conversion
-};
-
-template<> struct ConvertToCppType<gchar*>
-{
-  using type = std::string;
-};
-
-template<> struct ConvertToCppType<const gchar*>
-{
-  using type = std::string;
-};
-
-template<typename GlibType>
-struct ConvertToCppType<GlibType*, std::enable_if_t<IsGstObject<GlibType>::value || IsGstMiniObject<GlibType>::value>>
-{
-  using type = std::shared_ptr<GlibType>;
-};
-
-
-// General case: For types not needing special handling
-template<typename T>
-typename std::enable_if<
-  !IsGObjectType<typename std::remove_pointer<T>::type>::value
-   && !IsGstMiniObject<typename std::remove_pointer<T>::type>::value
-  ,T>::type
-convertParamToCppType(T value)
-{
-  return value;
-}
-
-// Overload for gchar* (null-terminated C strings)
-inline std::string convertParamToCppType(gchar* value)
-{
-  return value ? std::string(value) : std::string();
-}
-
-// Overload for const gchar*
-inline std::string convertParamToCppType(const gchar* value)
-{
-  return value ? std::string(value) : std::string();
-}
-
-template<typename GstType>
-inline std::enable_if_t<IsGstObject<GstType>::value || IsGstMiniObject<GstType>::value, std::shared_ptr<GstType>>
-convertParamToCppType(GstType* value)
-{
-  return makeGstSharedPtr(value, TransferType::None);
-}
-
 
 /**
  * @class Object
@@ -190,8 +107,8 @@ public:
   inline void setProperty(const std::string& name, const ValueType& value);
 
 protected:
- [[nodiscard]] const GstObject* getRawGstObject() const;
- [[nodiscard]] GstObject* getRawGstObject();
+  [[nodiscard]] const GstObject* getRawGstObject() const;
+  [[nodiscard]] GstObject* getRawGstObject();
 
 /**
 * @brief create boost::signals2 signal which is connected to the GObject signal with the matching name
