@@ -14,29 +14,62 @@ namespace dh::gst
 {
 
 Object::Object(GstObjectSPtr gstObject)
-: gstObject{std::move(gstObject)}
+: Object{gstObject.get(), TransferType::None}
 {
-  if(! this->gstObject)
-  {
-    throw std::runtime_error("No GstObject");
-  }
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
-: Object{makeGstSharedPtr(gstObject, transferType)}
+: gstObject{gstObject}
 {
-}
+  if(!gstObject)
+  {
+    throw std::runtime_error("No GstObject");
+  }
 
-Object::~Object() = default;
+  //FIXME: code duplication, see makeGstSharedPtr
+  switch(transferType)
+  {
+    case TransferType::Full:
+      // Full ownership is transferred; nothing extra to do
+        break;
+    case TransferType::None:
+      // No ownership is transferred; we need to increase the ref count
+        gst_object_ref(GST_OBJECT(gstObject));
+    break;
+    case TransferType::Floating:
+      // Handle floating references properly
+        if (g_object_is_floating(G_OBJECT(gstObject)))
+        {
+          g_object_ref_sink(G_OBJECT(gstObject)); // Sink the floating reference
+        }
+        else
+        {
+          gst_object_ref(GST_OBJECT(gstObject));  // Increase ref count if not floating
+        }
+    break;
+  }}
+
+Object::~Object()
+{
+  // Set GstElement state to NULL before unref if it's the last ref to the GstElement
+  // This does not work always because setting a pipeline to "playing" increases ref counts.
+  // But it is a layer of safety.
+  // TODO: code duplication in @ref GstObjectDeleter
+  if(GST_IS_ELEMENT(gstObject) && GST_OBJECT_REFCOUNT(gstObject) == 1)
+  {
+    gst_element_set_state(GST_ELEMENT(gstObject), GST_STATE_NULL);
+  }
+  gst_object_unref(gstObject);
+}
 
 GstObjectSPtr Object::getGstObject()
 {
-  return gstObject;
+  return makeGstSharedPtr(gstObject, TransferType::None);
 }
 
 const GstObjectSPtr Object::getGstObject() const
 {
-  return gstObject;
+  return makeGstSharedPtr(gstObject, TransferType::None);
 }
 
 std::string Object::getName() const
@@ -83,12 +116,12 @@ bool Object::propertyExists(const std::string& name) const
 
 const GstObject* Object::getRawGstObject() const
 {
-  return gstObject.get();
+  return gstObject;
 }
 
 GstObject* Object::getRawGstObject()
 {
-  return gstObject.get();
+  return gstObject;
 }
 
 } // dh::gst
