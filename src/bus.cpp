@@ -53,7 +53,7 @@ void Bus::post(const GstMessageSPtr message)
 
 bs2::signal<void(GstMessageSPtr)>& Bus::newSyncMessageSignal() const
 {
-  //TODO: on disconnect, gst_bus_enable_sync_message_emission should be called as often as it was enabled to stop sync signal emmission
+  //TODO: on disconnect, gst_bus_enable_sync_message_emission should be called as often as it was enabled to stop sync signal emission
   gst_bus_enable_sync_message_emission(const_cast<GstBus*>(getRawGstBus()));
   return connectGobjectSignal<GstMessageSPtr>("sync-message");
 }
