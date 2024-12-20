@@ -50,6 +50,7 @@ struct GstObjectDeleter
       // Set GstElement state to NULL before unref if it's the last ref to the GstElement
       // This does not work always because setting a pipeline to "playing" increases ref counts.
       // But it is a layer of safety.
+      // TODO: code duplication in @ref Element
       if(GST_IS_ELEMENT(obj) && GST_OBJECT_REFCOUNT(obj) == 1)
       {
         gst_element_set_state(GST_ELEMENT(obj), GST_STATE_NULL);
@@ -123,6 +124,7 @@ using GstPluginFeatureSPtr = std::shared_ptr<GstPluginFeature>;
  * @param obj Raw pointer to the GStreamer object.
  * @param transferType Enum value indicating the ownership transfer type.
  * @return std::shared_ptr<T> A shared pointer to the GStreamer object with a custom deleter.
+ * @todo code duplication, @see Object::Object
  */
 template <typename T>
 std::enable_if_t<IsGstObject<T>::value, std::shared_ptr<T>>

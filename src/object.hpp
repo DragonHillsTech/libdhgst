@@ -118,7 +118,7 @@ template<typename... Args>
 boost::signals2::signal<void(Args...)>& connectGobjectSignal(const std::string& signalName) const;
 
 private:
-  GstObjectSPtr gstObject;
+  GstObject* gstObject;
 
   // SignalConnector to hold Boost.Signals2 signal
   template<typename... Args>

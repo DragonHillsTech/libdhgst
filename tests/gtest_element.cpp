@@ -61,6 +61,7 @@ TEST_F(ElementTest, SetState)
   ASSERT_EQ(element->getState(), GST_STATE_PLAYING);
 
   // here we would get a gstreamer error if the Element is destroyed when state != null.
+  // This test may even fail to exit.
 }
 
 TEST_F(ElementTest, GetPads)
