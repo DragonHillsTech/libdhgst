@@ -16,7 +16,7 @@ namespace dh::gst
 Object::Object(GstObjectSPtr gstObject)
 : gstObject{std::move(gstObject)}
 {
-  if (! this->gstObject)
+  if(! this->gstObject)
   {
     throw std::runtime_error("No GstObject");
   }

@@ -61,7 +61,7 @@ public:
 
   /**
    * @brief Parses a GStreamer message and emits corresponding signals based on its type.
-   * If no async handler is set, the the message is processed synchronously.
+   * If no async handler is set, the message is processed synchronously.
    * @param message The GStreamer message to parse.
    */
   void parse(const GstMessage& message);

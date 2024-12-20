@@ -13,31 +13,31 @@ option(BUILD_EXAMPLES "Build example programs" ON)
 
 # Set the source and header files
 set(SOURCES
-    src/bin.cpp
-    src/bus.cpp
-    src/element.cpp
-    src/elementfactory.cpp
-    src/helpers.cpp
-    src/messageparser.cpp
-    src/object.cpp
-    src/pluginfeature.cpp
-    src/pipeline.cpp
+  src/bin.cpp
+  src/bus.cpp
+  src/element.cpp
+  src/elementfactory.cpp
+  src/helpers.cpp
+  src/messageparser.cpp
+  src/object.cpp
+  src/pluginfeature.cpp
+  src/pipeline.cpp
 )
 
 set(HEADERS
-    src/bin.hpp
-    src/bus.hpp
-    src/element.hpp
-    src/elementfactory.hpp
-    src/helpers.hpp
-    src/object.hpp
-    src/objecttraits.hpp
-    src/messageparser.hpp
-    src/pipeline.hpp
-    src/pluginfeature.cpp
-    src/sharedptrs.hpp
-    src/transfertype.hpp
-    src/typetraits.hpp
+  src/bin.hpp
+  src/bus.hpp
+  src/element.hpp
+  src/elementfactory.hpp
+  src/helpers.hpp
+  src/object.hpp
+  src/objecttraits.hpp
+  src/messageparser.hpp
+  src/pipeline.hpp
+  src/pluginfeature.cpp
+  src/sharedptrs.hpp
+  src/transfertype.hpp
+  src/typetraits.hpp
 )
 
 # Find required packages
@@ -63,20 +63,24 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 set(SOVERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        OUTPUT_NAME dhgst
-        VERSION ${PROJECT_VERSION}
-        SOVERSION ${SOVERSION_MAJOR}
+  OUTPUT_NAME dhgst
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${SOVERSION_MAJOR}
 )
 
 # Link libraries
-target_link_libraries(libdhgst ${GSTREAMER_LIBRARIES} ${GST_APP_LIBRARIES} spdlog::spdlog)
+target_link_libraries(libdhgst
+  ${GSTREAMER_LIBRARIES}
+  ${GST_APP_LIBRARIES}
+  spdlog::spdlog
+)
 
 # Installation directives
 include(GNUInstallDirs)
 
 install(TARGETS ${PROJECT_NAME}
-        EXPORT libdhgstTargets
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  EXPORT libdhgstTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(FILES ${HEADERS}
@@ -85,36 +89,37 @@ install(FILES ${HEADERS}
 
 # Create and install the pkg-config file
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libdhgst.pc.in
-        ${CMAKE_CURRENT_BINARY_DIR}/libdhgst.pc @ONLY)
+  ${CMAKE_CURRENT_BINARY_DIR}/libdhgst.pc @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libdhgst.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
 # Export the library for other CMake projects
 install(EXPORT libdhgstTargets
-        FILE libdhgstTargets.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+  FILE libdhgstTargets.cmake
+  NAMESPACE dh::gst::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
 )
 
 # Add the include directory to the search path
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY AnyNewerVersion
+  ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
 )
 
 configure_package_config_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/libdhgstConfig.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+  ${CMAKE_CURRENT_SOURCE_DIR}/libdhgstConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
 )
 
 install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+  ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
 )
 
 # Add the tests directory if BUILD_TESTS is ON
@@ -126,3 +131,4 @@ endif()
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
