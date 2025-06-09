@@ -8,6 +8,7 @@
 #define DH_GST_GILMAPPEDVIEWINTERLEAVED_HPP
 
 #include "sharedptrs.hpp"
+#include  "helpers.hpp"
 
 #include <boost/gil.hpp>
 
@@ -100,6 +101,12 @@ public:
       stride
     );
   }
+
+  GilMappedViewInterleaved(GstBufferSPtr buffer_)
+  : GilMappedViewInterleaved(buffer_, helpers::createVideoInfo(*buffer_))
+  {
+  }
+
 
   ~GilMappedViewInterleaved()
   {

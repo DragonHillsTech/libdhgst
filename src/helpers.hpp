@@ -31,6 +31,16 @@ std::string gstStreamStatusTypeToString(GstStreamStatusType type);
  */
 GstVideoInfo createVideoInfo(const GstCaps& caps);
 
+/**
+ * @brief Creates and initializes a GstVideoInfo structure from the given GstBuffer.
+ *
+ * @param buffer Reference to GstBuffer object containing video metadata.
+ * @return A GstVideoInfo structure initialized with the provided buffer.
+ * @throws std::runtime_error if initialization from buffer fails.
+ */
+GstVideoInfo createVideoInfo(const GstBuffer& buffer);
+
+
 } // dh::gst::helpers
 
 #endif //DH_GST_HELPERS_HPP
