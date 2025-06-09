@@ -24,5 +24,17 @@ std::string gstStreamStatusTypeToString(GstStreamStatusType type)
  }
 }
 
+GstVideoInfo createVideoInfo(const GstCaps& caps)
+{
+ GstVideoInfo vinfo;
+ gst_video_info_init(&vinfo);
+
+ if (!gst_video_info_from_caps(&vinfo, &caps))
+ {
+  throw std::runtime_error("Failed to initialize video info from caps");
+ }
+
+ return vinfo;
+}
 
 } // dh::gst::helpers
