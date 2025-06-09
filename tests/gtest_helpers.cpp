@@ -6,6 +6,7 @@
  */
 
 #include "sharedptrs.hpp"
+#include "helpers.hpp"
 
 #include <gst/gst.h>
 #include <gst/video/video.h>
@@ -30,7 +31,7 @@ protected:
 TEST_F(VideoInfoTest, CreateVideoInfoFromValidCaps)
 {
   // Create valid video caps
-  GstCapsSPtr caps = makeGstSharedPtr(
+  dh::gst::GstCapsSPtr caps = dh::gst::makeGstSharedPtr(
     gst_caps_new_simple(
       "video/x-raw",
       "format", G_TYPE_STRING, "RGB",
@@ -38,57 +39,50 @@ TEST_F(VideoInfoTest, CreateVideoInfoFromValidCaps)
       "height", G_TYPE_INT, 1080,
       "framerate", GST_TYPE_FRACTION, 30, 1,
       nullptr),
-    TransferType::Full
+    dh::gst::TransferType::Full
   );
 
   // Test successful creation
   ASSERT_NO_THROW(
     {
-      GstVideoInfo vinfo = createVideoInfo(caps);
+      GstVideoInfo vinfo = dh::gst::helpers::createVideoInfo(*caps);
 
       // Verify the video info properties
       EXPECT_EQ(GST_VIDEO_INFO_WIDTH(&vinfo), 1920);
       EXPECT_EQ(GST_VIDEO_INFO_HEIGHT(&vinfo), 1080);
       EXPECT_EQ(GST_VIDEO_INFO_FPS_N(&vinfo), 30);
       EXPECT_EQ(GST_VIDEO_INFO_FPS_D(&vinfo), 1);
-      EXPECT_EQ(std::string(GST_VIDEO_INFO_FORMAT_STRING(&vinfo)), "RGB");
+      EXPECT_EQ(std::string(gst_video_format_to_string(GST_VIDEO_INFO_FORMAT(&vinfo))), "RGB");
     }
   );
-}
-
-TEST_F(VideoInfoTest, CreateVideoInfoFromNullCaps)
-{
-  // Test with null caps
-  GstCapsSPtr nullCaps;
-  EXPECT_THROW(createVideoInfo(nullCaps), std::invalid_argument);
 }
 
 TEST_F(VideoInfoTest, CreateVideoInfoFromInvalidCaps)
 {
   // Create invalid video caps (missing required fields)
-  GstCapsSPtr invalidCaps = makeGstSharedPtr(
+  dh::gst::GstCapsSPtr invalidCaps = dh::gst::makeGstSharedPtr(
     gst_caps_new_simple("video/x-raw",
       "format", G_TYPE_STRING, "RGB",
       // Missing width and height
       nullptr),
-    TransferType::Full
+    dh::gst::TransferType::Full
   );
 
-  EXPECT_THROW(createVideoInfo(invalidCaps), std::runtime_error);
+  EXPECT_THROW(dh::gst::helpers::createVideoInfo(*invalidCaps), std::runtime_error);
 }
 
 TEST_F(VideoInfoTest, CreateVideoInfoFromNonVideoCaps)
 {
   // Create non-video caps
-  GstCapsSPtr audioCaps = makeGstSharedPtr(
+  dh::gst::GstCapsSPtr audioCaps = dh::gst::makeGstSharedPtr(
     gst_caps_new_simple(
       "audio/x-raw",
       "format", G_TYPE_STRING, "S16LE",
       "rate", G_TYPE_INT, 44100,
       "channels", G_TYPE_INT, 2,
       nullptr),
-    TransferType::Full
+    dh::gst::TransferType::Full
   );
 
-  EXPECT_THROW(createVideoInfo(audioCaps), std::runtime_error);
+  EXPECT_THROW(dh::gst::helpers::createVideoInfo(*audioCaps), std::runtime_error);
 }

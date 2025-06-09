@@ -37,4 +37,27 @@ GstVideoInfo createVideoInfo(const GstCaps& caps)
  return vinfo;
 }
 
+GstVideoInfo createVideoInfo(const GstBuffer& buffer)
+{
+  const GstVideoMeta* videoMeta = gst_buffer_get_video_meta(const_cast<GstBuffer*>(&buffer));
+  if(!videoMeta)
+  {
+    throw std::runtime_error("Buffer does not contain video metadata");
+  }
+
+  GstVideoInfo vinfo;
+  gst_video_info_init(&vinfo);
+
+  vinfo.width = videoMeta->width;
+  vinfo.height = videoMeta->height;
+  vinfo.finfo = gst_video_format_get_info(videoMeta->format);
+  if (!vinfo.finfo)
+  {
+    throw std::runtime_error("Invalid video format in buffer metadata");
+  }
+
+  return vinfo;
+}
+
+
 } // dh::gst::helpers
