@@ -7,8 +7,11 @@
 #ifndef DH_GST_HELPERS_HPP
 #define DH_GST_HELPERS_HPP
 
-#include <string>
 #include <gst/gst.h>
+#include <gst/video/video.h>
+
+#include <string>
+#include <stdexcept>
 
 namespace dh::gst::helpers
 {
@@ -18,6 +21,15 @@ namespace dh::gst::helpers
  * @todo since c++20, constexpr is possible with string
  */
 std::string gstStreamStatusTypeToString(GstStreamStatusType type);
+
+/**
+ * @brief Creates and initializes a GstVideoInfo structure from the given GstCaps.
+ *
+ * @param caps Reference to GstCaps object containing video capabilities.
+ * @return A GstVideoInfo structure initialized with the provided caps.
+ * @throws std::runtime_error if initialization from caps fails.
+ */
+GstVideoInfo createVideoInfo(const GstCaps& caps);
 
 } // dh::gst::helpers
 

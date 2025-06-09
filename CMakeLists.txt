@@ -44,6 +44,7 @@ set(HEADERS
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0>=1.14)
 pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+pkg_check_modules(GSTREAMER_VIDEO REQUIRED gstreamer-video-1.0)
 include_directories(${GSTREAMER_INCLUDE_DIRS})
 link_directories(${GSTREAMER_LIBRARY_DIRS})
 
@@ -72,6 +73,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_link_libraries(libdhgst
   ${GSTREAMER_LIBRARIES}
   ${GST_APP_LIBRARIES}
+  ${GSTREAMER_VIDEO_LIBRARIES}
   spdlog::spdlog
 )
 
