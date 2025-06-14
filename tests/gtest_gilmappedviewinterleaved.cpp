@@ -37,9 +37,11 @@ TEST_F(GilMappedViewInterleavedTest, CreateConstViewSucceeds)
   auto buffer = createTestBuffer();
   auto info = createTestVideoInfo();
 
+  ASSERT_EQ(buffer.use_count(), 1);
   dh::gst::GilMappedViewInterleaved<boost::gil::rgb8c_view_t> view{buffer, info};
   EXPECT_EQ(view.view.dimensions().x, 640);
   EXPECT_EQ(view.view.dimensions().y, 480);
+  EXPECT_EQ(buffer.use_count(), 2);
 }
 
 TEST_F(GilMappedViewInterleavedTest, CreateWritableViewSucceeds)
