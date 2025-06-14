@@ -133,6 +133,28 @@ TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstBus_Full) {
   gst_object_unref(rawPipeline);  // Clean up the initial ref
 }
 
+// Test makeGstSharedPtr with GstBuffer and TransferType::None
+TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstBuffer_None)
+{
+  GstBuffer* rawBuffer = gst_buffer_new();
+  ASSERT_NE(rawBuffer, nullptr) << "Failed to create buffer";
+
+  int initialRefCount = GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer);
+
+  // Create shared_ptr with TransferType::None
+  auto bufferSPtr = dh::gst::makeGstSharedPtr(rawBuffer, TransferType::None);
+
+  ASSERT_NE(bufferSPtr, nullptr) << "Shared pointer is null";
+
+  // Ref count should increase by 1 since ownership was not transferred
+  EXPECT_EQ(GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer), initialRefCount + 1);
+
+  // Shared pointer goes out of scope and unrefs the object
+  bufferSPtr.reset();
+  EXPECT_EQ(GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer), initialRefCount);
+  gst_buffer_unref(rawBuffer); // Clean up the initial ref
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

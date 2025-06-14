@@ -29,7 +29,6 @@ struct IsGstObject : std::false_type {};
 template <> struct IsGstObject<GstObject> : std::true_type {};
 template <> struct IsGstObject<GstElement> : std::true_type {};
 template <> struct IsGstObject<GstPad> : std::true_type {};
-template <> struct IsGstObject<GstBuffer> : std::true_type {};
 template <> struct IsGstObject<GstAppSink> : std::true_type {};
 template <> struct IsGstObject<GstAppSrc> : std::true_type {};
 template <> struct IsGstObject<GstBin> : std::true_type {};
@@ -51,6 +50,7 @@ struct IsGstMiniObject : std::false_type {};
 template <> struct IsGstMiniObject<GstMessage> : std::true_type {};
 template <> struct IsGstMiniObject<GstEvent> : std::true_type {};
 template <> struct IsGstMiniObject<GstCaps> : std::true_type {};
+template <> struct IsGstMiniObject<GstBuffer> : std::true_type {};
 
 // Type trait to determine if a type is a GObject-derived type
 template<typename T>
