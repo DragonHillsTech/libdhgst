@@ -181,6 +181,15 @@ makeGstSharedPtr(T* obj, TransferType transferType)
     {
       gst_message_ref(obj);
     }
+    else if constexpr(std::is_same_v<T, GstBuffer>)
+    {
+      gst_buffer_ref(obj);
+    }
+    else
+    {
+      // Static assert for unhandled types to ensure all cases are covered
+      static_assert(!sizeof(T*), "Unhandled GStreamer type in makeGstSharedPtr");
+    }
     // Add more special cases if necessary, e.g., GstStructure
   }
 
