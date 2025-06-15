@@ -29,6 +29,7 @@ set(HEADERS
   src/bus.hpp
   src/element.hpp
   src/elementfactory.hpp
+  src/gilmappedviewinterleaved.hpp
   src/helpers.hpp
   src/object.hpp
   src/objecttraits.hpp
