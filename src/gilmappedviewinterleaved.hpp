@@ -42,6 +42,7 @@ public:
   GstMapInfo map;           ///< The mapping info @todo: make private
   ViewType view;            ///< The GIL view
 
+
   GilMappedViewInterleaved(GstBufferSPtr buffer_, const GstVideoInfo& vinfo)
   {
     if(!buffer_)
@@ -107,6 +108,14 @@ public:
   {
   }
 
+  GilMappedViewInterleaved(GstVideoFrame& frame)
+  : GilMappedViewInterleaved(
+      makeGstSharedPtr(frame.buffer, TransferType::None),
+      frame.info
+    )
+
+  {
+  }
 
   ~GilMappedViewInterleaved()
   {
