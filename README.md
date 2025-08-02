@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/DragonHillsTech/libdhgst/actions/workflows/ci.yml/badge.svg)](https://github.com/DragonHillsTech/libdhgst/actions)
 
 ## Overview
-`libdhgst` is a C++17 library that provides a high-level wrapper for the GStreamer multimedia framework. It simplifies the use of GStreamer elements and bins in C++ applications by leveraging modern C++ features.
+`libdhgst` is a C++17 library that provides a high-level wrapper for the GStreamer multimedia framework. It simplifies the use of GStreamer elements and bins in C++ applications.
 
 ## Dependencies
 - **GStreamer** (`gstreamer-1.0`, `gstreamer-app-1.0`)
@@ -16,7 +16,7 @@
 1. Clone the repository:
    ```bash
    git clone git@github.com:DragonHillsTech/libdhgst.git
-   cd your-repo
+   cd libdhgst
    ```
 
 2. Build the project:
@@ -27,8 +27,12 @@
    make
    ```
 
-3. Run tests (optional):
+3. Build and run tests and examples:
    ```bash
+   mkdir build
+   cd build
+   cmake .. -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+   make
    ctest --output-on-failure
    ```
 
@@ -53,5 +57,3 @@ cmake -DCMAKE_INSTALL_PREFIX=/usr ..
 make
 sudo make install
 ```
-
-This allows you to control where the library and headers are installed on your system.
