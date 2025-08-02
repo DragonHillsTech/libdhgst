@@ -8,8 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
 # Options
-option(BUILD_TESTS "Build the unit tests" ON)
-option(BUILD_EXAMPLES "Build example programs" ON)
+option(BUILD_TESTS "Build the unit tests" OFF)
+option(BUILD_EXAMPLES "Build example programs" OFF)
 
 # Set the source and header files
 set(SOURCES

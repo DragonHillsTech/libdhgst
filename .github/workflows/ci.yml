@@ -43,7 +43,7 @@ jobs:
       # Configure the project with CMake
       - name: Configure CMake
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
 
       # Build the project
       - name: Build the project
