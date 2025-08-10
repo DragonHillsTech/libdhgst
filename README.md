@@ -1,4 +1,4 @@
-# libdhgst
+# libdhgst - A C++ wrapper library for gstreamer
 
 [![Build Status](https://github.com/DragonHillsTech/libdhgst/actions/workflows/ci.yml/badge.svg)](https://github.com/DragonHillsTech/libdhgst/actions)
 
