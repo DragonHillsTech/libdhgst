@@ -1,6 +1,9 @@
 /* -*- mode: c++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
  * @file pipelineFromDesc.cpp
+ * @brief This program works similar to gst-launch-1.0. (less features) You can run a pipeline like this:
+ * ./pipelineFromDesc videotestsrc ! videoconvert ! queue ! autovideosink
+ * quit with [ctl]+[C]
  * @author Sandro Stiller
  * @date 2024-09-15
  */

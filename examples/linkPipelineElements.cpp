@@ -1,6 +1,7 @@
 /* -*- mode: c++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
  * @file pipelineFromDesc.cpp
+ * @brief This program starts a test video, rotates it 45° and displays it.
  * @author Sandro Stiller
  * @date 2024-09-15
  */
