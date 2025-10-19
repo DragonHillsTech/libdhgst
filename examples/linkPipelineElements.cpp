@@ -9,7 +9,6 @@
 #include "pipeline.hpp"
 #include "elementfactory.hpp"
 
-#include <spdlog/spdlog.h>
 
 int main(const int argc, const char **argv)
 {
@@ -17,7 +16,10 @@ int main(const int argc, const char **argv)
 
   using namespace dh::gst;
 
+  // create an empty Pipeline
   auto pipeline = Pipeline::create("TestPipeline");
+
+  // create elements and add them to the pipeline
   auto srcElement = ElementFactory::makeElement("videotestsrc", "srcElement");
   pipeline->addElement(srcElement);
 
@@ -31,10 +33,13 @@ int main(const int argc, const char **argv)
   auto dstElement = ElementFactory::makeElement("fpsdisplaysink", "dstElement");
   pipeline->addElement(dstElement);
 
+  // link all the elements
   srcElement->link(rotateElement)->link(convertElement)->link(dstElement);
 
+  // start the pipeline
   pipeline->setState(GST_STATE_PLAYING);
 
   gst_deinit(); // hangs :-) That's good because we currently have no main loop
   return 0;
 }
+
