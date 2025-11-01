@@ -20,7 +20,6 @@
 
 // local includes
 #include "pipeline.hpp"
-#include "spdlog/spdlog.h"
 
 // std
 #include <stdexcept>
@@ -66,7 +65,7 @@ Pipeline Pipeline::fromDescription(const std::string& description)
 
   if(error)
   {
-    spdlog::warn("Failed to parse pipeline description: {}", error->message);
+    GST_WARNING("Failed to parse pipeline description: '%s'", error->message);
     g_error_free(error);
   }
 

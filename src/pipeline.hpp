@@ -61,7 +61,7 @@ public:
 
   /**
    * @brief Create a new Pipeline object from a pipeline description string.
-   * If there was a recoverable error, a warning is printed (spdlog::warn)
+   * If there was a recoverable error, a warning is printed
    * If parsing does not create a GstPipeline (could be a GstElement if only one entry), std::runtime_error is thrown.
    * @param description The GStreamer pipeline description.
    * @return A Pipeline object created from the description.

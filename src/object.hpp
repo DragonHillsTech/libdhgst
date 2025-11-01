@@ -35,7 +35,6 @@
 
 // C
 #include <gst/gst.h>
-#include <spdlog/spdlog.h>
 
 namespace dh::gst
 {

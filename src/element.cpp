@@ -22,9 +22,6 @@
 #include "element.hpp"
 #include "elementfactory.hpp"
 
-// opther libs
-#include "spdlog/spdlog.h"
-
 // std
 #include <string>
 

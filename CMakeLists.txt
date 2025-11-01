@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(libdhgst VERSION 0.0.3 LANGUAGES CXX)
+project(libdhgst VERSION 0.0.4 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,8 +52,6 @@ link_directories(${GSTREAMER_LIBRARY_DIRS})
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(spdlog REQUIRED)
-
 # Include source directory for header files
 include_directories(src)
 
@@ -75,7 +73,6 @@ target_link_libraries(libdhgst
   ${GSTREAMER_LIBRARIES}
   ${GST_APP_LIBRARIES}
   ${GSTREAMER_VIDEO_LIBRARIES}
-  spdlog::spdlog
 )
 
 # Installation directives

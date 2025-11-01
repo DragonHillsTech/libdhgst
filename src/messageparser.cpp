@@ -19,7 +19,6 @@
  */
 
 #include "messageparser.hpp"
-#include <spdlog/spdlog.h>
 
 namespace dh::gst
 {
@@ -153,7 +152,7 @@ void MessageParser::parseSync(const GstMessage& message)
     // Add more message types as needed...
 
     default:
-      spdlog::warn("MessageParser: Unhandled message type '{}'", std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
+      GST_WARNING("MessageParser: Unhandled message type '%s'", GST_MESSAGE_TYPE_NAME(messagePtr));
       //throw std::runtime_error("Unsupported message type: " + std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
   }
 }
