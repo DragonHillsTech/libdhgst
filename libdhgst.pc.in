@@ -7,6 +7,6 @@ Name: libdhgst
 Description: DragonHills shared library  for wrapping gstreamer
 Version: @PROJECT_VERSION@
 Cflags: -I${includedir}/dh/gst
-Libs: -L${libdir} -ldhgst
-Requires: spdlog 
+Libs: -L${libdir}
+Requires: gstreamer-1.0
 
