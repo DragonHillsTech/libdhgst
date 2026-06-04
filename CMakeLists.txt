@@ -10,6 +10,43 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 # Options
 option(BUILD_TESTS "Build the unit tests" OFF)
 option(BUILD_EXAMPLES "Build example programs" OFF)
+option(BUILD_DOCUMENTATION "Build Doxygen documentation" OFF)
+
+if(BUILD_DOCUMENTATION)
+  find_package(Doxygen)
+  if(NOT DOXYGEN_FOUND)
+    message(FATAL_ERROR "Doxygen is required to build documentation")
+  endif()
+  set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  set(DOXYGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen")
+  set(DOXYGEN_INDEX_FILE "${DOXYGEN_OUTPUT_DIR}/html/index.html")
+    configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    @ONLY
+  )
+  add_custom_command(
+    OUTPUT "${DOXYGEN_INDEX_FILE}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOXYGEN_OUTPUT_DIR}"
+    COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    MAIN_DEPENDENCY "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    DEPENDS
+      "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    COMMENT "Generating Doxygen documentation"
+    VERBATIM
+  )
+  add_custom_target(
+    docs
+    ALL
+    DEPENDS "${DOXYGEN_INDEX_FILE}"
+  )
+  install(
+    DIRECTORY "${DOXYGEN_OUTPUT_DIR}/html"
+    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
+    COMPONENT documentation
+  )
+endif()
+
 
 # Set the source and header files
 set(SOURCES

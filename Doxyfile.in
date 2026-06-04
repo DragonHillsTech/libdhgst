@@ -1,0 +1,29 @@
+PROJECT_NAME           = "@PROJECT_NAME@"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+
+OUTPUT_DIRECTORY       = "@DOXYGEN_OUTPUT_DIR@"
+
+INPUT                  = "@DOXYGEN_INPUT_DIR@"
+RECURSIVE              = YES
+
+FILE_PATTERNS          = *.hpp
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = "@CMAKE_CURRENT_SOURCE_DIR@"
+
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+
+GENERATE_TREEVIEW      = YES
+SEARCHENGINE           = YES
