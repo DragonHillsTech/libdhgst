@@ -29,7 +29,7 @@
 
 namespace bs2 = boost::signals2;
 
-namespace dh ::gst
+namespace dh::gst
 {
 
 class Bus : public Object
