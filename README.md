@@ -35,6 +35,13 @@
    make
    ctest --output-on-failure
    ```
+4. Build Documentation:
+   ```bash
+   mkdir build
+   cd build
+   cmake .. -DBUILD_DOCUMENTATION=ON
+   make
+   ```
 
 ## Installing
 To install the library:

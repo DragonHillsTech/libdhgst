@@ -20,7 +20,7 @@
 
 #include "bus.hpp"
 
-namespace dh ::gst
+namespace dh::gst
 {
 
 
