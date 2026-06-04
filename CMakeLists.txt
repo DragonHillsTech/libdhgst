@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(libdhgst VERSION 0.0.4 LANGUAGES CXX)
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -120,7 +122,6 @@ target_link_libraries(libdhgst
 )
 
 # Installation directives
-include(GNUInstallDirs)
 
 install(TARGETS ${PROJECT_NAME}
   EXPORT libdhgstTargets
