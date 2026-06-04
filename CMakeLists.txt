@@ -12,6 +12,13 @@ option(BUILD_TESTS "Build the unit tests" OFF)
 option(BUILD_EXAMPLES "Build example programs" OFF)
 option(BUILD_DOCUMENTATION "Build Doxygen documentation" OFF)
 
+message(STATUS "")
+message(STATUS "Project options:")
+message(STATUS "  BUILD_TESTS         = ${BUILD_TESTS}")
+message(STATUS "  BUILD_EXAMPLES      = ${BUILD_EXAMPLES}")
+message(STATUS "  BUILD_DOCUMENTATION = ${BUILD_DOCUMENTATION}")
+message(STATUS "")
+
 if(BUILD_DOCUMENTATION)
   find_package(Doxygen)
   if(NOT DOXYGEN_FOUND)
