@@ -5,6 +5,11 @@
 ## Overview
 `libdhgst` is a C++17 library that provides a high-level wrapper for the GStreamer multimedia framework. It simplifies the use of GStreamer elements and bins in C++ applications.
 
+## API Documentation
+
+The generated Doxygen API documentation is available here:  
+https://dragonhillstech.github.io/libdhgst/
+
 ## Dependencies
 - **GStreamer** (`gstreamer-1.0`, `gstreamer-app-1.0`)
 - **Boost**
