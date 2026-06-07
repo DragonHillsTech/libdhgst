@@ -29,6 +29,8 @@
 // gstreamer
 #include <gst/gst.h>
 
+#define DH_GST_HAS_PIPELINE_IS_LIVE GST_CHECK_VERSION(1, 24, 0)
+
 namespace dh::gst
 {
 
@@ -83,12 +85,13 @@ public:
    */
   void setPipelineClock(GstClockSPtr clock);
 
-  // Does not exist for older gstreamer. Enable when needed
-  // /**
-  //  * @brief Check if pipeline is live.
-  //  * @return true if pipeline is live, false if not or if it did not reach the PAUSED state yet
-  //  */
-  // [[nodiscard]] bool isLive() const;
+#if DH_GST_HAS_PIPELINE_IS_LIVE
+  /**
+   * @brief Check if pipeline is live.
+   * @return true if pipeline is live, false if not or if it did not reach the PAUSED state yet
+   */
+  [[nodiscard]] bool isLive() const;
+#endif
 
   /**
    * @brief Get the GstPipelineSPtr of the Pipeline.

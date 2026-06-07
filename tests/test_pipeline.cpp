@@ -53,15 +53,23 @@ BOOST_FIXTURE_TEST_CASE(FromDescriptionInvalidTest, PipelineTest)
   );
 }
 
-// Does not exist for older gstreamer. Enable when needed
-// BOOST_FIXTURE_TEST_CASE(IsLiveTest, PipelineTest) {
-//   Pipeline pipeline1("pipeline1");
-//
-//   // Initially, the pipeline should not be live
-//   BOOST_REQUIRE(!pipeline1.isLive());
-//
-//   // Set the pipeline to the PLAYING state and check if it's live
-//   pipeline1.setState(GST_STATE_PLAYING);
-//   BOOST_REQUIRE(!pipeline1.isLive());
-// }
+#if DH_GST_HAS_PIPELINE_IS_LIVE
+BOOST_FIXTURE_TEST_CASE(IsLiveTest, PipelineTest)
+{
+  auto pipeline = Pipeline::create("pipeline1");
 
+  // Initially, the pipeline should not be live.
+  BOOST_REQUIRE(!pipeline->isLive());
+
+  // Empty pipelines should not report as live after starting.
+  pipeline->setState(GST_STATE_PLAYING);
+  BOOST_REQUIRE(!pipeline->isLive());
+  pipeline->setState(GST_STATE_NULL);
+
+  auto livePipeline = Pipeline::fromDescription("videotestsrc is-live=true ! fakesink");
+
+  BOOST_REQUIRE_EQUAL(livePipeline.setState(GST_STATE_PAUSED), GST_STATE_CHANGE_NO_PREROLL);
+  BOOST_REQUIRE(livePipeline.isLive());
+  livePipeline.setState(GST_STATE_NULL);
+}
+#endif
