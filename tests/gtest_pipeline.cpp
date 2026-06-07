@@ -1,7 +1,8 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 #include "pipeline.hpp"
 
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
 #include <gst/gst.h>
 
@@ -12,36 +13,30 @@ using namespace dh::gst;
 /**
  * @brief Test fixture for setting up and tearing down the test environment for Element class.
  */
-class PipelineTest : public ::testing::Test
+class PipelineTest
 {
 public:
   // Setup before first test case
-  static void SetUpTestSuite()
+  PipelineTest()
   {
     // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
     setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
-
-  // Cleanup after last test case
-  static void TearDownTestSuite()
-  {
-    gst_deinit();
-  }
 };
 
 // Test the empty pipeline constructor
-TEST_F(PipelineTest, EmptyPipelineConstructorTest)
+BOOST_FIXTURE_TEST_CASE(EmptyPipelineConstructorTest, PipelineTest)
 {
   const std::string pipelineName = "test_pipeline";
   const auto pipeline = Pipeline::create(pipelineName);
-  ASSERT_EQ(pipeline->getName(), pipelineName) << "Pipeline name mismatch.";
+  BOOST_REQUIRE_EQUAL(pipeline->getName(), pipelineName);
 }
 
 // Test the fromDescription method with a valid pipeline description
-TEST_F(PipelineTest, FromDescriptionTest)
+BOOST_FIXTURE_TEST_CASE(FromDescriptionTest, PipelineTest)
 {
-  ASSERT_NO_THROW(
+  BOOST_REQUIRE_NO_THROW(
     {
       auto descPipeline = Pipeline::fromDescription("fakesrc ! fakesink");
     }
@@ -49,23 +44,24 @@ TEST_F(PipelineTest, FromDescriptionTest)
 }
 
 // Test fromDescription with an invalid description (should throw)
-TEST_F(PipelineTest, FromDescriptionInvalidTest)
+BOOST_FIXTURE_TEST_CASE(FromDescriptionInvalidTest, PipelineTest)
 {
-  ASSERT_THROW(
+  BOOST_REQUIRE_THROW(
     {
       auto pipeline = Pipeline::fromDescription("invalid_description");
     }, std::runtime_error
-  ) << "Expected std::runtime_error for invalid pipeline description.";
+  );
 }
 
 // Does not exist for older gstreamer. Enable when needed
-// TEST_F(PipelineTest, IsLiveTest) {
+// BOOST_FIXTURE_TEST_CASE(IsLiveTest, PipelineTest) {
 //   Pipeline pipeline1("pipeline1");
 //
 //   // Initially, the pipeline should not be live
-//   ASSERT_FALSE(pipeline1.isLive()) << "Pipeline should not be live initially.";
+//   BOOST_REQUIRE(!pipeline1.isLive());
 //
 //   // Set the pipeline to the PLAYING state and check if it's live
 //   pipeline1.setState(GST_STATE_PLAYING);
-//   ASSERT_FALSE(pipeline1.isLive()) << "Pipeline should not be live after starting unless configured to be live.";
+//   BOOST_REQUIRE(!pipeline1.isLive());
 // }
+

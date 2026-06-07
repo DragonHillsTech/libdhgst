@@ -11,24 +11,20 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
-class VideoInfoTest : public ::testing::Test
+class VideoInfoTest
 {
 protected:
-  void SetUp() override
+  VideoInfoTest()
   {
     // Initialize GStreamer
     gst_init(nullptr, nullptr);
   }
-
-  void TearDown() override
-  {
-    // Cleanup if needed
-  }
 };
 
-TEST_F(VideoInfoTest, CreateVideoInfoFromValidCaps)
+BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromValidCaps, VideoInfoTest)
 {
   // Create valid video caps
   dh::gst::GstCapsSPtr caps = dh::gst::makeGstSharedPtr(
@@ -43,21 +39,21 @@ TEST_F(VideoInfoTest, CreateVideoInfoFromValidCaps)
   );
 
   // Test successful creation
-  ASSERT_NO_THROW(
+  BOOST_REQUIRE_NO_THROW(
     {
       GstVideoInfo vinfo = dh::gst::helpers::createVideoInfo(*caps);
 
       // Verify the video info properties
-      EXPECT_EQ(GST_VIDEO_INFO_WIDTH(&vinfo), 1920);
-      EXPECT_EQ(GST_VIDEO_INFO_HEIGHT(&vinfo), 1080);
-      EXPECT_EQ(GST_VIDEO_INFO_FPS_N(&vinfo), 30);
-      EXPECT_EQ(GST_VIDEO_INFO_FPS_D(&vinfo), 1);
-      EXPECT_EQ(std::string(gst_video_format_to_string(GST_VIDEO_INFO_FORMAT(&vinfo))), "RGB");
+      BOOST_CHECK_EQUAL(GST_VIDEO_INFO_WIDTH(&vinfo), 1920);
+      BOOST_CHECK_EQUAL(GST_VIDEO_INFO_HEIGHT(&vinfo), 1080);
+      BOOST_CHECK_EQUAL(GST_VIDEO_INFO_FPS_N(&vinfo), 30);
+      BOOST_CHECK_EQUAL(GST_VIDEO_INFO_FPS_D(&vinfo), 1);
+      BOOST_CHECK_EQUAL(std::string(gst_video_format_to_string(GST_VIDEO_INFO_FORMAT(&vinfo))), "RGB");
     }
   );
 }
 
-TEST_F(VideoInfoTest, CreateVideoInfoFromInvalidCaps)
+BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromInvalidCaps, VideoInfoTest)
 {
   // Create invalid video caps (missing required fields)
   dh::gst::GstCapsSPtr invalidCaps = dh::gst::makeGstSharedPtr(
@@ -68,10 +64,10 @@ TEST_F(VideoInfoTest, CreateVideoInfoFromInvalidCaps)
     dh::gst::TransferType::Full
   );
 
-  EXPECT_THROW(dh::gst::helpers::createVideoInfo(*invalidCaps), std::runtime_error);
+  BOOST_CHECK_THROW(dh::gst::helpers::createVideoInfo(*invalidCaps), std::runtime_error);
 }
 
-TEST_F(VideoInfoTest, CreateVideoInfoFromNonVideoCaps)
+BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromNonVideoCaps, VideoInfoTest)
 {
   // Create non-video caps
   dh::gst::GstCapsSPtr audioCaps = dh::gst::makeGstSharedPtr(
@@ -84,5 +80,6 @@ TEST_F(VideoInfoTest, CreateVideoInfoFromNonVideoCaps)
     dh::gst::TransferType::Full
   );
 
-  EXPECT_THROW(dh::gst::helpers::createVideoInfo(*audioCaps), std::runtime_error);
+  BOOST_CHECK_THROW(dh::gst::helpers::createVideoInfo(*audioCaps), std::runtime_error);
 }
+
