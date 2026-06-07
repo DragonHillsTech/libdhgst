@@ -1,6 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
 /**
- * @file gtest_gilmappedviewinterleaved.cpp
+ * @file test_gilview.cpp
  * @author Sandro Stiller
  * @date 2025-07-17
  */
@@ -105,4 +105,3 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatGray8, GilViewTest) {
   gst_video_frame_unmap(&frame);
   gst_buffer_unref(buffer);
 }
-

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
 /**
- * @file gtest_helpers.cpp
+ * @file test_helpers.cpp
  * @author Sandro Stiller
  * @date 2025-06-09
  */
@@ -82,4 +82,3 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromNonVideoCaps, VideoInfoTest)
 
   BOOST_CHECK_THROW(dh::gst::helpers::createVideoInfo(*audioCaps), std::runtime_error);
 }
-

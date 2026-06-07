@@ -1,6 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
- * @file gtest_messageparser.cpp
+ * @file test_messageparser.cpp
  * @author Sandro Stiller
  * @date 2024-10-11
  */
@@ -228,4 +228,3 @@ BOOST_FIXTURE_TEST_CASE(AsyncDoneSignalEmittedWithRunningTime, MessageParserTest
   gst_message_unref(message);
   gst_object_unref(element);
 }
-

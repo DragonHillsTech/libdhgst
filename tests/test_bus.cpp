@@ -1,6 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
- * @file gtest_bus.cpp
+ * @file test_bus.cpp
  * @author Sandro Stiller
  * @date 2024-10-05
  */
@@ -50,4 +50,3 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
   bus->post(mockMessage);
   BOOST_REQUIRE(signalReceived);
 }
-

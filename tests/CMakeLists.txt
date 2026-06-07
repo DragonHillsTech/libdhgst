@@ -5,8 +5,8 @@ include_directories(../src)
 # Set the output directory for the test binaries
 set(TEST_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
 
-# Get all gtest_*.cpp files in the tests directory
-file(GLOB TEST_SOURCES "gtest_*.cpp")
+# Get all test_*.cpp files in the tests directory
+file(GLOB TEST_SOURCES "test_*.cpp")
 
 # Create a test executable for each test source file
 foreach(TEST_SOURCE ${TEST_SOURCES})
