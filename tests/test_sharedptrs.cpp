@@ -1,22 +1,17 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
 
 #include "sharedptrs.hpp"
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
 using namespace dh::gst;
 // Test fixture for GStreamer tests
-class GStreamerSharedPtrTest : public ::testing::Test {
+class GStreamerSharedPtrTest {
 protected:
   // Setup before first test case
-  static void SetUpTestSuite()
+  GStreamerSharedPtrTest()
   {
     gst_init(nullptr, nullptr);  // Initialize GStreamer
-  }
-
-  // Cleanup after last test case
-  static void TearDownTestSuite()
-  {
-    gst_deinit();
   }
 };
 
@@ -26,71 +21,71 @@ int getRefCount(GstObject* obj) {
 }
 
 // Test makeGstSharedPtr with GstElement and TransferType::Full
-TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstElement_Full) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest) {
   GstElement* rawSource = gst_element_factory_make("fakesrc", "source");
-  ASSERT_NE(rawSource, nullptr) << "Failed to create element 'fakesrc'";
+  BOOST_REQUIRE_NE(rawSource, nullptr);
 
   int initialRefCount = getRefCount(GST_OBJECT(rawSource));
 
   // Create shared_ptr with TransferType::Full
   auto sourceSPtr = dh::gst::makeGstSharedPtr(rawSource, TransferType::Full);
 
-  ASSERT_NE(sourceSPtr, nullptr) << "Shared pointer is null";
+  BOOST_REQUIRE_NE(sourceSPtr, nullptr);
 
   // Ref count should remain the same because ownership was transferred fully
-  EXPECT_EQ(getRefCount(GST_OBJECT(rawSource)), initialRefCount);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawSource)), initialRefCount);
 
   // Shared pointer goes out of scope and unrefs the object
   sourceSPtr.reset();
-  EXPECT_EQ(getRefCount(GST_OBJECT(rawSource)), 0);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawSource)), 0);
 }
 
 // Test makeGstSharedPtr with GstPad and TransferType::None
-TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstPad_None) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest) {
   GstPad* rawPad = gst_pad_new("sink", GST_PAD_SINK);
-  ASSERT_NE(rawPad, nullptr) << "Failed to create pad 'sink'";
+  BOOST_REQUIRE_NE(rawPad, nullptr);
 
   int initialRefCount = getRefCount(GST_OBJECT(rawPad));
 
   // Create shared_ptr with TransferType::None
   auto padSPtr = dh::gst::makeGstSharedPtr(rawPad, TransferType::None);
 
-  ASSERT_NE(padSPtr, nullptr) << "Shared pointer is null";
+  BOOST_REQUIRE_NE(padSPtr, nullptr);
 
   // Ref count should increase by 1 since ownership was not transferred
-  EXPECT_EQ(getRefCount(GST_OBJECT(rawPad)), initialRefCount + 1);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawPad)), initialRefCount + 1);
 
   // Shared pointer goes out of scope and unrefs the object
   padSPtr.reset();
-  EXPECT_EQ(getRefCount(GST_OBJECT(rawPad)), initialRefCount);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawPad)), initialRefCount);
   gst_object_unref(rawPad);  // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstCaps and TransferType::None
-TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstCaps_None) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest) {
   GstCaps* rawCaps = gst_caps_new_empty_simple("video/x-raw");
-  ASSERT_NE(rawCaps, nullptr) << "Failed to create caps";
+  BOOST_REQUIRE_NE(rawCaps, nullptr);
 
   int initialRefCount = GST_CAPS_REFCOUNT_VALUE(rawCaps);
 
   // Create shared_ptr with TransferType::None
   auto capsSPtr = dh::gst::makeGstSharedPtr(rawCaps, TransferType::None);
 
-  ASSERT_NE(capsSPtr, nullptr) << "Shared pointer is null";
+  BOOST_REQUIRE_NE(capsSPtr, nullptr);
 
   // Ref count should increase by 1 since ownership was not transferred
-  EXPECT_EQ(GST_CAPS_REFCOUNT_VALUE(rawCaps), initialRefCount + 1);
+  BOOST_CHECK_EQUAL(GST_CAPS_REFCOUNT_VALUE(rawCaps), initialRefCount + 1);
 
   // Shared pointer goes out of scope and unrefs the object
   capsSPtr.reset();
-  EXPECT_EQ(GST_CAPS_REFCOUNT_VALUE(rawCaps), initialRefCount);
+  BOOST_CHECK_EQUAL(GST_CAPS_REFCOUNT_VALUE(rawCaps), initialRefCount);
   gst_caps_unref(rawCaps);  // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstAppSink and TransferType::None
-TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstAppSink_None) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest) {
   GstElement* rawSink = gst_element_factory_make("appsink", "sink");
-  ASSERT_NE(rawSink, nullptr) << "Failed to create element 'appsink'";
+  BOOST_REQUIRE_NE(rawSink, nullptr);
 
   GstAppSink* appSink = GST_APP_SINK(rawSink);
   int initialRefCount = getRefCount(GST_OBJECT(appSink));
@@ -98,34 +93,34 @@ TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstAppSink_None) {
   // Create shared_ptr with TransferType::None
   auto sinkSPtr = dh::gst::makeGstSharedPtr(appSink, TransferType::None);
 
-  ASSERT_NE(sinkSPtr, nullptr) << "Shared pointer is null";
+  BOOST_REQUIRE_NE(sinkSPtr, nullptr);
 
   // Ref count should increase by 1 since ownership was not transferred
-  EXPECT_EQ(getRefCount(GST_OBJECT(appSink)), initialRefCount + 1);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(appSink)), initialRefCount + 1);
 
   // Shared pointer goes out of scope and unrefs the object
   sinkSPtr.reset();
-  EXPECT_EQ(getRefCount(GST_OBJECT(appSink)), initialRefCount);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(appSink)), initialRefCount);
   gst_object_unref(rawSink);  // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstBus and TransferType::Full
-TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstBus_Full) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest) {
   GstElement* rawPipeline = gst_element_factory_make("pipeline", "pipeline");
-  ASSERT_NE(rawPipeline, nullptr) << "Failed to create element 'pipeline'";
+  BOOST_REQUIRE_NE(rawPipeline, nullptr);
 
   GstBus* rawBus = gst_pipeline_get_bus(GST_PIPELINE(rawPipeline));
-  ASSERT_NE(rawBus, nullptr) << "Failed to get bus from pipeline";
+  BOOST_REQUIRE_NE(rawBus, nullptr);
 
   int initialRefCount = getRefCount(GST_OBJECT(rawBus));
 
   // Create shared_ptr with TransferType::Full
   auto busSPtr = dh::gst::makeGstSharedPtr(rawBus, TransferType::Full);
 
-  ASSERT_NE(busSPtr, nullptr) << "Shared pointer is null";
+  BOOST_REQUIRE_NE(busSPtr, nullptr);
 
   // Ref count should remain the same because ownership was transferred fully
-  EXPECT_EQ(getRefCount(GST_OBJECT(rawBus)), initialRefCount);
+  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawBus)), initialRefCount);
 
   // Shared pointer goes out of scope and unrefs the object
   busSPtr.reset();
@@ -134,28 +129,24 @@ TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstBus_Full) {
 }
 
 // Test makeGstSharedPtr with GstBuffer and TransferType::None
-TEST_F(GStreamerSharedPtrTest, MakeGstSharedPtr_GstBuffer_None)
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
 {
   GstBuffer* rawBuffer = gst_buffer_new();
-  ASSERT_NE(rawBuffer, nullptr) << "Failed to create buffer";
+  BOOST_REQUIRE_NE(rawBuffer, nullptr);
 
   int initialRefCount = GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer);
 
   // Create shared_ptr with TransferType::None
   auto bufferSPtr = dh::gst::makeGstSharedPtr(rawBuffer, TransferType::None);
 
-  ASSERT_NE(bufferSPtr, nullptr) << "Shared pointer is null";
+  BOOST_REQUIRE_NE(bufferSPtr, nullptr);
 
   // Ref count should increase by 1 since ownership was not transferred
-  EXPECT_EQ(GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer), initialRefCount + 1);
+  BOOST_CHECK_EQUAL(GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer), initialRefCount + 1);
 
   // Shared pointer goes out of scope and unrefs the object
   bufferSPtr.reset();
-  EXPECT_EQ(GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer), initialRefCount);
+  BOOST_CHECK_EQUAL(GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer), initialRefCount);
   gst_buffer_unref(rawBuffer); // Clean up the initial ref
 }
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

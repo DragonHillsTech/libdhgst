@@ -1,37 +1,32 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
- * @file gtest_messageparser.cpp
+ * @file test_messageparser.cpp
  * @author Sandro Stiller
  * @date 2024-10-11
  */
 
 #include "messageparser.hpp"
 
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
 using namespace dh::gst;
 
 
-class MessageParserTest : public ::testing::Test
+class MessageParserTest
 {
 public:
   // Setup before first test case
-  static void SetUpTestSuite()
+  MessageParserTest()
   {
     // Set G_DEBUG to fatal_warnings to make warnings crash the program
     setenv("G_DEBUG", "fatal_warnings", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
 
-  // Cleanup after last test case
-  static void TearDownTestSuite()
-  {
-    gst_deinit();
-  }
-
 };
 
-TEST_F(MessageParserTest, EndOfStreamSignalEmitted)
+BOOST_FIXTURE_TEST_CASE(EndOfStreamSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -46,13 +41,13 @@ TEST_F(MessageParserTest, EndOfStreamSignalEmitted)
   GstMessage* message = gst_message_new_eos(nullptr);
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(sourceName, "unknown");
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(sourceName, "unknown");
 
   gst_message_unref(message);
 }
 
-TEST_F(MessageParserTest, ErrorSignalEmitted)
+BOOST_FIXTURE_TEST_CASE(ErrorSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -74,16 +69,16 @@ TEST_F(MessageParserTest, ErrorSignalEmitted)
   GstMessage* message = gst_message_new_error(nullptr, error, "Test debug info");
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(receivedSourceName, "unknown");
-  EXPECT_EQ(receivedErrorMessage, "Test error message");
-  EXPECT_EQ(receivedDebugInfo, "Test debug info");
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(receivedSourceName, "unknown");
+  BOOST_CHECK_EQUAL(receivedErrorMessage, "Test error message");
+  BOOST_CHECK_EQUAL(receivedDebugInfo, "Test debug info");
 
   gst_message_unref(message);
   g_error_free(error);
 }
 
-TEST_F(MessageParserTest, StateChangedSignalEmitted)
+BOOST_FIXTURE_TEST_CASE(StateChangedSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -105,17 +100,17 @@ TEST_F(MessageParserTest, StateChangedSignalEmitted)
   GstMessage* message = gst_message_new_state_changed(GST_OBJECT(element), GST_STATE_NULL, GST_STATE_READY, GST_STATE_VOID_PENDING);
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(receivedSourceName, "test_source");
-  EXPECT_EQ(oldState, GST_STATE_NULL);
-  EXPECT_EQ(newState, GST_STATE_READY);
-  EXPECT_EQ(pendingState, GST_STATE_VOID_PENDING);
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_source");
+  BOOST_CHECK_EQUAL(oldState, GST_STATE_NULL);
+  BOOST_CHECK_EQUAL(newState, GST_STATE_READY);
+  BOOST_CHECK_EQUAL(pendingState, GST_STATE_VOID_PENDING);
 
   gst_message_unref(message);
   gst_object_unref(element);
 }
 
-TEST_F(MessageParserTest, StreamStatusSignalEmitted)
+BOOST_FIXTURE_TEST_CASE(StreamStatusSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -137,16 +132,16 @@ TEST_F(MessageParserTest, StreamStatusSignalEmitted)
   GstMessage* message = gst_message_new_stream_status(GST_OBJECT(element), GST_STREAM_STATUS_TYPE_ENTER, element);
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(receivedSourceName, "test_element");
-  EXPECT_EQ(receivedStatusType, GST_STREAM_STATUS_TYPE_ENTER);
-  EXPECT_EQ(receivedElementName, "test_element");
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
+  BOOST_CHECK_EQUAL(receivedStatusType, GST_STREAM_STATUS_TYPE_ENTER);
+  BOOST_CHECK_EQUAL(receivedElementName, "test_element");
 
   gst_message_unref(message);
   gst_object_unref(element);
 }
 
-TEST_F(MessageParserTest, StreamStartSignalEmitted)
+BOOST_FIXTURE_TEST_CASE(StreamStartSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -164,14 +159,14 @@ TEST_F(MessageParserTest, StreamStartSignalEmitted)
   GstMessage* message = gst_message_new_stream_start(GST_OBJECT(element));
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(receivedSourceName, "test_element");
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
 
   gst_message_unref(message);
   gst_object_unref(element);
 }
 
-TEST_F(MessageParserTest, ElementMessageSignalEmitted)
+BOOST_FIXTURE_TEST_CASE(ElementMessageSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -192,20 +187,20 @@ TEST_F(MessageParserTest, ElementMessageSignalEmitted)
   GstMessage* message = gst_message_new_element(GST_OBJECT(element), structure);
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(receivedSourceName, "test_element");
-  ASSERT_NE(receivedStructure, nullptr);
-  EXPECT_STREQ(gst_structure_get_name(receivedStructure), "test_structure");
-  EXPECT_TRUE(gst_structure_has_field(receivedStructure, "field"));
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
+  BOOST_REQUIRE_NE(receivedStructure, nullptr);
+  BOOST_CHECK_EQUAL(gst_structure_get_name(receivedStructure), "test_structure");
+  BOOST_CHECK(gst_structure_has_field(receivedStructure, "field"));
 
   const gchar* fieldValue = gst_structure_get_string(receivedStructure, "field");
-  EXPECT_STREQ(fieldValue, "value");
+  BOOST_CHECK_EQUAL(fieldValue, "value");
 
   gst_message_unref(message);
   gst_object_unref(element);
 }
 
-TEST_F(MessageParserTest, AsyncDoneSignalEmittedWithRunningTime)
+BOOST_FIXTURE_TEST_CASE(AsyncDoneSignalEmittedWithRunningTime, MessageParserTest)
 {
   auto parser = MessageParser::create();
   bool signalCalled = false;
@@ -226,9 +221,9 @@ TEST_F(MessageParserTest, AsyncDoneSignalEmittedWithRunningTime)
   GstMessage* message = gst_message_new_async_done(GST_OBJECT(element), expectedRunningTime);
   parser->parse(*message);
 
-  EXPECT_TRUE(signalCalled);
-  EXPECT_EQ(receivedSourceName, "test_element");
-  EXPECT_EQ(receivedRunningTime, expectedRunningTime);
+  BOOST_CHECK(signalCalled);
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
+  BOOST_CHECK_EQUAL(receivedRunningTime, expectedRunningTime);
 
   gst_message_unref(message);
   gst_object_unref(element);

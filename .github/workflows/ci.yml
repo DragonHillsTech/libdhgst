@@ -33,8 +33,7 @@ jobs:
             libgstreamer1.0-dev \
             libgstreamer-plugins-base1.0-dev \
             libgstreamer-plugins-bad1.0-dev \
-            libgstreamer-plugins-good1.0-dev \
-            libgtest-dev
+            libgstreamer-plugins-good1.0-dev
 
       # Create build directory
       - name: Create build directory
@@ -54,5 +53,4 @@ jobs:
         run: |
           cd build/tests
           ctest --output-on-failure
-
 

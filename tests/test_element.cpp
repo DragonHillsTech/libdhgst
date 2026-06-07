@@ -1,7 +1,8 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
 #include "element.hpp"
 
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 #include <gst/gst.h>
 
 #include <stdexcept>
@@ -13,91 +14,85 @@ using namespace dh::gst;
 /**
  * @brief Test fixture for setting up and tearing down the test environment for Element class.
  */
-class ElementTest : public ::testing::Test
+class ElementTest
 {
 public:
   // Setup before first test case
-  static void SetUpTestSuite()
+  ElementTest()
   {
     // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
     setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
-
-  // Cleanup after last test case
-  static void TearDownTestSuite()
-  {
-    gst_deinit();
-  }
 };
 
-TEST_F(ElementTest, CreationAndDestruction)
+BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, ElementTest)
 {
   // ctor GstElementSPtr
   auto element1 = Element::create(makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating));
-  ASSERT_EQ(element1->getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
-  ASSERT_EQ(GST_OBJECT_REFCOUNT(element1->getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
-  ASSERT_EQ(element1->getFactoryName(), "fakesrc");
+  BOOST_REQUIRE_EQUAL(element1->getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
+  BOOST_REQUIRE_EQUAL(GST_OBJECT_REFCOUNT(element1->getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
+  BOOST_REQUIRE_EQUAL(element1->getFactoryName(), "fakesrc");
 
   //ctor GstElement*
   auto element2 = Element::create(gst_element_factory_make("fakesrc", "testSource2"), TransferType::Floating);
-  ASSERT_EQ(element2->getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
-  ASSERT_EQ(GST_OBJECT_REFCOUNT(element2->getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
+  BOOST_REQUIRE_EQUAL(element2->getGstElement().use_count(), 1); // getGstElement creates a new shared_ptr, so the count must be 1
+  BOOST_REQUIRE_EQUAL(GST_OBJECT_REFCOUNT(element2->getGstElement().get()), 2); // getGstElement creates a new shared_ptr, so the GstObject must have increased
 }
 
-TEST_F(ElementTest, GetNameReturnsCorrectName)
+BOOST_FIXTURE_TEST_CASE(GetNameReturnsCorrectName, ElementTest)
 {
   const auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   // Check that getName returns the correct name
-  EXPECT_EQ(element->getName(), "test_source");
+  BOOST_CHECK_EQUAL(element->getName(), "test_source");
 }
 
-TEST_F(ElementTest, SetState)
+BOOST_FIXTURE_TEST_CASE(SetState, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  ASSERT_EQ(element->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
-  ASSERT_EQ(element->getState(), GST_STATE_PLAYING);
+  BOOST_REQUIRE_EQUAL(element->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
+  BOOST_REQUIRE_EQUAL(element->getState(), GST_STATE_PLAYING);
 
   // here we would get a gstreamer error if the Element is destroyed when state != null.
 }
 
-TEST_F(ElementTest, GetPads)
+BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   std::vector<GstPad*> pads = element->getPads();
-  ASSERT_EQ(pads.size(), 1);  // fakesrc has one "src" pad
+  BOOST_REQUIRE_EQUAL(pads.size(), 1);  // fakesrc has one "src" pad
 }
 
-TEST_F(ElementTest, GetSinkPads)
+BOOST_FIXTURE_TEST_CASE(GetSinkPads, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   std::vector<GstPad*> sinkPads = element->getSinkPads();
-  ASSERT_EQ(sinkPads.size(), 0);  // fakesrc has no sink pads
+  BOOST_REQUIRE_EQUAL(sinkPads.size(), 0);  // fakesrc has no sink pads
 }
 
-TEST_F(ElementTest, GetSrcPads)
+BOOST_FIXTURE_TEST_CASE(GetSrcPads, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   std::vector<GstPad*> srcPads = element->getSrcPads();
-  ASSERT_EQ(srcPads.size(), 1);  // fakesrc has one "src" pad
-  ASSERT_EQ(gst_pad_get_name(srcPads[0]), std::string("src"));  // Verify the pad name
+  BOOST_REQUIRE_EQUAL(srcPads.size(), 1);  // fakesrc has one "src" pad
+  BOOST_REQUIRE_EQUAL(gst_pad_get_name(srcPads[0]), std::string("src"));  // Verify the pad name
 }
 
-TEST_F(ElementTest, GetStaticPad)
+BOOST_FIXTURE_TEST_CASE(GetStaticPad, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   GstPad* staticPad = element->getStaticPad("src");
-  ASSERT_NE(staticPad, nullptr);  // fakesrc has a "src" pad
-  ASSERT_EQ(gst_pad_get_name(staticPad), std::string("src"));  // Verify the pad name
+  BOOST_REQUIRE_NE(staticPad, nullptr);  // fakesrc has a "src" pad
+  BOOST_REQUIRE_EQUAL(gst_pad_get_name(staticPad), std::string("src"));  // Verify the pad name
 }
 
-TEST_F(ElementTest, GetCompatiblePad)
+BOOST_FIXTURE_TEST_CASE(GetCompatiblePad, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
@@ -109,44 +104,45 @@ TEST_F(ElementTest, GetCompatiblePad)
                                       "height", G_TYPE_INT, 480,
                                       "framerate", GST_TYPE_FRACTION, 30, 1,
                                       nullptr);
-  ASSERT_NE(caps, nullptr) << "Failed to create caps";
+  BOOST_REQUIRE_NE(caps, nullptr);
 
   // Call getCompatiblePad with the created pad and caps
   GstPad* resultPad = element->getCompatiblePad(sinkPad, caps);
 
-  ASSERT_EQ(resultPad, element->getSrcPads().at(0));
+  BOOST_REQUIRE_EQUAL(resultPad, element->getSrcPads().at(0));
 
   gst_caps_unref(caps);  // Unref the caps
 }
 
-TEST_F(ElementTest, LinkAndUnlink)
+BOOST_FIXTURE_TEST_CASE(LinkAndUnlink, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   auto sink = Element::create(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating);
 
   GstPad* sourcePad = element->getStaticPad("src");
-  ASSERT_NE(sourcePad, nullptr) << "Failed to get sourcePad.";
+  BOOST_REQUIRE_NE(sourcePad, nullptr);
 
   GstPad* sinkPad = sink->getStaticPad("sink");
-  ASSERT_NE(sinkPad, nullptr) << "Failed to get sinkPad.";
+  BOOST_REQUIRE_NE(sinkPad, nullptr);
 
   element->link(sink);
   // Check if elements are linked
-  ASSERT_TRUE(gst_pad_is_linked(sourcePad));
-  ASSERT_TRUE(gst_pad_is_linked(sinkPad));
+  BOOST_REQUIRE(gst_pad_is_linked(sourcePad));
+  BOOST_REQUIRE(gst_pad_is_linked(sinkPad));
 
   element->unlink(sink);
   // Check if elements are unlinked
-  ASSERT_FALSE(gst_pad_is_linked(sourcePad));
-  ASSERT_FALSE(gst_pad_is_linked(sinkPad));
+  BOOST_REQUIRE(!gst_pad_is_linked(sourcePad));
+  BOOST_REQUIRE(!gst_pad_is_linked(sinkPad));
 }
 
-TEST_F(ElementTest, SetName)
+BOOST_FIXTURE_TEST_CASE(SetName, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "firstName"), TransferType::Floating);
-  ASSERT_EQ(element->getName(), "firstName");
+  BOOST_REQUIRE_EQUAL(element->getName(), "firstName");
 
-  ASSERT_NO_THROW(element->setName("secondName"));
-  EXPECT_EQ(element->getName(), "secondName");
+  BOOST_REQUIRE_NO_THROW(element->setName("secondName"));
+  BOOST_CHECK_EQUAL(element->getName(), "secondName");
 }
+

@@ -4,7 +4,8 @@
 #include "pipeline.hpp"
 #include "element.hpp"
 
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
 #include <gst/gst.h>
 
@@ -13,25 +14,19 @@
 
 using namespace dh::gst;
 
-class ObjectTest : public ::testing::Test
+class ObjectTest
 {
 public:
   // Setup before first test case
-  static void SetUpTestSuite()
+  ObjectTest()
   {
     // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
     setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
-
-  // Cleanup after last test case
-  static void TearDownTestSuite()
-  {
-    gst_deinit();
-  }
 };
 
-TEST_F(ObjectTest, TestConnectGobjectSignal_PadAdded)
+BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
 {
   auto pipeline = Pipeline::fromDescription("videotestsrc ! decodebin name=test-decodebin");
 
@@ -50,7 +45,7 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_PadAdded)
 
   // Set pipeline to PLAYING to trigger the "pad-added" signal
   const auto setStateResult = pipeline.setState(GST_STATE_PLAYING);
-  ASSERT_NE(setStateResult, GST_STATE_CHANGE_FAILURE);
+  BOOST_REQUIRE_NE(setStateResult, GST_STATE_CHANGE_FAILURE);
 
   // Wait for the main loop to process events
   GMainContext* context = g_main_context_default();
@@ -61,12 +56,12 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_PadAdded)
   }
 
   // Check that the signal was emitted and the pad was captured
-  EXPECT_TRUE(signalEmitted);
-  ASSERT_NE(capturedPad, nullptr);
+  BOOST_CHECK(signalEmitted);
+  BOOST_REQUIRE_NE(capturedPad, nullptr);
   pipeline.setState(GST_STATE_NULL);
 }
 
-TEST_F(ObjectTest, TestConnectGobjectSignal_ElementAdded)
+BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ElementAdded, ObjectTest)
 {
   // Create a GstBin
   auto bin = Bin::create("test-bin");
@@ -90,14 +85,14 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_ElementAdded)
   g_main_context_iteration(context, FALSE);
 
   // Check that the signal was emitted and the element was captured
-  EXPECT_TRUE(signalEmitted);
-  ASSERT_NE(capturedElement, nullptr);
-  EXPECT_EQ(capturedElement, element->getGstElement());
+  BOOST_CHECK(signalEmitted);
+  BOOST_REQUIRE_NE(capturedElement, nullptr);
+  BOOST_CHECK_EQUAL(capturedElement, element->getGstElement());
 }
 
 //TODO:
 
-TEST_F(ObjectTest, TestConnectGobjectSignal_deleteWhileCallbackActive)
+BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, ObjectTest)
 {
   /* TODO:
    * This works find, BUT
@@ -120,11 +115,11 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_deleteWhileCallbackActive)
 
   auto element = ElementFactory::makeElement("fakesrc", "test-source");
 
-  ASSERT_EQ(bin.use_count(), 1);
+  BOOST_REQUIRE_EQUAL(bin.use_count(), 1);
   // does not increase gstBinSPtr.use_count because a new one is created from the raw ptr
   GstBin* gstBinPtr = bin->getGstBin().get();
 
-  ASSERT_EQ(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
+  BOOST_REQUIRE_EQUAL(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
 
   std::thread thread(
     // Keep a copy to the objects when using threads. "&" is dangerous!.
@@ -136,35 +131,36 @@ TEST_F(ObjectTest, TestConnectGobjectSignal_deleteWhileCallbackActive)
 
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   // the callback should have increased in the thread capture
-  ASSERT_EQ(bin.use_count(), 2);
+  BOOST_REQUIRE_EQUAL(bin.use_count(), 2);
 
   // one in Bin, one in  callback
   const auto currentGObjectRefCnt = GST_OBJECT_REFCOUNT(gstBinPtr);
-  ASSERT_GE(currentGObjectRefCnt, 2);
+  BOOST_REQUIRE_GE(currentGObjectRefCnt, 2);
 
   std::weak_ptr<Bin> weakBin = bin;
   bin.reset();
 
   // the Bin element must still exist. after deleting the local pointer. Copy in thread capture
-  ASSERT_NE(weakBin.lock(), nullptr);
+  BOOST_REQUIRE_NE(weakBin.lock(), nullptr);
   // and of course the internal object
-  ASSERT_EQ(GST_OBJECT_REFCOUNT(gstBinPtr), currentGObjectRefCnt);
+  BOOST_REQUIRE_EQUAL(GST_OBJECT_REFCOUNT(gstBinPtr), currentGObjectRefCnt);
 
   // Wait for the main loop to process events
   GMainContext* context = g_main_context_default();
   g_main_context_iteration(context, FALSE);
 
   // Check that the signal was emitted and the element was captured
-  EXPECT_TRUE(signalEmitted);
-  ASSERT_NE(capturedElement, nullptr);
-  EXPECT_EQ(capturedElement, element->getGstElement());
+  BOOST_CHECK(signalEmitted);
+  BOOST_REQUIRE_NE(capturedElement, nullptr);
+  BOOST_CHECK_EQUAL(capturedElement, element->getGstElement());
 
   // the Bin element must still exist.
-  ASSERT_NE(weakBin.lock(), nullptr);
-  ASSERT_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
+  BOOST_REQUIRE_NE(weakBin.lock(), nullptr);
+  BOOST_REQUIRE_GE(GST_OBJECT_REFCOUNT(gstBinPtr), 1);
 
   thread.join();
 
   // Now everything should be deleted
-  ASSERT_EQ(weakBin.lock(), nullptr);
+  BOOST_REQUIRE_EQUAL(weakBin.lock(), nullptr);
 }
+

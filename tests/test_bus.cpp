@@ -1,37 +1,32 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
- * @file gtest_bus.cpp
+ * @file test_bus.cpp
  * @author Sandro Stiller
  * @date 2024-10-05
  */
 
 #include "bus.hpp"
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
 using namespace dh::gst;
 
 /**
  * @brief Test fixture for setting up and tearing down the test environment
  */
-class BusTest : public ::testing::Test
+class BusTest
 {
 public:
  // Setup before first test case
- static void SetUpTestSuite()
+ BusTest()
  {
   // Set G_DEBUG to fatal_warnings to make warnings crash the program
   setenv("G_DEBUG", "fatal_warnings", 1);
   gst_init(nullptr, nullptr);  // Initialize GStreamer
  }
-
- // Cleanup after last test case
- static void TearDownTestSuite()
- {
-  gst_deinit();
- }
 };
 
-TEST_F(BusTest, BusReceivesMessageFromPost)
+BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
 {
   auto bus = Bus::create(gst_bus_new(), TransferType::Full);
   bool signalReceived = false;
@@ -41,8 +36,7 @@ TEST_F(BusTest, BusReceivesMessageFromPost)
     {
       signalReceived = true;
       // Check message type and content
-      ASSERT_STREQ(gst_structure_get_name(gst_message_get_structure(message.get())), "TestMessage")
-        << "Received unexpected message structure.";
+      BOOST_REQUIRE_EQUAL(std::string(gst_structure_get_name(gst_message_get_structure(message.get()))), "TestMessage");
     }
   );
   // Create a mock message to post to the bus
@@ -54,5 +48,5 @@ TEST_F(BusTest, BusReceivesMessageFromPost)
   );
   // Post the message to the bus using the post function
   bus->post(mockMessage);
-  ASSERT_TRUE(signalReceived) << "The bus did not receive the posted message.";
+  BOOST_REQUIRE(signalReceived);
 }

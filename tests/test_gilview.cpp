@@ -1,21 +1,22 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
 /**
- * @file gtest_gilmappedviewinterleaved.cpp
+ * @file test_gilview.cpp
  * @author Sandro Stiller
  * @date 2025-07-17
  */
 
 #include "gilview.hpp"
 
-#include <gtest/gtest.h>
+#define BOOST_TEST_MODULE libdhgst_tests
+#include <boost/test/included/unit_test.hpp>
 
 #include <gst/gst.h>
 #include <gst/video/video.h>
 
-class GilViewTest : public ::testing::Test
+class GilViewTest
 {
 protected:
-  void SetUp() override
+  GilViewTest()
   {
     gst_init(nullptr, nullptr);
   }
@@ -32,74 +33,74 @@ protected:
   }
 };
 
-TEST_F(GilViewTest, CreateRgb8View) {
+BOOST_FIXTURE_TEST_CASE(CreateRgb8View, GilViewTest) {
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 4, 2);
-  ASSERT_NE(buffer, nullptr);
+  BOOST_REQUIRE_NE(buffer, nullptr);
 
   GstVideoFrame frame;
   gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READWRITE);
-  ASSERT_TRUE(mapped);
+  BOOST_REQUIRE(mapped);
 
   fillBuffer(frame, 255);
 
   auto view = dh::gst::createGilView<boost::gil::rgb8_view_t>(frame);
 
-  EXPECT_EQ(view.width(), 4);
-  EXPECT_EQ(view.height(), 2);
-  EXPECT_EQ(view(0, 0)[0], 255);
-  EXPECT_EQ(view(0, 0)[1], 255);
-  EXPECT_EQ(view(0, 0)[2], 255);
+  BOOST_CHECK_EQUAL(view.width(), 4);
+  BOOST_CHECK_EQUAL(view.height(), 2);
+  BOOST_CHECK_EQUAL(view(0, 0)[0], 255);
+  BOOST_CHECK_EQUAL(view(0, 0)[1], 255);
+  BOOST_CHECK_EQUAL(view(0, 0)[2], 255);
 
   gst_video_frame_unmap(&frame);
   gst_buffer_unref(buffer);
 }
 
-TEST_F(GilViewTest, CreateGray8View) {
+BOOST_FIXTURE_TEST_CASE(CreateGray8View, GilViewTest) {
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_GRAY8, 2, 3);
-  ASSERT_NE(buffer, nullptr);
+  BOOST_REQUIRE_NE(buffer, nullptr);
 
   GstVideoFrame frame;
   gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READWRITE);
-  ASSERT_TRUE(mapped);
+  BOOST_REQUIRE(mapped);
 
   fillBuffer(frame, 42);
 
   auto view = dh::gst::createGilView<boost::gil::gray8_view_t>(frame);
-  EXPECT_EQ(view.width(), 2);
-  EXPECT_EQ(view.height(), 3);
-  EXPECT_EQ(view(1, 2), 42);
+  BOOST_CHECK_EQUAL(view.width(), 2);
+  BOOST_CHECK_EQUAL(view.height(), 3);
+  BOOST_CHECK_EQUAL(view(1, 2), 42);
 
   gst_video_frame_unmap(&frame);
   gst_buffer_unref(buffer);
 }
 
-TEST_F(GilViewTest, ThrowsOnWrongFormatRgb8) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatRgb8, GilViewTest) {
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_GRAY8, 1, 1); // Not RGB
-  ASSERT_NE(buffer, nullptr);
+  BOOST_REQUIRE_NE(buffer, nullptr);
 
   GstVideoFrame frame;
   gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READ);
-  ASSERT_TRUE(mapped);
+  BOOST_REQUIRE(mapped);
 
-  EXPECT_THROW(dh::gst::createGilView<boost::gil::rgb8_view_t>(frame), std::runtime_error);
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8_view_t>(frame), std::runtime_error);
 
   gst_video_frame_unmap(&frame);
   gst_buffer_unref(buffer);
 }
 
-TEST_F(GilViewTest, ThrowsOnWrongFormatGray8) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatGray8, GilViewTest) {
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 1, 1); // Not GRAY
-  ASSERT_NE(buffer, nullptr);
+  BOOST_REQUIRE_NE(buffer, nullptr);
 
   GstVideoFrame frame;
   gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READ);
-  ASSERT_TRUE(mapped);
+  BOOST_REQUIRE(mapped);
 
-  EXPECT_THROW(dh::gst::createGilView<boost::gil::gray8_view_t>(frame), std::runtime_error);
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::gray8_view_t>(frame), std::runtime_error);
 
   gst_video_frame_unmap(&frame);
   gst_buffer_unref(buffer);
