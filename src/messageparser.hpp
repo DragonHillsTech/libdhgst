@@ -47,10 +47,12 @@ public:
  /**
   * @brief Sets a custom asynchronous handler for parse().
   * @param handler A function that takes a callable and posts it to the desired main loop.
+  *
   * Example boost.asio:
   * @code
   * create[&ioContext](auto task){boost::asio::post(ioContext, std::move(task));});
   * @endcode
+  *
   * Example glib:
   * @code
   * create(
@@ -166,3 +168,4 @@ private:
 } // dh::gst
 
 #endif //DH_GST_MESSAGEPARSER_HPP
+
