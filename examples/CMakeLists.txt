@@ -5,7 +5,6 @@ set(EXAMPLES_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples)
 
 file(GLOB EXAMPLE_SOURCES "*.cpp")
 
-find_package(spdlog REQUIRED)
 
 # Create a test executable for each test source file
 foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
@@ -17,7 +16,6 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
 
   target_link_libraries(${EXAMPLE_NAME}
           libdhgst ${GSTREAMER_LIBRARIES}
-          spdlog::spdlog
   )
 
   # Set the output directory for the test binary

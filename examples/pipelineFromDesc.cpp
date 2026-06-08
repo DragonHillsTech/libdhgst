@@ -12,7 +12,6 @@
 #include "pipeline.hpp"
 #include "messageparser.hpp"
 
-#include <spdlog/spdlog.h>
 
 // std
 #include <iostream>
@@ -33,7 +32,7 @@ int main(const int argc, const char **argv)
 
   const std::string desc = concatArgs(argc, argv);
 
-  spdlog::info(desc);
+  std::cout << desc << std::endl;
 
   gst_init(const_cast<int*>(&argc), const_cast<char***>(&argv));
   auto ppl = dh::gst::Pipeline::fromDescription(desc);
@@ -56,68 +55,65 @@ int main(const int argc, const char **argv)
   messageParser->errorSignal.connect(
     [mainLoop](const std::string& source, const std::string& errorMessage, const std::string& debugMessage)
     {
-      spdlog::error("Error from '{}' | Message: {} | Debug info: {}", source, errorMessage, debugMessage);
-      spdlog::error("Quitting");
+      std::cerr << "Error from '" << source << "' | Message: " << errorMessage << " | Debug info: " << debugMessage << std::endl;
+      std:: cerr << "Quitting" << std::endl;
       g_main_loop_quit(mainLoop);
     }
   );
   messageParser->infoSignal.connect(
     [](const std::string& source, const std::string& infoMessage, const std::string& debugMessage)
     {
-      spdlog::info("Info from '{}' | Message: {} | Debug info: {}", source, infoMessage, debugMessage);
+      std::cout << "Info from '" << source << "' | Message: " << infoMessage << " | Debug info: " << debugMessage << std::endl;
     }
   );
 
   messageParser->warningSignal.connect(
     [](const std::string& source, const std::string& warningMessage, const std::string& debugMessage)
     {
-      spdlog::warn("Warning from '{}' | Message: {} | Debug info: {}", source, warningMessage, debugMessage);
+      std::cout << "Warning from '" << source << "' | Message: " << warningMessage << " | Debug info: " << debugMessage << std::endl;
     }
   );
   messageParser->stateChangedSignal.connect(
     [](const std::string& source, GstState oldState, GstState newState, GstState pendingState)
     {
-      spdlog::info("State change '{}': {} -> {} ({})",
-                   source,
-                   gst_element_state_get_name(oldState),
-                   gst_element_state_get_name(newState),
-                   gst_element_state_get_name(pendingState));
+      std::cout << "State change '" << source << "': "
+                << gst_element_state_get_name(oldState) << " -> "
+                << gst_element_state_get_name(newState) << " ("
+                << gst_element_state_get_name(pendingState) << ")" << std::endl;
     }
   );
   messageParser->endOfStreamSignal.connect(
     [](const std::string& sourceName)
     {
-       spdlog::info("EOS from '{}'", sourceName);
+       std::cout << "EOS from '" << sourceName << "'" << std::endl;
     }
   );
   messageParser->streamStatusSignal.connect(
     [](const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)
     {
-      spdlog::info("Stream status from '{}' | Status Type: {} | Owner: {}",
-             sourceName,
-             dh::gst::helpers::gstStreamStatusTypeToString(statusType),
-             ownerName);
+      std::cout << "Stream status from '" << sourceName << "' | Status Type: "
+                << dh::gst::helpers::gstStreamStatusTypeToString(statusType) << " | Owner: "
+                << ownerName << std::endl;
     }
   );
   messageParser->streamStartSignal.connect(
     [](const std::string& sourceName)
     {
-      spdlog::info("Stream start from '{}'", sourceName);
+      std::cout << "Stream start from '" << sourceName << "'" << std::endl;
     }
   );
   messageParser->asyncDoneSignal.connect(
     [](const std::string& sourceName, GstClockTime runningTime)
     {
-      spdlog::info("Stream status from '{}' | Running time: {}ns",
-       sourceName,
-       runningTime);
+      std::cout << "Stream status from '" << sourceName << "' | Running time: "
+                << runningTime << "ns" << std::endl;
     }
   );
 
   messageParser->elementMessageSignal.connect(
     [](const std::string& sourceName, const GstStructure*)
     {
-      spdlog::info("Element specific message from '{}'", sourceName);
+      std::cout << "Element specific message from '" << sourceName << "'" << std::endl;
     }
   );
 
