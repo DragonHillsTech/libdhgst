@@ -56,7 +56,7 @@ int main(const int argc, const char **argv)
     [mainLoop](const std::string& source, const std::string& errorMessage, const std::string& debugMessage)
     {
       std::cerr << "Error from '" << source << "' | Message: " << errorMessage << " | Debug info: " << debugMessage << std::endl;
-      std:: cerr << "Quitting" << std::endl;
+      std::cerr << "Quitting" << std::endl;
       g_main_loop_quit(mainLoop);
     }
   );
