@@ -13,7 +13,6 @@ https://dragonhillstech.github.io/libdhgst/
 ## Dependencies
 - **GStreamer** (`gstreamer-1.0`, `gstreamer-app-1.0`)
 - **Boost**
-- **spdlog** (when building examples)
 - **CMake 3.10+**
 - **C++17 compiler**
 
