@@ -24,10 +24,7 @@
 #include "object.hpp"
 #include "sharedptrs.hpp"
 
-// boost
-#include <boost/signals2.hpp>
-
-namespace bs2 = boost::signals2;
+#include <functional>
 
 namespace dh::gst
 {
@@ -68,10 +65,8 @@ public:
   /**
    * @brief  A message has been posted on the bus.
    * This signal is emitted from the thread that posted the message so one has to be careful with locking.
-   * @todo Calling this function creates a new glib signal connection, no matter if that was already done.
-   *       This could be improved by keeping track of bs2 signals (in GObject data)
    */
-  [[nodiscard]] bs2::signal<void(GstMessageSPtr)>& newSyncMessageSignal() const;
+  [[nodiscard]] SignalConnection connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const;
 
   // TODO: Enable "message" also? (only valid with existing glib main loop)
 private:

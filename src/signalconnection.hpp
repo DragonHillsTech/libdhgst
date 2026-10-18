@@ -1,0 +1,58 @@
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
+/* Copyright (C) 2026 Sandro Stiller <sandro.stiller@dragonhills.de>
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ *
+ * This file is part of Libdhgst <https://dragonhills.de/>.
+ *
+ * Libdhgst is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * Libdhgst is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Libdhgst. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef DH_GST_SIGNALCONNECTION_HPP
+#define DH_GST_SIGNALCONNECTION_HPP
+
+#include <glib-object.h>
+
+namespace dh::gst
+{
+
+/**
+ * @brief Move-only RAII handle for a GLib signal connection.
+ */
+class SignalConnection
+{
+public:
+  SignalConnection() = default;
+  SignalConnection(GObject* object, gulong handlerId);
+  SignalConnection(const SignalConnection&) = delete;
+  SignalConnection& operator=(const SignalConnection&) = delete;
+  SignalConnection(SignalConnection&& other) noexcept;
+  SignalConnection& operator=(SignalConnection&& other) noexcept;
+  ~SignalConnection();
+
+  void disconnect();
+  [[nodiscard]] bool connected() const;
+  [[nodiscard]] explicit operator bool() const;
+
+private:
+  void clearWeakRef();
+  void moveFrom(SignalConnection&& other) noexcept;
+
+  GWeakRef weakObject{};
+  gulong handlerId{0};
+  bool weakRefInitialized{false};
+};
+
+} // namespace dh::gst
+
+#endif // DH_GST_SIGNALCONNECTION_HPP

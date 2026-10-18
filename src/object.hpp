@@ -23,15 +23,16 @@
 
 // local includes
 #include "objecttraits.hpp"
+#include "signalconnection.hpp"
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
-// boost
-#include <boost/signals2.hpp>
-
 // std
+#include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 // C
 #include <gst/gst.h>
@@ -112,6 +113,8 @@ public:
    */
   [[nodiscard]] bool propertyExists(const std::string& name) const;
 
+  void disconnectSignal(SignalConnection& connection) const;
+
  template<typename ValueType>
   [[nodiscard]] inline ValueType getProperty(const std::string& name) const;
 
@@ -123,36 +126,17 @@ protected:
   [[nodiscard]] GstObject* getRawGstObject();
 
 /**
-* @brief create boost::signals2 signal which is connected to the GObject signal with the matching name
+* @brief Connect a callback directly to the GObject signal with the matching name.
 * @throws std::runtime_error if signal could not be connected
 */
 template<typename... Args>
-boost::signals2::signal<void(Args...)>& connectGobjectSignal(const std::string& signalName) const;
+SignalConnection connectGobjectSignal(
+  const std::string& signalName,
+  std::function<void(Args...)> callback
+) const;
 
 private:
   GstObjectSPtr gstObject;
-
-  // SignalConnector to hold Boost.Signals2 signal
-  template<typename... Args>
-  struct SignalConnector
-  {
-    using ConvertedArgs = boost::signals2::signal<void(typename ConvertToCppType<Args>::type...)>;
-    ConvertedArgs signal;
-    // the weak ptr is used to make sure that the Object is alive while the callback runs.
-    // When finishing the CB, it is still possible that the GstObject is deleted before the complete signal processing is finished.
-    // whoever emits a signal must make sure that the GstObject stays alive.
-    GWeakRef weakSignalSource;
-
-    SignalConnector(const GstObject* gstObject)
-    {
-      g_weak_ref_init(&weakSignalSource, const_cast<GstObject*>(gstObject));
-    }
-
-    ~SignalConnector()
-    {
-      g_weak_ref_clear(&weakSignalSource);
-    }
-  };
 
   // SignalHandler to define the callback function
   template<typename... Args>
@@ -160,15 +144,11 @@ private:
   {
     static void callback(GObject* /*object*/, Args... args, gpointer user_data)
     {
-      SignalConnector<Args...>* connector = static_cast<SignalConnector<Args...>*>(user_data);
-      if(connector)
+      using Callback = std::function<void(typename ConvertToCppType<Args>::type...)>;
+      auto* callback = static_cast<Callback*>(user_data);
+      if(callback)
       {
-        const auto* signalSource = g_weak_ref_get(&connector->weakSignalSource);
-        //TODO: else print warning message?
-        if(signalSource)
-        {
-          connector->signal(convertParamToCppType(args)...);
-        }
+        (*callback)(convertParamToCppType(args)...);
       }
     }
   };
@@ -257,14 +237,18 @@ inline void Object::setProperty<std::string>(const std::string& name, const std:
   );
 }
 
-/** Create a boost.signals2 signal to connect to a gobject signal.
+/** Connect a callback to a GObject signal.
   * @tparam Args types you want to use. GstObject* types are not allowed, use shared_ptr instead.
   * @param signalName the name of the signal
+  * @param callback the callback invoked when the signal is emitted
   * @throws std::invalid_argument if signal name invalid or signal with the name not found.
   * @see Object::signalExists
   */
 template<typename ... Args>
-boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::string& signalName) const
+SignalConnection Object::connectGobjectSignal(
+  const std::string& signalName,
+  std::function<void(Args...)> callback
+) const
 {
   static_assert(
     (... && (! (std::is_pointer<Args>::value && IsGstObject<std::remove_pointer_t<Args>>::value))),
@@ -278,20 +262,23 @@ boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::
   {
     throw std::invalid_argument("No signal with name " + signalName);
   }
-  // Create a new SignalConnector
-  auto self = shared_from_this();
+  if(! callback)
+  {
+    throw std::invalid_argument("empty signal callback");
+  }
 
-  auto* connector = new SignalConnector<Args...>(getRawGstObject());
+  using Callback = std::function<void(Args...)>;
+  auto callbackData = std::make_unique<Callback>(std::move(callback));
 
   // Connect the signal
   const auto connectionId = g_signal_connect_data(
     const_cast<GstObject*>(getRawGstObject()),
     signalName.c_str(),
     reinterpret_cast<GCallback>(SignalHandler<typename ConvertToGlibType<Args>::type...>::callback),
-    connector,
+    callbackData.get(),
     [](gpointer data, GClosure* /*closure*/)
     {
-      delete static_cast<SignalConnector<Args...>*>(data);
+      delete static_cast<Callback*>(data);
     },
     G_CONNECT_AFTER
   );
@@ -300,8 +287,11 @@ boost::signals2::signal<void(Args...)>& Object::connectGobjectSignal(const std::
   {
     throw std::runtime_error("failed to connect signal " + signalName);
   }
-  // Return the Boost.Signals2 signal reference
-  return connector->signal;
+  callbackData.release();
+  return SignalConnection(
+    G_OBJECT(const_cast<GstObject*>(getRawGstObject())),
+    connectionId
+  );
 }
 
 } // dh::gst

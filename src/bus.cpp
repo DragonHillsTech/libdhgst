@@ -20,8 +20,39 @@
 
 #include "bus.hpp"
 
+#include <cassert>
+#include <memory>
+#include <utility>
+
 namespace dh::gst
 {
+
+namespace
+{
+
+class SyncMessageEmission
+{
+public:
+  explicit SyncMessageEmission(GstBusSPtr bus)
+  : bus(std::move(bus))
+  {
+    assert(this->bus != nullptr);
+    gst_bus_enable_sync_message_emission(this->bus.get());
+  }
+
+  ~SyncMessageEmission()
+  {
+    gst_bus_disable_sync_message_emission(bus.get());
+  }
+
+  SyncMessageEmission(const SyncMessageEmission&) = delete;
+  SyncMessageEmission& operator=(const SyncMessageEmission&) = delete;
+
+private:
+  GstBusSPtr bus;
+};
+
+} // namespace
 
 
 Bus::Bus(GstBusSPtr gstBus)
@@ -64,11 +95,19 @@ void Bus::post(const GstMessageSPtr message)
   gst_bus_post(getRawGstBus(), gst_message_ref(message.get()));
 }
 
-bs2::signal<void(GstMessageSPtr)>& Bus::newSyncMessageSignal() const
+SignalConnection Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const
 {
-  //TODO: on disconnect, gst_bus_enable_sync_message_emission should be called as often as it was enabled to stop sync signal emission
-  gst_bus_enable_sync_message_emission(const_cast<GstBus*>(getRawGstBus()));
-  return connectGobjectSignal<GstMessageSPtr>("sync-message");
+  auto emission = std::make_shared<SyncMessageEmission>(getGstBus());
+  return connectGobjectSignal<GstMessageSPtr>(
+    "sync-message",
+    std::function<void(GstMessageSPtr)>(
+      [callback = std::move(callback), emission = std::move(emission)](GstMessageSPtr message)
+      {
+        (void)emission;
+        callback(std::move(message));
+      }
+    )
+  );
 }
 
 GstBus* Bus::getRawGstBus()

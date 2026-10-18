@@ -31,6 +31,7 @@ set(SOURCES
   src/object.cpp
   src/pluginfeature.cpp
   src/pipeline.cpp
+  src/signalconnection.cpp
 )
 
 set(HEADERS
@@ -46,6 +47,7 @@ set(HEADERS
   src/pipeline.hpp
   src/pluginfeature.hpp
   src/sharedptrs.hpp
+  src/signalconnection.hpp
   src/transfertype.hpp
   src/typetraits.hpp
 )

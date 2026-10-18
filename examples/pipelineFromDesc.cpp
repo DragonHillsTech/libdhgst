@@ -15,6 +15,7 @@
 
 // std
 #include <iostream>
+#include <stdexcept>
 #include <sstream>
 
 void printHelp(const std::string& appName);
@@ -118,12 +119,16 @@ int main(const int argc, const char **argv)
   );
 
   auto bus = ppl.getBus();
-  bus->newSyncMessageSignal().connect(
+  auto syncMessageConnection = bus->connectSignalNewSyncMessage(
     [&messageParser](dh::gst::GstMessageSPtr message)
     {
       messageParser->parse(*message);
     }
   );
+  if(!syncMessageConnection)
+  {
+    throw std::runtime_error("Failed to connect sync message signal");
+  }
 
   ppl.setState(GST_STATE_PLAYING);
   g_main_loop_run(mainLoop);
