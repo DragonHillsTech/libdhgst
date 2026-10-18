@@ -81,7 +81,7 @@ set(HEADERS
   src/objecttraits.hpp
   src/messageparser.hpp
   src/pipeline.hpp
-  src/pluginfeature.cpp
+  src/pluginfeature.hpp
   src/sharedptrs.hpp
   src/transfertype.hpp
   src/typetraits.hpp
