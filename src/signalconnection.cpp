@@ -54,6 +54,11 @@ SignalConnection::SignalConnection(GObject* object, gulong handlerId)
   }
 }
 
+SignalConnection::SignalConnection(std::function<void()> disconnectHandler)
+: customDisconnectHandler(std::move(disconnectHandler))
+{
+}
+
 SignalConnection::SignalConnection(SignalConnection&& other) noexcept
 {
   moveFrom(std::move(other));
@@ -78,6 +83,14 @@ SignalConnection::~SignalConnection()
 
 void SignalConnection::disconnect()
 {
+  if(customDisconnectHandler)
+  {
+    auto handler = std::move(customDisconnectHandler);
+    customDisconnectHandler = nullptr;
+    handler();
+    return;
+  }
+
   if(handlerId == 0 || !weakRefInitialized)
   {
     handlerId = 0;
@@ -97,6 +110,11 @@ void SignalConnection::disconnect()
 
 bool SignalConnection::connected() const
 {
+  if(customDisconnectHandler)
+  {
+    return true;
+  }
+
   if(handlerId == 0 || !weakRefInitialized)
   {
     return false;
@@ -128,6 +146,8 @@ void SignalConnection::clearWeakRef()
 void SignalConnection::moveFrom(SignalConnection&& other) noexcept
 {
   handlerId = other.handlerId;
+  customDisconnectHandler = std::move(other.customDisconnectHandler);
+  other.customDisconnectHandler = nullptr;
 
   if(other.weakRefInitialized)
   {

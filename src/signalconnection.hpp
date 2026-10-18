@@ -22,18 +22,20 @@
 #define DH_GST_SIGNALCONNECTION_HPP
 
 #include <glib-object.h>
+#include <functional>
 
 namespace dh::gst
 {
 
 /**
- * @brief Move-only RAII handle for a GLib signal connection.
+ * @brief Move-only RAII handle for a signal connection.
  */
 class SignalConnection
 {
 public:
   SignalConnection() = default;
   SignalConnection(GObject* object, gulong handlerId);
+  explicit SignalConnection(std::function<void()> disconnectHandler);
   SignalConnection(const SignalConnection&) = delete;
   SignalConnection& operator=(const SignalConnection&) = delete;
   SignalConnection(SignalConnection&& other) noexcept;
@@ -51,6 +53,7 @@ private:
   GWeakRef weakObject{};
   gulong handlerId{0};
   bool weakRefInitialized{false};
+  std::function<void()> customDisconnectHandler;
 };
 
 } // namespace dh::gst

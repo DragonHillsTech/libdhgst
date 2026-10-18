@@ -53,28 +53,29 @@ int main(const int argc, const char **argv)
     }
   );
 
-  messageParser->errorSignal.connect(
+  std::vector<dh::gst::SignalConnection> parserConnections;
+  parserConnections.push_back(messageParser->connectSignalError(
     [mainLoop](const std::string& source, const std::string& errorMessage, const std::string& debugMessage)
     {
       std::cerr << "Error from '" << source << "' | Message: " << errorMessage << " | Debug info: " << debugMessage << std::endl;
       std::cerr << "Quitting" << std::endl;
       g_main_loop_quit(mainLoop);
     }
-  );
-  messageParser->infoSignal.connect(
+  ));
+  parserConnections.push_back(messageParser->connectSignalInfo(
     [](const std::string& source, const std::string& infoMessage, const std::string& debugMessage)
     {
       std::cout << "Info from '" << source << "' | Message: " << infoMessage << " | Debug info: " << debugMessage << std::endl;
     }
-  );
+  ));
 
-  messageParser->warningSignal.connect(
+  parserConnections.push_back(messageParser->connectSignalWarning(
     [](const std::string& source, const std::string& warningMessage, const std::string& debugMessage)
     {
       std::cout << "Warning from '" << source << "' | Message: " << warningMessage << " | Debug info: " << debugMessage << std::endl;
     }
-  );
-  messageParser->stateChangedSignal.connect(
+  ));
+  parserConnections.push_back(messageParser->connectSignalStateChanged(
     [](const std::string& source, GstState oldState, GstState newState, GstState pendingState)
     {
       std::cout << "State change '" << source << "': "
@@ -82,41 +83,41 @@ int main(const int argc, const char **argv)
                 << gst_element_state_get_name(newState) << " ("
                 << gst_element_state_get_name(pendingState) << ")" << std::endl;
     }
-  );
-  messageParser->endOfStreamSignal.connect(
+  ));
+  parserConnections.push_back(messageParser->connectSignalEndOfStream(
     [](const std::string& sourceName)
     {
        std::cout << "EOS from '" << sourceName << "'" << std::endl;
     }
-  );
-  messageParser->streamStatusSignal.connect(
+  ));
+  parserConnections.push_back(messageParser->connectSignalStreamStatus(
     [](const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)
     {
       std::cout << "Stream status from '" << sourceName << "' | Status Type: "
                 << dh::gst::helpers::gstStreamStatusTypeToString(statusType) << " | Owner: "
                 << ownerName << std::endl;
     }
-  );
-  messageParser->streamStartSignal.connect(
+  ));
+  parserConnections.push_back(messageParser->connectSignalStreamStart(
     [](const std::string& sourceName)
     {
       std::cout << "Stream start from '" << sourceName << "'" << std::endl;
     }
-  );
-  messageParser->asyncDoneSignal.connect(
+  ));
+  parserConnections.push_back(messageParser->connectSignalAsyncDone(
     [](const std::string& sourceName, GstClockTime runningTime)
     {
       std::cout << "Stream status from '" << sourceName << "' | Running time: "
                 << runningTime << "ns" << std::endl;
     }
-  );
+  ));
 
-  messageParser->elementMessageSignal.connect(
+  parserConnections.push_back(messageParser->connectSignalElementMessage(
     [](const std::string& sourceName, const GstStructure*)
     {
       std::cout << "Element specific message from '" << sourceName << "'" << std::endl;
     }
-  );
+  ));
 
   auto bus = ppl.getBus();
   auto syncMessageConnection = bus->connectSignalNewSyncMessage(
