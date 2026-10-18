@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
 # Options
 option(BUILD_TESTS "Build the unit tests" OFF)
@@ -20,42 +19,6 @@ message(STATUS "  BUILD_TESTS         = ${BUILD_TESTS}")
 message(STATUS "  BUILD_EXAMPLES      = ${BUILD_EXAMPLES}")
 message(STATUS "  BUILD_DOCUMENTATION = ${BUILD_DOCUMENTATION}")
 message(STATUS "")
-
-if(BUILD_DOCUMENTATION)
-  find_package(Doxygen)
-  if(NOT DOXYGEN_FOUND)
-    message(FATAL_ERROR "Doxygen is required to build documentation")
-  endif()
-  set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  set(DOXYGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen")
-  set(DOXYGEN_INDEX_FILE "${DOXYGEN_OUTPUT_DIR}/html/index.html")
-    configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    @ONLY
-  )
-  add_custom_command(
-    OUTPUT "${DOXYGEN_INDEX_FILE}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOXYGEN_OUTPUT_DIR}"
-    COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    MAIN_DEPENDENCY "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    DEPENDS
-      "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    COMMENT "Generating Doxygen documentation"
-    VERBATIM
-  )
-  add_custom_target(
-    docs
-    ALL
-    DEPENDS "${DOXYGEN_INDEX_FILE}"
-  )
-  install(
-    DIRECTORY "${DOXYGEN_OUTPUT_DIR}/html"
-    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
-    COMPONENT documentation
-  )
-endif()
-
 
 # Set the source and header files
 set(SOURCES
@@ -87,6 +50,42 @@ set(HEADERS
   src/typetraits.hpp
 )
 
+if(BUILD_DOCUMENTATION)
+  find_package(Doxygen)
+  if(NOT DOXYGEN_FOUND)
+    message(FATAL_ERROR "Doxygen is required to build documentation")
+  endif()
+  set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  set(DOXYGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen")
+  set(DOXYGEN_INDEX_FILE "${DOXYGEN_OUTPUT_DIR}/html/index.html")
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    @ONLY
+  )
+  add_custom_command(
+    OUTPUT "${DOXYGEN_INDEX_FILE}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOXYGEN_OUTPUT_DIR}"
+    COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    MAIN_DEPENDENCY "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    DEPENDS
+      ${HEADERS}
+      ${SOURCES}
+    COMMENT "Generating Doxygen documentation"
+    VERBATIM
+  )
+  add_custom_target(
+    docs
+    ALL
+    DEPENDS "${DOXYGEN_INDEX_FILE}"
+  )
+  install(
+    DIRECTORY "${DOXYGEN_OUTPUT_DIR}/html"
+    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
+    COMPONENT documentation
+  )
+endif()
+
 # Find required packages
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0>=1.14)
@@ -98,11 +97,16 @@ link_directories(${GSTREAMER_LIBRARY_DIRS})
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-# Include source directory for header files
-include_directories(src)
-
 # Create the shared library
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
+
+target_include_directories(${PROJECT_NAME}
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/dh/gst>
+)
 
 # Add version information to the library
 # Automatically set SOVERSION based on the project major version
@@ -129,7 +133,7 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 install(FILES ${HEADERS}
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dh/libdhgst
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dh/gst
 )
 
 # Create and install the pkg-config file
@@ -159,6 +163,7 @@ configure_package_config_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/libdhgstConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfig.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libdhgst
+  PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 
 install(FILES
