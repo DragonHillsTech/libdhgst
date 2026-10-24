@@ -93,21 +93,21 @@ protected:
   [[nodiscard]] std::vector<GstPadSPtr> getSrcPads();
 
  /**
-  * @brief Finds a compatible pad for a given pad and caps.
-  * @param pad (transfer none): The GstPad to find a compatible pad for.
-  * @param caps (transfer none): The GstCaps that the compatible pad must match.
-  * @return (transfer none): A pointer to the compatible GstPad, or nullptr if none found.
-  * @note The caller does not own the returned GstPad pointer. Use gst_object_ref() if you need to keep it.
+  * @brief Finds a pad of this element that is compatible with the given pad and caps.
+  * May request a new pad from a request pad template.
+  * @param pad The pad to find a compatible pad for.
+  * @param caps The caps the compatible pad must match. nullptr (default) means any caps.
+  * @return The compatible pad, or nullptr if none was found.
+  * @throws std::invalid_argument if pad is nullptr.
   */
-  [[nodiscard]] GstPad* getCompatiblePad(GstPad* pad, GstCaps* caps);
+  [[nodiscard]] GstPadSPtr getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps = nullptr);
 
  /**
-  * @brief Gets a static pad by name.
+  * @brief Gets a static (always or sometimes) pad by name.
   * @param name The name of the pad to retrieve.
-  * @return (transfer none): A pointer to the GstPad if found, nullptr otherwise.
-  * @note The caller does not own the returned GstPad pointer. Use gst_object_ref() if you need to keep it.
+  * @return The pad, or nullptr if the element has no static pad with that name.
   */
-  [[nodiscard]] GstPad* getStaticPad(const std::string& name);
+  [[nodiscard]] GstPadSPtr getStaticPad(const std::string& name);
 
   /**
    * @brief Links this element with another element.
