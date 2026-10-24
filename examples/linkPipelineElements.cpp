@@ -21,20 +21,20 @@ int main(const int argc, const char **argv)
 
   // create elements and add them to the pipeline
   auto srcElement = ElementFactory::makeElement("videotestsrc", "srcElement");
-  pipeline->addElement(srcElement);
+  pipeline->addElement(*srcElement);
 
   auto rotateElement = ElementFactory::makeElement("rotate", "rotateElement");
   rotateElement->setProperty("angle", .7854); // 45 degrees
-  pipeline->addElement(rotateElement);
+  pipeline->addElement(*rotateElement);
 
   auto convertElement = ElementFactory::makeElement("videoconvert", "convertElement");
-  pipeline->addElement(convertElement);
+  pipeline->addElement(*convertElement);
 
   auto dstElement = ElementFactory::makeElement("fpsdisplaysink", "dstElement");
-  pipeline->addElement(dstElement);
+  pipeline->addElement(*dstElement);
 
   // link all the elements
-  srcElement->link(rotateElement)->link(convertElement)->link(dstElement);
+  srcElement->link(*rotateElement).link(*convertElement).link(*dstElement);
 
   // start the pipeline
   pipeline->setState(GST_STATE_PLAYING);
