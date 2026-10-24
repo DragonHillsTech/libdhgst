@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(libdhgst VERSION 0.0.6 LANGUAGES CXX)
+project(libdhgst VERSION 1.0.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
@@ -31,6 +31,7 @@ set(SOURCES
   src/object.cpp
   src/pluginfeature.cpp
   src/pipeline.cpp
+  src/signalconnection.cpp
 )
 
 set(HEADERS
@@ -46,6 +47,7 @@ set(HEADERS
   src/pipeline.hpp
   src/pluginfeature.hpp
   src/sharedptrs.hpp
+  src/signalconnection.hpp
   src/transfertype.hpp
   src/typetraits.hpp
 )

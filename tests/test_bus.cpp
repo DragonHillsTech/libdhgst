@@ -31,7 +31,7 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
   auto bus = Bus::create(gst_bus_new(), TransferType::Full);
   bool signalReceived = false;
   // Connect to the sync message signal from the Bus
-  bus->newSyncMessageSignal().connect(
+  auto syncMessageConnection = bus->connectSignalNewSyncMessage(
     [&](GstMessageSPtr message)
     {
       signalReceived = true;
@@ -39,6 +39,7 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
       BOOST_REQUIRE_EQUAL(std::string(gst_structure_get_name(gst_message_get_structure(message.get()))), "TestMessage");
     }
   );
+  BOOST_REQUIRE(syncMessageConnection.connected());
   // Create a mock message to post to the bus
   // gst_structure_new_empty returns transfer:full
   // gst_message_new_application takes GstMessage transfertype:full and returns full

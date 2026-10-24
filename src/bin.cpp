@@ -21,6 +21,7 @@
 #include "bin.hpp"
 
 #include <stdexcept>
+#include <utility>
 
 namespace dh::gst
 {
@@ -152,9 +153,9 @@ void Bin::removeElement(const std::shared_ptr<Element>& element)
   }
 }
 
-bs2::signal<void(GstElementSPtr)>& Bin::elementAddedSignal() const
+SignalConnection Bin::connectSignalElementAdded(std::function<void(GstElementSPtr)> callback) const
 {
-  return connectGobjectSignal<GstElementSPtr>("element-added");
+  return connectGobjectSignal<GstElementSPtr>("element-added", std::move(callback));
 }
 
 const GstBin* Bin::getRawGstBin() const
