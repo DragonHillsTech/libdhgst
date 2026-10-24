@@ -32,6 +32,7 @@ Object::Object(GstObjectSPtr gstObject)
   {
     throw std::runtime_error("No GstObject");
   }
+  requireType(GST_TYPE_OBJECT);
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
@@ -146,6 +147,17 @@ void Object::throwPropertyTypeMismatch(const GParamSpec* propertySpec)
 void Object::disconnectSignal(SignalConnection& connection) const
 {
   connection.disconnect();
+}
+
+void Object::requireType(GType expectedType) const
+{
+  if(! G_TYPE_CHECK_INSTANCE_TYPE(getRawGstObject(), expectedType))
+  {
+    throw std::invalid_argument(
+      std::string("Expected a ") + g_type_name(expectedType)
+      + ", got a " + G_OBJECT_TYPE_NAME(getRawGstObject())
+    );
+  }
 }
 
 const GstObject* Object::getRawGstObject() const

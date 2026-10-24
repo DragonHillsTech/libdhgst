@@ -29,11 +29,13 @@ namespace dh::gst
 Bin::Bin(GstBinSPtr gstBin)
 : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
 {
+  requireType(GST_TYPE_BIN);
 }
 
 Bin::Bin(GstBin* gstBin, TransferType transferType)
 : Element(GST_ELEMENT_CAST(gstBin), transferType)
 {
+  requireType(GST_TYPE_BIN);
 }
 
 Bin::Bin(const std::string& name)

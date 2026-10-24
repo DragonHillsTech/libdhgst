@@ -145,6 +145,13 @@ protected:
   [[nodiscard]] const GstObject* getRawGstObject() const;
   [[nodiscard]] GstObject* getRawGstObject();
 
+  /**
+   * @brief Check that the wrapped object is an instance of expectedType (or a subclass).
+   * Wrapper constructors call this, because the GST_*_CAST macros used to pass C pointers do not check types.
+   * @throws std::invalid_argument if the wrapped object has a different type.
+   */
+  void requireType(GType expectedType) const;
+
 /**
 * @brief Connect a callback directly to the GObject signal with the matching name.
 * @throws std::runtime_error if signal could not be connected
