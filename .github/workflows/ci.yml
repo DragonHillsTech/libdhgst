@@ -33,7 +33,7 @@ jobs:
             libgstreamer1.0-dev \
             libgstreamer-plugins-base1.0-dev \
             libgstreamer-plugins-bad1.0-dev \
-            libgstreamer-plugins-good1.0-dev
+            gstreamer1.0-plugins-base
 
       # Create build directory
       - name: Create build directory
