@@ -30,26 +30,36 @@ namespace dh::gst
 namespace
 {
 
+/**
+ * @brief Enables sync message emission on a bus for its lifetime.
+ * It is owned by the signal handler stored in the bus, so it only holds a weak reference:
+ * a strong one would keep the bus alive as long as the handler is connected.
+ */
 class SyncMessageEmission
 {
 public:
-  explicit SyncMessageEmission(GstBusSPtr bus)
-  : bus(std::move(bus))
+  explicit SyncMessageEmission(GstBus& bus)
   {
-    assert(this->bus != nullptr);
-    gst_bus_enable_sync_message_emission(this->bus.get());
+    g_weak_ref_init(&weakBus, &bus);
+    gst_bus_enable_sync_message_emission(&bus);
   }
 
   ~SyncMessageEmission()
   {
-    gst_bus_disable_sync_message_emission(bus.get());
+    // the bus is gone if the handler is destroyed while the bus is finalized
+    if(auto* bus = static_cast<GstBus*>(g_weak_ref_get(&weakBus)))
+    {
+      gst_bus_disable_sync_message_emission(bus);
+      gst_object_unref(bus);
+    }
+    g_weak_ref_clear(&weakBus);
   }
 
   SyncMessageEmission(const SyncMessageEmission&) = delete;
   SyncMessageEmission& operator=(const SyncMessageEmission&) = delete;
 
 private:
-  GstBusSPtr bus;
+  GWeakRef weakBus;
 };
 
 } // namespace
@@ -97,7 +107,7 @@ void Bus::post(const GstMessageSPtr message)
 
 SignalConnection Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const
 {
-  auto emission = std::make_shared<SyncMessageEmission>(getGstBus());
+  auto emission = std::make_shared<SyncMessageEmission>(*getGstBus());
   return connectGobjectSignal<GstMessageSPtr>(
     "sync-message",
     std::function<void(GstMessageSPtr)>(
