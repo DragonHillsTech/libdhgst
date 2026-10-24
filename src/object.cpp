@@ -144,6 +144,26 @@ void Object::throwPropertyTypeMismatch(const GParamSpec* propertySpec)
   );
 }
 
+void Object::throwSignalSignatureMismatch(const GSignalQuery& query)
+{
+  std::string signature = g_type_name(query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE);
+  signature += std::string(" ") + query.signal_name + "(";
+  for(guint i = 0; i < query.n_params; ++i)
+  {
+    if(i > 0)
+    {
+      signature += ", ";
+    }
+    signature += g_type_name(query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE);
+  }
+  signature += ")";
+
+  throw std::invalid_argument(
+    "Callback does not match signal " + signature
+    + ": it must return void and take exactly these parameter types"
+  );
+}
+
 void Object::disconnectSignal(SignalConnection& connection) const
 {
   connection.disconnect();

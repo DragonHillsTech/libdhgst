@@ -65,6 +65,11 @@ template<> struct GstTypeOf<GstPadTemplate> { static GType get() { return GST_TY
 template<> struct GstTypeOf<GstPipeline> { static GType get() { return GST_TYPE_PIPELINE; } };
 template<> struct GstTypeOf<GstPlugin> { static GType get() { return GST_TYPE_PLUGIN; } };
 template<> struct GstTypeOf<GstPluginFeature> { static GType get() { return GST_TYPE_PLUGIN_FEATURE; } };
+// GstMiniObject based types
+template<> struct GstTypeOf<GstCaps> { static GType get() { return GST_TYPE_CAPS; } };
+template<> struct GstTypeOf<GstMessage> { static GType get() { return GST_TYPE_MESSAGE; } };
+template<> struct GstTypeOf<GstEvent> { static GType get() { return GST_TYPE_EVENT; } };
+template<> struct GstTypeOf<GstBuffer> { static GType get() { return GST_TYPE_BUFFER; } };
 
 /**
  * @brief Maps a C++ type to GObject properties, used by Object::getProperty and Object::setProperty.
@@ -80,7 +85,7 @@ template<> struct GstTypeOf<GstPluginFeature> { static GType get() { return GST_
  *  - float, double
  *  - std::string (and const char* for setProperty only)
  *  - C++ enums for GEnum and GFlags properties (the concrete enum type can not be verified)
- *  - GstCapsSPtr
+ *  - std::shared_ptr<T> for GstMiniObject based types: GstCapsSPtr, GstMessageSPtr, GstEventSPtr, GstBufferSPtr
  *  - std::shared_ptr<T> for GstObject based types (property type must be exactly T)
  */
 template<typename T, typename = void>
@@ -89,7 +94,7 @@ struct GValueTraits
   static_assert(
     !sizeof(T*),
     "Unsupported property type. Use bool, an integer type matching the property size and signedness, "
-    "float, double, std::string, an enum, GstCapsSPtr or std::shared_ptr<GstObject type>, see GValueTraits"
+    "float, double, std::string, an enum or std::shared_ptr<GstObject or GstMiniObject type>, see GValueTraits"
   );
 };
 
@@ -218,15 +223,16 @@ struct GValueTraits<T, std::enable_if_t<std::is_enum_v<T>>>
   }
 };
 
-template<> struct GValueTraits<GstCapsSPtr>
+template<typename T>
+struct GValueTraits<std::shared_ptr<T>, std::enable_if_t<IsGstMiniObject<T>::value>>
 {
-  static bool matches(GType propertyType) { return propertyType == GST_TYPE_CAPS; }
-  static GstCapsSPtr get(const GValue* value)
+  static bool matches(GType propertyType) { return propertyType == GstTypeOf<T>::get(); }
+  static std::shared_ptr<T> get(const GValue* value)
   {
     // g_value_dup_boxed returns a new reference
-    return makeGstSharedPtr(static_cast<GstCaps*>(g_value_dup_boxed(value)), TransferType::Full);
+    return makeGstSharedPtr(static_cast<T*>(g_value_dup_boxed(value)), TransferType::Full);
   }
-  static void set(GValue* value, const GstCapsSPtr& x) { g_value_set_boxed(value, x.get()); }
+  static void set(GValue* value, const std::shared_ptr<T>& x) { g_value_set_boxed(value, x.get()); }
 };
 
 template<typename T>
