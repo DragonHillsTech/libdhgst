@@ -71,6 +71,14 @@ protected:
   Object(GstObject* gstObject, TransferType transferType);
 
 public:
+  /**
+   * @brief Create an Object that wraps any GstObject, e.g. the source of a GstMessage.
+   * @param gstObject the GstObject to wrap
+   * @param transferType see if None, then increase use count
+   * @throws std::runtime_error if gstObject is nullptr
+   */
+  [[nodiscard]] static std::shared_ptr<Object> create(GstObject* gstObject, TransferType transferType);
+
   virtual ~Object();
 
   /**
