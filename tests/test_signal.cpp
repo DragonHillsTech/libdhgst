@@ -24,6 +24,7 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <string>
 #include <thread>
 #include <vector>
@@ -174,15 +175,15 @@ BOOST_AUTO_TEST_CASE(DisconnectionDuringEmission)
     }
   );
 
-  // When emitted, both callbacks from the snapshot run during the first emission
+  // slot 1 disconnects slot 2 before it runs, so slot 2 is not called anymore, also not in this emission
   sig(10);
   BOOST_CHECK_EQUAL(count1, 1);
-  BOOST_CHECK_EQUAL(count2, 1);
+  BOOST_CHECK_EQUAL(count2, 0);
 
   // Second emission: both slots were disconnected
   sig(20);
   BOOST_CHECK_EQUAL(count1, 1);
-  BOOST_CHECK_EQUAL(count2, 1);
+  BOOST_CHECK_EQUAL(count2, 0);
 }
 
 BOOST_AUTO_TEST_CASE(MultipleArgumentsAndTypes)
@@ -244,4 +245,93 @@ BOOST_AUTO_TEST_CASE(ConcurrentConnectDisconnectAndEmission)
   const int callsBefore = temporaryCalls + persistentCalls;
   sig(1);
   BOOST_CHECK_EQUAL(temporaryCalls + persistentCalls, callsBefore);
+}
+
+BOOST_AUTO_TEST_CASE(DisconnectWaitsForRunningSlot)
+{
+  // an object that disconnects in its destructor must not be used by a slot after disconnect() returned
+  Signal<int> sig;
+  std::atomic<bool> entered{false};
+  std::atomic<bool> finished{false};
+
+  const auto id = sig.connect(
+    [&](int)
+    {
+      entered = true;
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      finished = true;
+    }
+  );
+
+  std::thread emitter([&]() { sig(1); });
+  while(!entered)
+  {
+    std::this_thread::yield();
+  }
+
+  sig.disconnect(id);
+  BOOST_CHECK(finished); // disconnect() returned only after the running call finished
+
+  emitter.join();
+}
+
+BOOST_AUTO_TEST_CASE(NoCallAfterDisconnectReturned)
+{
+  Signal<int> sig;
+  std::atomic<bool> stop{false};
+  std::atomic<int> callsAfterDisconnect{0};
+
+  auto emitter = [&]()
+  {
+    while(!stop)
+    {
+      sig(1);
+    }
+  };
+  std::thread emitter1(emitter);
+  std::thread emitter2(emitter);
+
+  for(int i = 0; i < 2000; ++i)
+  {
+    // stands for the state of an object that is destroyed after disconnecting
+    auto alive = std::make_shared<std::atomic<bool>>(true);
+    const auto id = sig.connect(
+      [alive, &callsAfterDisconnect](int)
+      {
+        if(!*alive)
+        {
+          ++callsAfterDisconnect;
+        }
+      }
+    );
+    std::this_thread::yield();
+    sig.disconnect(id);
+    *alive = false;
+  }
+
+  stop = true;
+  emitter1.join();
+  emitter2.join();
+
+  BOOST_CHECK_EQUAL(callsAfterDisconnect.load(), 0);
+}
+
+BOOST_AUTO_TEST_CASE(SlotMayDisconnectItselfWhileRunning)
+{
+  // must not deadlock: the slot disconnects itself while it is being called
+  Signal<int> sig;
+  Signal<int>::Id id = 0;
+  int count = 0;
+  id = sig.connect(
+    [&](int)
+    {
+      ++count;
+      sig.disconnect(id);
+    }
+  );
+
+  std::thread emitter([&]() { sig(1); });
+  emitter.join();
+  sig(2);
+  BOOST_CHECK_EQUAL(count, 1);
 }

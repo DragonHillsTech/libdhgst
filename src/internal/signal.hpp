@@ -37,10 +37,17 @@ namespace dh::gst
  * @brief Lightweight multi-cast signal template for internal callback dispatching.
  *
  * Thread-safe: connect(), disconnect() and emission may be called concurrently from different threads.
- * Each emission works on a snapshot of the connected slots, taken when the emission starts.
- * Therefore a slot disconnected while an emission is running (in this or another thread)
- * may still be called once by that emission, also after disconnect() has returned.
- * Slots are called without holding the internal lock, so they may connect and disconnect slots themselves.
+ *
+ * Disconnect guarantee: when disconnect() returns, the slot is not running and will not be called again.
+ * If the slot is running in another thread, disconnect() waits until that call has finished.
+ * This makes it safe to disconnect in the destructor of an object that the slot uses.
+ * A slot may disconnect itself or other slots while it runs; a slot disconnected during an emission
+ * is not called by that emission anymore.
+ *
+ * Because disconnect() may wait for a running slot, do not call it while holding a lock
+ * that the slot needs, and do not disconnect each other's slots from two slots running
+ * concurrently in different threads: both would deadlock.
+ * A slot is never called concurrently with itself; concurrent emissions call it one after the other.
  */
 template<typename... Args>
 class Signal
@@ -51,17 +58,17 @@ public:
 
   Id connect(Slot slot)
   {
-    auto sharedSlot = std::make_shared<const Slot>(std::move(slot));
+    auto state = std::make_shared<SlotState>(std::move(slot));
     std::lock_guard<std::mutex> lock(mutex);
     const Id id = nextId++;
-    slots.emplace_back(id, std::move(sharedSlot));
+    slots.emplace_back(id, std::move(state));
     return id;
   }
 
   void disconnect(Id id)
   {
-    // destroy the removed slot outside the lock, its captures may run arbitrary code
-    std::vector<std::pair<Id, SharedSlot>> removed;
+    // destroy the removed slot outside the locks, its captures may run arbitrary code
+    std::vector<std::pair<Id, SharedSlotState>> removed;
     {
       std::lock_guard<std::mutex> lock(mutex);
       const auto it = std::stable_partition(
@@ -72,31 +79,50 @@ public:
       removed.assign(std::make_move_iterator(it), std::make_move_iterator(slots.end()));
       slots.erase(it, slots.end());
     }
+
+    for(const auto& [removedId, state] : removed)
+    {
+      // waits for a running call in another thread; recursive, so a slot can disconnect itself
+      std::lock_guard<std::recursive_mutex> callLock(state->callMutex);
+      state->connected = false;
+    }
   }
 
   void operator()(Args... args) const
   {
-    std::vector<std::pair<Id, SharedSlot>> slotsCopy;
+    std::vector<std::pair<Id, SharedSlotState>> slotsCopy;
     {
       std::lock_guard<std::mutex> lock(mutex);
       slotsCopy = slots;
     }
 
-    for(const auto& [id, slot] : slotsCopy)
+    for(const auto& [id, state] : slotsCopy)
     {
-      if(slot && *slot)
+      std::lock_guard<std::recursive_mutex> callLock(state->callMutex);
+      if(state->connected && state->slot)
       {
-        (*slot)(args...);
+        state->slot(args...);
       }
     }
   }
 
 private:
-  using SharedSlot = std::shared_ptr<const Slot>;
+  struct SlotState
+  {
+    explicit SlotState(Slot slot)
+    : slot(std::move(slot))
+    {
+    }
+
+    const Slot slot;
+    std::recursive_mutex callMutex; // held while the slot runs
+    bool connected{true}; // guarded by callMutex
+  };
+  using SharedSlotState = std::shared_ptr<SlotState>;
 
   mutable std::mutex mutex;
   Id nextId{1}; // guarded by mutex
-  std::vector<std::pair<Id, SharedSlot>> slots; // guarded by mutex
+  std::vector<std::pair<Id, SharedSlotState>> slots; // guarded by mutex
 };
 
 } // namespace dh::gst
