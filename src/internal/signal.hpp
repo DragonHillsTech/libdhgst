@@ -48,6 +48,9 @@ namespace dh::gst
  * that the slot needs, and do not disconnect each other's slots from two slots running
  * concurrently in different threads: both would deadlock.
  * A slot is never called concurrently with itself; concurrent emissions call it one after the other.
+ *
+ * Exceptions are not caught: an exception from a slot propagates out of the emission
+ * and the remaining slots are not called. Users that emit from C callbacks must not use throwing slots.
  */
 template<typename... Args>
 class Signal

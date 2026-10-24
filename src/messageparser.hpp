@@ -34,6 +34,13 @@ namespace dh::gst
 
 /**
  * @brief parser for GstMessages. After parsing, the matching signal is emitted.
+ *
+ * Callbacks must not throw. parse() is typically called from C code: a bus sync handler,
+ * a bus watch, or a main loop source that runs the task of the async handler.
+ * An exception from a callback would propagate out of parse() and unwind through these C frames,
+ * which terminates the program or leaves GStreamer/GLib locks held.
+ * It also stops the emission: the remaining callbacks for that message are not called.
+ * Catch exceptions inside the callback.
  */
 class MessageParser
 {
@@ -77,6 +84,7 @@ public:
   /**
    * @brief Parses a GStreamer message and emits corresponding signals based on its type.
    * If no async handler is set, the message is processed synchronously.
+   * The callbacks must not throw, see the class description.
    * @param message The GStreamer message to parse.
    */
   void parse(const GstMessage& message);
