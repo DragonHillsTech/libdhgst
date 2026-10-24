@@ -93,6 +93,56 @@ bool Object::propertyExists(const std::string& name) const
   return propertySpec != nullptr;
 }
 
+const GParamSpec* Object::findProperty(const std::string& name) const
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("empty property name");
+  }
+
+  const GParamSpec* propertySpec = g_object_class_find_property(
+    G_OBJECT_GET_CLASS(getRawGstObject()),
+    name.c_str()
+  );
+  if(! propertySpec)
+  {
+    throw std::invalid_argument("No property with name " + name);
+  }
+  return propertySpec;
+}
+
+const GParamSpec* Object::findReadableProperty(const std::string& name) const
+{
+  const GParamSpec* propertySpec = findProperty(name);
+  if(! (propertySpec->flags & G_PARAM_READABLE))
+  {
+    throw std::invalid_argument("Property " + name + " is not readable");
+  }
+  return propertySpec;
+}
+
+const GParamSpec* Object::findWritableProperty(const std::string& name) const
+{
+  const GParamSpec* propertySpec = findProperty(name);
+  if(! (propertySpec->flags & G_PARAM_WRITABLE))
+  {
+    throw std::invalid_argument("Property " + name + " is not writable");
+  }
+  if(propertySpec->flags & G_PARAM_CONSTRUCT_ONLY)
+  {
+    throw std::invalid_argument("Property " + name + " can only be set at construction");
+  }
+  return propertySpec;
+}
+
+void Object::throwPropertyTypeMismatch(const GParamSpec* propertySpec)
+{
+  throw std::invalid_argument(
+    std::string("Requested type does not match type ") + g_type_name(propertySpec->value_type)
+    + " of property " + g_param_spec_get_name(const_cast<GParamSpec*>(propertySpec))
+  );
+}
+
 void Object::disconnectSignal(SignalConnection& connection) const
 {
   connection.disconnect();
