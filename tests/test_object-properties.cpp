@@ -32,3 +32,11 @@ BOOST_FIXTURE_TEST_CASE(GetStringProperty, ObjectPropertiesTest)
   const auto name = element->getProperty<std::string>("name");
   BOOST_CHECK_EQUAL(name, "test_source");
 }
+
+BOOST_FIXTURE_TEST_CASE(SetStringProperty, ObjectPropertiesTest)
+{
+  auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+
+  element->setProperty<std::string>("name", "renamed_source");
+  BOOST_CHECK_EQUAL(element->getProperty<std::string>("name"), "renamed_source");
+}
