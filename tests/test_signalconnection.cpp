@@ -25,11 +25,12 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 #include <glib-object.h>
 #include <gst/gst.h>
 
-#include <cstdlib>
 #include <utility>
 
 using namespace dh::gst;
@@ -39,7 +40,6 @@ class SignalConnectionTest
 public:
   SignalConnectionTest()
   {
-    setenv("G_DEBUG", "fatal_warnings", 1);
     gst_init(nullptr, nullptr);
   }
 };

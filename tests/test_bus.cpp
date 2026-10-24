@@ -8,6 +8,8 @@
 #include "bus.hpp"
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 using namespace dh::gst;
 
@@ -20,8 +22,6 @@ public:
  // Setup before first test case
  BusTest()
  {
-  // Set G_DEBUG to fatal_warnings to make warnings crash the program
-  setenv("G_DEBUG", "fatal_warnings", 1);
   gst_init(nullptr, nullptr);  // Initialize GStreamer
  }
 };
