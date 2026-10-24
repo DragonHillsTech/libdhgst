@@ -1,11 +1,16 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
 #include "element.hpp"
+#include "elementfactory.hpp"
+#include "pipeline.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
 #include <gst/gst.h>
 
+#include <chrono>
+#include <future>
 #include <stdexcept>
+#include <thread>
 
 #include <cstdlib>
 
@@ -56,6 +61,55 @@ BOOST_FIXTURE_TEST_CASE(SetState, ElementTest)
   BOOST_REQUIRE_EQUAL(element->getState(), GST_STATE_PLAYING);
 
   // here we would get a gstreamer error if the Element is destroyed when state != null.
+}
+
+BOOST_FIXTURE_TEST_CASE(GetStateDoesNotBlockDuringAsyncStateChange, ElementTest)
+{
+  // a sink without data never prerolls, so the change to PAUSED stays pending
+  auto pipeline = Pipeline::create("test_pipeline");
+  pipeline->addElement(ElementFactory::makeElement("fakesink", "test_sink"));
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+
+  std::promise<GstState> result;
+  auto future = result.get_future();
+  std::thread queryThread([&]() { result.set_value(pipeline->getState()); });
+  const bool returned = future.wait_for(std::chrono::seconds(2)) == std::future_status::ready;
+
+  // aborts the pending state change, this also wakes up a getState() that is still waiting
+  pipeline->setState(GST_STATE_NULL);
+  queryThread.join();
+
+  BOOST_REQUIRE(returned);
+  BOOST_CHECK_EQUAL(future.get(), GST_STATE_READY); // the current state, PAUSED is still pending
+}
+
+BOOST_FIXTURE_TEST_CASE(QueryStateDuringAsyncStateChange, ElementTest)
+{
+  auto pipeline = Pipeline::create("test_pipeline");
+  pipeline->addElement(ElementFactory::makeElement("fakesink", "test_sink"));
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+
+  const auto query = pipeline->queryState();
+  BOOST_CHECK_EQUAL(query.result, GST_STATE_CHANGE_ASYNC);
+  BOOST_CHECK_EQUAL(query.current, GST_STATE_READY);
+  BOOST_CHECK_EQUAL(query.pending, GST_STATE_PAUSED);
+
+  // a timeout waits, but returns when the change does not complete
+  const auto start = std::chrono::steady_clock::now();
+  BOOST_CHECK_EQUAL(pipeline->queryState(100 * GST_MSECOND).result, GST_STATE_CHANGE_ASYNC);
+  BOOST_CHECK(std::chrono::steady_clock::now() - start >= std::chrono::milliseconds(90));
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(GetStateThrowsOnFailedStateChange, ElementTest)
+{
+  auto filesrc = ElementFactory::makeElement("filesrc", "test_filesrc");
+  filesrc->setProperty<std::string>("location", "/this/file/does/not/exist");
+  BOOST_REQUIRE_EQUAL(filesrc->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_FAILURE);
+
+  BOOST_CHECK_THROW((void)filesrc->getState(), std::runtime_error);
+  BOOST_CHECK_EQUAL(filesrc->queryState().result, GST_STATE_CHANGE_FAILURE);
 }
 
 BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
