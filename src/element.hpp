@@ -26,17 +26,13 @@
 #include "sharedptrs.hpp"
 #include "transfertype.hpp"
 
-// boost
-#include <boost/signals2.hpp>
-
 // std
+#include <functional>
 #include <string>
 #include <vector>
 
 // C
 #include <gst/gst.h>
-
-namespace bs2 = boost::signals2;
 
 namespace dh::gst
 {
@@ -172,9 +168,8 @@ protected:
    * Also keep in mind that if you add new elements to the pipeline in the signal handler
    * you will need to set them to the desired target state with gst_element_set_state or
    * gst_element_sync_state_with_parent.
-   * @todo Calling this function creates a new glib signal connection. no matter if that was already done. This could be improved by keeping track of bs2 signals (in GObject data)
    */
-  [[nodiscard]] bs2::signal<void()>& noMorePadsSignal() const;
+  [[nodiscard]] SignalConnection connectSignalNoMorePads(std::function<void()> callback) const;
 
   /**
    * @brief a new GstPad has been added to the element.
@@ -182,15 +177,13 @@ protected:
    * Also keep in mind that if you add new elements to the pipeline in the signal handler
    * you will need to set them to the desired target state with gst_element_set_state or
    * gst_element_sync_state_with_parent.
-   * @todo Calling this function creates a new glib signal connection, no matter if that was already done.
-   *       This could be improved by keeping track of bs2 signals (in GObject data)
    */
-  [[nodiscard]] bs2::signal<void(GstPadSPtr)>& padAddedSignal() const;
+  [[nodiscard]] SignalConnection connectSignalPadAdded(std::function<void(GstPadSPtr)> callback) const;
 
   /**
    * @brief a GstPad has been removed from the element
    */
-  [[nodiscard]] bs2::signal<void(GstPadSPtr)>& padRemovedSignal() const;
+  [[nodiscard]] SignalConnection connectSignalPadRemoved(std::function<void(GstPadSPtr)> callback) const;
 
 private:
   [[nodiscard]] const GstElement* getRawGstElement() const;

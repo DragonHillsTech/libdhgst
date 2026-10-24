@@ -93,6 +93,11 @@ bool Object::propertyExists(const std::string& name) const
   return propertySpec != nullptr;
 }
 
+void Object::disconnectSignal(SignalConnection& connection) const
+{
+  connection.disconnect();
+}
+
 const GstObject* Object::getRawGstObject() const
 {
   return gstObject.get();

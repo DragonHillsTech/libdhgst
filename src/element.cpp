@@ -24,6 +24,7 @@
 
 // std
 #include <string>
+#include <utility>
 
 // C
 #include <cassert>
@@ -189,19 +190,19 @@ void Element::syncStateWithParent()
   }
 }
 
-bs2::signal<void()>& Element::noMorePadsSignal() const
+SignalConnection Element::connectSignalNoMorePads(std::function<void()> callback) const
 {
-  return connectGobjectSignal<>("no-more-pads");
+  return connectGobjectSignal<>("no-more-pads", std::move(callback));
 }
 
-bs2::signal<void(GstPadSPtr)>& Element::padAddedSignal() const
+SignalConnection Element::connectSignalPadAdded(std::function<void(GstPadSPtr)> callback) const
 {
-  return connectGobjectSignal<GstPadSPtr>("pad-added");
+  return connectGobjectSignal<GstPadSPtr>("pad-added", std::move(callback));
 }
 
-bs2::signal<void(GstPadSPtr)>& Element::padRemovedSignal() const
+SignalConnection Element::connectSignalPadRemoved(std::function<void(GstPadSPtr)> callback) const
 {
-  return connectGobjectSignal<GstPadSPtr>("pad-removed");
+  return connectGobjectSignal<GstPadSPtr>("pad-removed", std::move(callback));
 }
 
 const GstElement* Element::getRawGstElement() const

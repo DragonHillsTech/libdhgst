@@ -20,8 +20,49 @@
 
 #include "bus.hpp"
 
+#include <cassert>
+#include <memory>
+#include <utility>
+
 namespace dh::gst
 {
+
+namespace
+{
+
+/**
+ * @brief Enables sync message emission on a bus for its lifetime.
+ * It is owned by the signal handler stored in the bus, so it only holds a weak reference:
+ * a strong one would keep the bus alive as long as the handler is connected.
+ */
+class SyncMessageEmission
+{
+public:
+  explicit SyncMessageEmission(GstBus& bus)
+  {
+    g_weak_ref_init(&weakBus, &bus);
+    gst_bus_enable_sync_message_emission(&bus);
+  }
+
+  ~SyncMessageEmission()
+  {
+    // the bus is gone if the handler is destroyed while the bus is finalized
+    if(auto* bus = static_cast<GstBus*>(g_weak_ref_get(&weakBus)))
+    {
+      gst_bus_disable_sync_message_emission(bus);
+      gst_object_unref(bus);
+    }
+    g_weak_ref_clear(&weakBus);
+  }
+
+  SyncMessageEmission(const SyncMessageEmission&) = delete;
+  SyncMessageEmission& operator=(const SyncMessageEmission&) = delete;
+
+private:
+  GWeakRef weakBus;
+};
+
+} // namespace
 
 
 Bus::Bus(GstBusSPtr gstBus)
@@ -64,11 +105,19 @@ void Bus::post(const GstMessageSPtr message)
   gst_bus_post(getRawGstBus(), gst_message_ref(message.get()));
 }
 
-bs2::signal<void(GstMessageSPtr)>& Bus::newSyncMessageSignal() const
+SignalConnection Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const
 {
-  //TODO: on disconnect, gst_bus_enable_sync_message_emission should be called as often as it was enabled to stop sync signal emission
-  gst_bus_enable_sync_message_emission(const_cast<GstBus*>(getRawGstBus()));
-  return connectGobjectSignal<GstMessageSPtr>("sync-message");
+  auto emission = std::make_shared<SyncMessageEmission>(*getGstBus());
+  return connectGobjectSignal<GstMessageSPtr>(
+    "sync-message",
+    std::function<void(GstMessageSPtr)>(
+      [callback = std::move(callback), emission = std::move(emission)](GstMessageSPtr message)
+      {
+        (void)emission;
+        callback(std::move(message));
+      }
+    )
+  );
 }
 
 GstBus* Bus::getRawGstBus()

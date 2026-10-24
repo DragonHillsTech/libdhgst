@@ -35,13 +35,14 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
   // Connect to the "pad-added" signal
   bool signalEmitted = false;
   std::shared_ptr<GstPad> capturedPad;
-  decodeBinElement->padAddedSignal().connect(
-  [&](std::shared_ptr<GstPad> pad)
+  auto padAddedConnection = decodeBinElement->connectSignalPadAdded(
+    [&](std::shared_ptr<GstPad> pad)
     {
       signalEmitted = true;
       capturedPad = pad;
     }
   );
+  BOOST_REQUIRE(padAddedConnection.connected());
 
   // Set pipeline to PLAYING to trigger the "pad-added" signal
   const auto setStateResult = pipeline.setState(GST_STATE_PLAYING);
@@ -68,13 +69,14 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ElementAdded, ObjectTest)
 
   bool signalEmitted = false;
   GstElementSPtr capturedElement;
-  bin->elementAddedSignal().connect(
+  auto elementAddedConnection = bin->connectSignalElementAdded(
     [&](std::shared_ptr<GstElement> element)
     {
       signalEmitted = true;
       capturedElement = element;
     }
   );
+  BOOST_REQUIRE(elementAddedConnection.connected());
 
   auto element = ElementFactory::makeElement("fakesrc", "test-source");
 
@@ -104,7 +106,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, Obje
 
   bool signalEmitted = false;
   GstElementSPtr capturedElement;
-  bin->elementAddedSignal().connect(
+  auto elementAddedConnection = bin->connectSignalElementAdded(
     [&](std::shared_ptr<GstElement> element)
     {
       signalEmitted = true;
@@ -112,6 +114,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, Obje
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
   );
+  BOOST_REQUIRE(elementAddedConnection.connected());
 
   auto element = ElementFactory::makeElement("fakesrc", "test-source");
 

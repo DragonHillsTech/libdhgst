@@ -24,6 +24,8 @@
 #include "element.hpp"
 #include "sharedptrs.hpp"
 
+#include <functional>
+
 namespace dh::gst
 {
 class Bin : public Element
@@ -114,7 +116,7 @@ public:
    */
   void removeElement(const std::shared_ptr<Element>& element);
 
-  [[nodiscard]] bs2::signal<void(GstElementSPtr)>& elementAddedSignal() const;
+  [[nodiscard]] SignalConnection connectSignalElementAdded(std::function<void(GstElementSPtr)> callback) const;
  /* TODO: add signals
   * element-removed
   * deep-element-added
