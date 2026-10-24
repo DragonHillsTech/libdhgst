@@ -142,9 +142,9 @@ public:
   [[nodiscard]] SignalConnection connectSignalAsyncDone(std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback);
 
 private:
-  void parseSync(const GstMessage& message);
-  std::string getSourceName(const GstMessage& message) const;
   class Private;
+  static void parseSync(Private& prv, const GstMessage& message);
+  static std::string getSourceName(const GstMessage& message);
   std::shared_ptr<Private> prv;
 };
 
