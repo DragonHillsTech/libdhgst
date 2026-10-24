@@ -154,6 +154,9 @@ protected:
 
 /**
 * @brief Connect a callback directly to the GObject signal with the matching name.
+* @tparam Args the parameter types of the signal, without the emitting object and user data.
+*         Number and types must match the signal exactly (see GValueTraits), and the signal must return void.
+* @throws std::invalid_argument if the signal does not exist or its signature does not match Args
 * @throws std::runtime_error if signal could not be connected
 */
 template<typename... Args>
@@ -185,6 +188,18 @@ private:
    * @throws std::invalid_argument always, with a message about the type mismatch.
    */
   [[noreturn]] static void throwPropertyTypeMismatch(const GParamSpec* propertySpec);
+
+  /**
+   * @brief Check that a callback with parameters Args can be connected to the queried signal:
+   * same number of parameters, exactly matching types and no return value.
+   */
+  template<typename... Args>
+  [[nodiscard]] static bool signalSignatureMatches(const GSignalQuery& query);
+
+  /**
+   * @throws std::invalid_argument always, with a message containing the signal signature.
+   */
+  [[noreturn]] static void throwSignalSignatureMismatch(const GSignalQuery& query);
 
   GstObjectSPtr gstObject;
 
@@ -260,6 +275,17 @@ void Object::setProperty(const std::string& name, const ValueType& value)
   );
 }
 
+template<typename... Args>
+bool Object::signalSignatureMatches(const GSignalQuery& query)
+{
+  if((query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE) != G_TYPE_NONE || query.n_params != sizeof...(Args))
+  {
+    return false;
+  }
+  [[maybe_unused]] guint index = 0;
+  return (true && ... && GValueTraits<std::decay_t<Args>>::matches(query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE));
+}
+
 /** Connect a callback to a GObject signal.
   * @tparam Args types you want to use. GstObject* types are not allowed, use shared_ptr instead.
   * @param signalName the name of the signal
@@ -288,6 +314,15 @@ SignalConnection Object::connectGobjectSignal(
   if(! callback)
   {
     throw std::invalid_argument("empty signal callback");
+  }
+
+  // The handler is cast to GCallback, so a mismatching signature would read garbage arguments
+  // or return an undefined value to GLib. Check it against the signal before connecting.
+  GSignalQuery query;
+  g_signal_query(g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getRawGstObject())), &query);
+  if(! signalSignatureMatches<Args...>(query))
+  {
+    throwSignalSignatureMismatch(query);
   }
 
   using Callback = std::function<void(Args...)>;
