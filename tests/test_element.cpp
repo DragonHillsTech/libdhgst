@@ -105,31 +105,52 @@ BOOST_FIXTURE_TEST_CASE(GetStaticPad, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  GstPad* staticPad = element->getStaticPad("src");
-  BOOST_REQUIRE_NE(staticPad, nullptr);  // fakesrc has a "src" pad
-  BOOST_REQUIRE_EQUAL(gst_pad_get_name(staticPad), std::string("src"));  // Verify the pad name
+  const auto staticPad = element->getStaticPad("src");
+  BOOST_REQUIRE(staticPad);  // fakesrc has a "src" pad
+  BOOST_CHECK_EQUAL(GST_OBJECT_NAME(staticPad.get()), std::string("src"));  // Verify the pad name
+
+  const auto refCount = [&staticPad]() -> int { return GST_OBJECT_REFCOUNT_VALUE(staticPad.get()); };
+  const int baseline = refCount();
+  {
+    const auto samePad = element->getStaticPad("src");
+    BOOST_CHECK_EQUAL(samePad, staticPad);
+    BOOST_CHECK_EQUAL(refCount(), baseline + 1);
+  }
+  BOOST_CHECK_EQUAL(refCount(), baseline); // released again, no leak
+
+  BOOST_CHECK(! element->getStaticPad("does_not_exist"));
 }
 
 BOOST_FIXTURE_TEST_CASE(GetCompatiblePad, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  GstPad* sinkPad = gst_pad_new("sink", GST_PAD_SINK);
+  const auto sinkPad = makeGstSharedPtr(gst_pad_new("sink", GST_PAD_SINK), TransferType::Floating);
   // Create capabilities for the sink pad
-  GstCaps* caps = gst_caps_new_simple("video/x-raw",
-                                      "format", G_TYPE_STRING, "I420",
-                                      "width", G_TYPE_INT, 640,
-                                      "height", G_TYPE_INT, 480,
-                                      "framerate", GST_TYPE_FRACTION, 30, 1,
-                                      nullptr);
-  BOOST_REQUIRE_NE(caps, nullptr);
+  const auto caps = makeGstSharedPtr(
+    gst_caps_new_simple("video/x-raw",
+                        "format", G_TYPE_STRING, "I420",
+                        "width", G_TYPE_INT, 640,
+                        "height", G_TYPE_INT, 480,
+                        "framerate", GST_TYPE_FRACTION, 30, 1,
+                        nullptr),
+    TransferType::Full
+  );
+  BOOST_REQUIRE(caps);
 
-  // Call getCompatiblePad with the created pad and caps
-  GstPad* resultPad = element->getCompatiblePad(sinkPad, caps);
+  const auto srcPad = element->getStaticPad("src");
+  const auto refCount = [&srcPad]() -> int { return GST_OBJECT_REFCOUNT_VALUE(srcPad.get()); };
+  const int baseline = refCount();
+  {
+    const auto resultPad = element->getCompatiblePad(sinkPad, caps);
+    BOOST_REQUIRE_EQUAL(resultPad, srcPad);
+    BOOST_CHECK_EQUAL(refCount(), baseline + 1);
+  }
+  BOOST_CHECK_EQUAL(refCount(), baseline); // released again, no leak
 
-  BOOST_REQUIRE_EQUAL(resultPad, element->getSrcPads().at(0).get());
-
-  gst_caps_unref(caps);  // Unref the caps
+  // caps are optional
+  BOOST_CHECK_EQUAL(element->getCompatiblePad(sinkPad), srcPad);
+  BOOST_CHECK_THROW((void)element->getCompatiblePad(nullptr), std::invalid_argument);
 }
 
 BOOST_FIXTURE_TEST_CASE(LinkAndUnlink, ElementTest)
@@ -138,21 +159,21 @@ BOOST_FIXTURE_TEST_CASE(LinkAndUnlink, ElementTest)
 
   auto sink = Element::create(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating);
 
-  GstPad* sourcePad = element->getStaticPad("src");
-  BOOST_REQUIRE_NE(sourcePad, nullptr);
+  const auto sourcePad = element->getStaticPad("src");
+  BOOST_REQUIRE(sourcePad);
 
-  GstPad* sinkPad = sink->getStaticPad("sink");
-  BOOST_REQUIRE_NE(sinkPad, nullptr);
+  const auto sinkPad = sink->getStaticPad("sink");
+  BOOST_REQUIRE(sinkPad);
 
   element->link(sink);
   // Check if elements are linked
-  BOOST_REQUIRE(gst_pad_is_linked(sourcePad));
-  BOOST_REQUIRE(gst_pad_is_linked(sinkPad));
+  BOOST_REQUIRE(gst_pad_is_linked(sourcePad.get()));
+  BOOST_REQUIRE(gst_pad_is_linked(sinkPad.get()));
 
   element->unlink(sink);
   // Check if elements are unlinked
-  BOOST_REQUIRE(!gst_pad_is_linked(sourcePad));
-  BOOST_REQUIRE(!gst_pad_is_linked(sinkPad));
+  BOOST_REQUIRE(!gst_pad_is_linked(sourcePad.get()));
+  BOOST_REQUIRE(!gst_pad_is_linked(sinkPad.get()));
 }
 
 BOOST_FIXTURE_TEST_CASE(SetName, ElementTest)

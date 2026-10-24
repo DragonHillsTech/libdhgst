@@ -23,6 +23,7 @@
 #include "elementfactory.hpp"
 
 // std
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -109,14 +110,26 @@ std::vector<GstPadSPtr> Element::getSrcPads()
   return srcPads;
 }
 
-GstPad* Element::getCompatiblePad(GstPad* pad, GstCaps* caps)
+GstPadSPtr Element::getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps)
 {
-  return gst_element_get_compatible_pad(getRawGstElement(), pad, caps);
+  if(! pad)
+  {
+    throw std::invalid_argument("getCompatiblePad: pad must not be nullptr");
+  }
+  // gst_element_get_compatible_pad: transfer full, nullable
+  return makeGstSharedPtr(
+    gst_element_get_compatible_pad(getRawGstElement(), pad.get(), caps.get()),
+    TransferType::Full
+  );
 }
 
-GstPad* Element::getStaticPad(const std::string& name)
+GstPadSPtr Element::getStaticPad(const std::string& name)
 {
-  return gst_element_get_static_pad(getRawGstElement(), name.c_str());
+  // gst_element_get_static_pad: transfer full, nullable
+  return makeGstSharedPtr(
+    gst_element_get_static_pad(getRawGstElement(), name.c_str()),
+    TransferType::Full
+  );
 }
 
 std::shared_ptr<Element>& Element::link(std::shared_ptr<Element>& other)
