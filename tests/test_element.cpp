@@ -60,7 +60,8 @@ BOOST_FIXTURE_TEST_CASE(SetState, ElementTest)
   BOOST_REQUIRE_EQUAL(element->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   BOOST_REQUIRE_EQUAL(element->getState(), GST_STATE_PLAYING);
 
-  // here we would get a gstreamer error if the Element is destroyed when state != null.
+  // the owner must set the element to NULL before it is destroyed
+  BOOST_REQUIRE_EQUAL(element->setState(GST_STATE_NULL), GST_STATE_CHANGE_SUCCESS);
 }
 
 BOOST_FIXTURE_TEST_CASE(GetStateDoesNotBlockDuringAsyncStateChange, ElementTest)
@@ -110,6 +111,8 @@ BOOST_FIXTURE_TEST_CASE(GetStateThrowsOnFailedStateChange, ElementTest)
 
   BOOST_CHECK_THROW((void)filesrc->getState(), std::runtime_error);
   BOOST_CHECK_EQUAL(filesrc->queryState().result, GST_STATE_CHANGE_FAILURE);
+
+  filesrc->setState(GST_STATE_NULL);
 }
 
 BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
