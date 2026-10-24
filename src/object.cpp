@@ -40,6 +40,11 @@ Object::Object(GstObject* gstObject, TransferType transferType)
 {
 }
 
+std::shared_ptr<Object> Object::create(GstObject* gstObject, TransferType transferType)
+{
+  return std::shared_ptr<Object>(new Object(gstObject, transferType));
+}
+
 Object::~Object() = default;
 
 GstObjectSPtr Object::getGstObject()

@@ -88,10 +88,11 @@ BOOST_FIXTURE_TEST_CASE(DisconnectDisablesSyncMessageEmission, BusTest)
 
   auto postMessage = [&bus]()
   {
-    bus->post(makeGstSharedPtr(
+    const auto message = makeGstSharedPtr(
       gst_message_new_application(nullptr, gst_structure_new_empty("TestMessage")),
       TransferType::Full
-    ));
+    );
+    bus->post(*message);
   };
 
   {

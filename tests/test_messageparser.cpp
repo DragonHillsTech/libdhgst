@@ -238,6 +238,28 @@ BOOST_FIXTURE_TEST_CASE(StreamStatusSignalEmitted, MessageParserTest)
   gst_object_unref(element);
 }
 
+BOOST_FIXTURE_TEST_CASE(SourceNameOfNonElementSource, MessageParserTest)
+{
+  // message sources are GstObjects, not necessarily elements
+  auto parser = MessageParser::create();
+  std::string sourceName;
+  auto conn = parser->connectSignalEndOfStream([&](const std::string& src) { sourceName = src; });
+
+  GstBus* bus = gst_bus_new();
+  gst_object_set_name(GST_OBJECT(bus), "test_bus");
+  GstMessage* message = gst_message_new_eos(GST_OBJECT(bus));
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(sourceName, "test_bus");
+
+  // the current name is used
+  gst_object_set_name(GST_OBJECT(bus), "renamed_bus");
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(sourceName, "renamed_bus");
+
+  gst_message_unref(message);
+  gst_object_unref(bus);
+}
+
 BOOST_FIXTURE_TEST_CASE(StreamStartSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();

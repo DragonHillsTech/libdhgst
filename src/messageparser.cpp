@@ -20,6 +20,7 @@
 
 #include "messageparser.hpp"
 #include "internal/signal.hpp"
+#include "object.hpp"
 #include "sharedptrs.hpp"
 
 #include <algorithm>
@@ -29,6 +30,25 @@
 
 namespace dh::gst
 {
+
+namespace
+{
+
+/**
+ * @brief Name of a GstObject, or "unknown" if there is no object or it has no name.
+ * Object::getName() takes the object lock: the object may be renamed by another thread.
+ */
+std::string getObjectNameOrUnknown(GstObject* object)
+{
+  if(! object)
+  {
+    return "unknown";
+  }
+  const std::string name = Object::create(object, TransferType::None)->getName();
+  return name.empty() ? "unknown" : name;
+}
+
+} // namespace
 
 class MessageParser::Private
 {
@@ -221,7 +241,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GstStreamStatusType statusType;
       GstElement* ownerElement;
       gst_message_parse_stream_status(messagePtr, &statusType, &ownerElement);
-      std::string ownerName = ownerElement ? GST_OBJECT_NAME(ownerElement) : "unknown";
+      const std::string ownerName = getObjectNameOrUnknown(GST_OBJECT_CAST(ownerElement));
       prv.streamStatusSignal(sourceName, statusType, ownerName);
       break;
     }
@@ -269,12 +289,7 @@ std::shared_ptr<MessageParser> MessageParser::create(AsyncHandler handler)
 
 std::string MessageParser::getSourceName(const GstMessage& message)
 {
-  if(GST_MESSAGE_SRC(&message))
-  {
-    const gchar* name = GST_OBJECT_NAME(GST_MESSAGE_SRC(&message));
-    return name ? name : "unknown";
-  }
-  return "unknown";
+  return getObjectNameOrUnknown(GST_MESSAGE_SRC(&message));
 }
 
 
