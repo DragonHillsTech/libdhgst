@@ -72,18 +72,18 @@ public:
   [[nodiscard]] const GstBinSPtr getGstBin() const;
 
   /**
-  * @brief Adds an element to the GstBin using a shared pointer.
-  * @param element The Element to add.
-  * @throws std::runtime_error if the element cannot be added.
-  */
-  void addElement(GstElementSPtr element);
+   * @brief Adds an element to the bin.
+   * @param element The GstElement to add.
+   * @throws std::runtime_error if the element cannot be added (e.g. it already has a parent).
+   */
+  void addElement(GstElement& element);
 
   /**
-   * @brief Adds an element to the GstBin using a reference.
+   * @brief Adds an element to the bin.
    * @param element The Element to add.
-   * @throws std::runtime_error if the element cannot be added.
+   * @throws std::runtime_error if the element cannot be added (e.g. it already has a parent).
    */
-  void addElement(std::shared_ptr<Element> element);
+  void addElement(Element& element);
 
  /**
   * @brief Retrieves an element by its name. This function recurses into child bins.
@@ -103,18 +103,18 @@ public:
   [[nodiscard]] std::shared_ptr<Element> getElementByNameRecurseUp(const std::string& name);
 
   /**
-   * @brief Removes an element from the GstBin using a shared pointer.
-   * @param element The Element to remove.
-   * @throws std::runtime_error if the element cannot be removed.
+   * @brief Removes an element from the bin.
+   * @param element The GstElement to remove.
+   * @throws std::runtime_error if the element cannot be removed (e.g. it is not in this bin).
    */
-  void removeElement(GstElementSPtr element);
+  void removeElement(GstElement& element);
 
   /**
-   * @brief Removes an element from the GstBin using a reference.
+   * @brief Removes an element from the bin.
    * @param element The Element to remove.
-   * @throws std::runtime_error if the element cannot be removed.
+   * @throws std::runtime_error if the element cannot be removed (e.g. it is not in this bin).
    */
-  void removeElement(const std::shared_ptr<Element>& element);
+  void removeElement(Element& element);
 
   [[nodiscard]] SignalConnection connectSignalElementAdded(std::function<void(GstElementSPtr)> callback) const;
  /* TODO: add signals

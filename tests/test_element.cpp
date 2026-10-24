@@ -67,7 +67,7 @@ BOOST_FIXTURE_TEST_CASE(GetStateDoesNotBlockDuringAsyncStateChange, ElementTest)
 {
   // a sink without data never prerolls, so the change to PAUSED stays pending
   auto pipeline = Pipeline::create("test_pipeline");
-  pipeline->addElement(ElementFactory::makeElement("fakesink", "test_sink"));
+  pipeline->addElement(*ElementFactory::makeElement("fakesink", "test_sink"));
   BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
 
   std::promise<GstState> result;
@@ -86,7 +86,7 @@ BOOST_FIXTURE_TEST_CASE(GetStateDoesNotBlockDuringAsyncStateChange, ElementTest)
 BOOST_FIXTURE_TEST_CASE(QueryStateDuringAsyncStateChange, ElementTest)
 {
   auto pipeline = Pipeline::create("test_pipeline");
-  pipeline->addElement(ElementFactory::makeElement("fakesink", "test_sink"));
+  pipeline->addElement(*ElementFactory::makeElement("fakesink", "test_sink"));
   BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
 
   const auto query = pipeline->queryState();
@@ -221,15 +221,37 @@ BOOST_FIXTURE_TEST_CASE(LinkAndUnlink, ElementTest)
   const auto sinkPad = sink->getStaticPad("sink");
   BOOST_REQUIRE(sinkPad);
 
-  element->link(sink);
+  element->link(*sink);
   // Check if elements are linked
   BOOST_REQUIRE(gst_pad_is_linked(sourcePad.get()));
   BOOST_REQUIRE(gst_pad_is_linked(sinkPad.get()));
 
-  element->unlink(sink);
+  element->unlink(*sink);
   // Check if elements are unlinked
   BOOST_REQUIRE(!gst_pad_is_linked(sourcePad.get()));
   BOOST_REQUIRE(!gst_pad_is_linked(sinkPad.get()));
+}
+
+BOOST_FIXTURE_TEST_CASE(LinkReturnsOtherForChaining, ElementTest)
+{
+  auto pipeline = Pipeline::create("test_pipeline");
+  auto source = ElementFactory::makeElement("fakesrc", "test_source");
+  auto identity = ElementFactory::makeElement("identity", "test_identity");
+  auto sink = ElementFactory::makeElement("fakesink", "test_sink");
+  pipeline->addElement(*source);
+  pipeline->addElement(*identity);
+  pipeline->addElement(*sink);
+
+  Element& last = source->link(*identity).link(*sink);
+  BOOST_CHECK_EQUAL(&last, sink.get());
+
+  const auto identitySinkPad = identity->getStaticPad("sink");
+  const auto sinkPad = sink->getStaticPad("sink");
+  BOOST_CHECK(gst_pad_is_linked(identitySinkPad.get()));
+  BOOST_CHECK(gst_pad_is_linked(sinkPad.get()));
+
+  // linking twice fails and is reported
+  BOOST_CHECK_THROW(source->link(*identity), std::runtime_error);
 }
 
 BOOST_FIXTURE_TEST_CASE(SetName, ElementTest)

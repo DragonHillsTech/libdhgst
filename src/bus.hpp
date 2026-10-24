@@ -60,7 +60,7 @@ public:
   /**
    * @brief Posts a message on the bus.
    */
-  void post(const GstMessageSPtr message);
+  void post(GstMessage& message);
 
   /**
    * @brief  A message has been posted on the bus.

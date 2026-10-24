@@ -99,12 +99,11 @@ const GstBusSPtr Bus::getGstBus() const
  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
 }
 
-void Bus::post(const GstMessageSPtr message)
+void Bus::post(GstMessage& message)
 {
-  assert(message);
   // [transfer: full]) for the GstMessage in gst_bus_post.
   // --> ref before forwarding
-  gst_bus_post(getRawGstBus(), gst_message_ref(message.get()));
+  gst_bus_post(getRawGstBus(), gst_message_ref(&message));
 }
 
 SignalConnection Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const

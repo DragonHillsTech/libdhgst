@@ -131,12 +131,12 @@ GstPadSPtr Element::getStaticPad(const std::string& name)
   );
 }
 
-std::shared_ptr<Element>& Element::link(std::shared_ptr<Element>& other)
+Element& Element::link(Element& other)
 {
-  if (!gst_element_link(getRawGstElement(), other->getRawGstElement()))
+  if (!gst_element_link(getRawGstElement(), other.getRawGstElement()))
   {
     std::string errorMessage = "Failed to link GstElements: ";
-    errorMessage += getName() + " -> " + other->getName();
+    errorMessage += getName() + " -> " + other.getName();
 
     // Throw an exception with the detailed error message
     throw std::runtime_error(errorMessage);
@@ -193,9 +193,9 @@ Element::StateQuery Element::queryState(GstClockTime timeout) const
   return query;
 }
 
-void Element::unlink(std::shared_ptr<Element>& other)
+void Element::unlink(Element& other)
 {
-  gst_element_unlink(getRawGstElement(), other->getRawGstElement());
+  gst_element_unlink(getRawGstElement(), other.getRawGstElement());
 }
 
 void Element::syncStateWithParent()

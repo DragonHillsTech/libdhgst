@@ -83,6 +83,12 @@ BOOST_FIXTURE_TEST_CASE(makeElementTest, ElementFactoryTest)
 }
 
 // Test the getElementType method
+BOOST_FIXTURE_TEST_CASE(makeElementWithEmptyFactoryNameThrows, ElementFactoryTest)
+{
+  // must be reported in release builds too, not only by an assert
+  BOOST_CHECK_THROW((void)ElementFactory::makeElement("", "test_element"), std::invalid_argument);
+}
+
 BOOST_FIXTURE_TEST_CASE(GetElementTypeTest, ElementFactoryTest)
 {
   const auto factory = ElementFactory::fromFactoryName("fakesrc");
