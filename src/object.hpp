@@ -201,6 +201,7 @@ template<>
   {
     g_free(value);
   }
+  return result;
 }
 
 template<typename ValueType>
