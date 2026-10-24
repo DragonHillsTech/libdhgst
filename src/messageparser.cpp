@@ -20,6 +20,7 @@
 
 #include "messageparser.hpp"
 #include "internal/signal.hpp"
+#include "sharedptrs.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -135,23 +136,27 @@ void MessageParser::parse(const GstMessage& message)
 {
   if(prv->asyncHandler)
   {
-    // keep the message alive until processed
-    gst_message_ref(const_cast<GstMessage*>(&message));
+    // The task may run after this parser is destroyed, or never: keep the message alive
+    // only as long as the task exists and do not touch the parser if it is already gone.
+    auto messageSPtr = makeGstSharedPtr(const_cast<GstMessage*>(&message), TransferType::None);
+    std::weak_ptr<Private> weakPrv = prv;
     prv->asyncHandler(
-      [this, &message]()
+      [weakPrv, messageSPtr = std::move(messageSPtr)]()
       {
-        parseSync(message);
-        gst_message_unref(const_cast<GstMessage*>(&message));
+        if(auto lockedPrv = weakPrv.lock())
+        {
+          parseSync(*lockedPrv, *messageSPtr);
+        }
       }
     );
   }
   else
   {
-    parseSync(message);
+    parseSync(*prv, message);
   }
 }
 
-void MessageParser::parseSync(const GstMessage& message)
+void MessageParser::parseSync(Private& prv, const GstMessage& message)
 {
   const std::string sourceName = getSourceName(message);
   auto* messagePtr = const_cast<GstMessage*>(&message);
@@ -160,7 +165,7 @@ void MessageParser::parseSync(const GstMessage& message)
   {
     case GST_MESSAGE_EOS:
     {
-      prv->endOfStreamSignal(sourceName);
+      prv.endOfStreamSignal(sourceName);
       break;
     }
 
@@ -169,7 +174,7 @@ void MessageParser::parseSync(const GstMessage& message)
       GError* error = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_error(messagePtr, &error, &debugInfo);
-      prv->errorSignal(sourceName, error->message, debugInfo ? debugInfo : "");
+      prv.errorSignal(sourceName, error->message, debugInfo ? debugInfo : "");
       g_clear_error(&error);
       g_free(debugInfo);
       break;
@@ -180,7 +185,7 @@ void MessageParser::parseSync(const GstMessage& message)
       GError* warning = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_warning(messagePtr, &warning, &debugInfo);
-      prv->warningSignal(sourceName, warning->message, debugInfo ? debugInfo : "");
+      prv.warningSignal(sourceName, warning->message, debugInfo ? debugInfo : "");
       g_clear_error(&warning);
       g_free(debugInfo);
       break;
@@ -191,7 +196,7 @@ void MessageParser::parseSync(const GstMessage& message)
       GError* info = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_info(messagePtr, &info, &debugInfo);
-      prv->infoSignal(sourceName, info->message, debugInfo ? debugInfo : "");
+      prv.infoSignal(sourceName, info->message, debugInfo ? debugInfo : "");
       g_clear_error(&info);
       g_free(debugInfo);
       break;
@@ -201,13 +206,13 @@ void MessageParser::parseSync(const GstMessage& message)
     {
       GstState oldState, newState, pendingState;
       gst_message_parse_state_changed(messagePtr, &oldState, &newState, &pendingState);
-      prv->stateChangedSignal(sourceName, oldState, newState, pendingState);
+      prv.stateChangedSignal(sourceName, oldState, newState, pendingState);
       break;
     }
 
     case GST_MESSAGE_DURATION_CHANGED:
     {
-      prv->durationChangedSignal(sourceName);
+      prv.durationChangedSignal(sourceName);
       break;
     }
 
@@ -217,20 +222,20 @@ void MessageParser::parseSync(const GstMessage& message)
       GstElement* ownerElement;
       gst_message_parse_stream_status(messagePtr, &statusType, &ownerElement);
       std::string ownerName = ownerElement ? GST_OBJECT_NAME(ownerElement) : "unknown";
-      prv->streamStatusSignal(sourceName, statusType, ownerName);
+      prv.streamStatusSignal(sourceName, statusType, ownerName);
       break;
     }
 
     case GST_MESSAGE_STREAM_START:
     {
-      prv->streamStartSignal(sourceName);
+      prv.streamStartSignal(sourceName);
       break;
     }
 
     case GST_MESSAGE_ELEMENT:
     {
       const GstStructure* structure = gst_message_get_structure(messagePtr);
-      prv->elementMessageSignal(sourceName, structure);
+      prv.elementMessageSignal(sourceName, structure);
       break;
     }
 
@@ -238,7 +243,7 @@ void MessageParser::parseSync(const GstMessage& message)
     {
       GstClockTime runningTime;
       gst_message_parse_async_done(messagePtr, &runningTime);
-      prv->asyncDoneSignal(sourceName, runningTime);
+      prv.asyncDoneSignal(sourceName, runningTime);
       break;
     }
 
@@ -262,7 +267,7 @@ std::shared_ptr<MessageParser> MessageParser::create(AsyncHandler handler)
   return ret;
 }
 
-std::string MessageParser::getSourceName(const GstMessage& message) const
+std::string MessageParser::getSourceName(const GstMessage& message)
 {
   if(GST_MESSAGE_SRC(&message))
   {
