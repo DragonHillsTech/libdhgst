@@ -105,3 +105,68 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatGray8, GilViewTest) {
   gst_video_frame_unmap(&frame);
   gst_buffer_unref(buffer);
 }
+
+BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableRgb8ViewOfReadOnlyFrame, GilViewTest) {
+  GstVideoInfo info;
+  GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 4, 2);
+  BOOST_REQUIRE_NE(buffer, nullptr);
+
+  GstVideoFrame frame;
+  gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READ);
+  BOOST_REQUIRE(mapped);
+
+  // writing through a mutable view would modify memory that is mapped read-only
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8_view_t>(frame), std::runtime_error);
+
+  gst_video_frame_unmap(&frame);
+  gst_buffer_unref(buffer);
+}
+
+BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableGray8ViewOfReadOnlyFrame, GilViewTest) {
+  GstVideoInfo info;
+  GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_GRAY8, 4, 2);
+  BOOST_REQUIRE_NE(buffer, nullptr);
+
+  GstVideoFrame frame;
+  gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READ);
+  BOOST_REQUIRE(mapped);
+
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::gray8_view_t>(frame), std::runtime_error);
+
+  gst_video_frame_unmap(&frame);
+  gst_buffer_unref(buffer);
+}
+
+BOOST_FIXTURE_TEST_CASE(CreateConstViewOfReadOnlyFrame, GilViewTest) {
+  GstVideoInfo info;
+  GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 4, 2);
+  BOOST_REQUIRE_NE(buffer, nullptr);
+
+  GstVideoFrame writeFrame;
+  BOOST_REQUIRE(gst_video_frame_map(&writeFrame, &info, buffer, GST_MAP_WRITE));
+  fillBuffer(writeFrame, 7);
+  gst_video_frame_unmap(&writeFrame);
+
+  GstVideoFrame frame;
+  gboolean mapped = gst_video_frame_map(&frame, &info, buffer, GST_MAP_READ);
+  BOOST_REQUIRE(mapped);
+
+  const auto view = dh::gst::createGilView<boost::gil::rgb8c_view_t>(frame);
+  BOOST_CHECK_EQUAL(view.width(), 4);
+  BOOST_CHECK_EQUAL(view.height(), 2);
+  BOOST_CHECK_EQUAL(view(3, 1)[2], 7);
+
+  gst_video_frame_unmap(&frame);
+  gst_buffer_unref(buffer);
+}
+
+BOOST_FIXTURE_TEST_CASE(ThrowsOnUnmappedFrame, GilViewTest) {
+  GstVideoInfo info;
+  gst_video_info_set_format(&info, GST_VIDEO_FORMAT_RGB, 4, 2);
+
+  // a frame that was never mapped: correct format, but no plane data
+  GstVideoFrame frame{};
+  frame.info = info;
+
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8c_view_t>(frame), std::runtime_error);
+}
