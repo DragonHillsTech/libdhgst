@@ -97,7 +97,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ElementAdded, ObjectTest)
 
   auto element = ElementFactory::makeElement("fakesrc", "test-source");
 
-  bin->addElement(element);
+  bin->addElement(*element);
 
   // Wait for the main loop to process events
   GMainContext* context = g_main_context_default();
@@ -145,7 +145,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, Obje
     // Keep a copy to the objects when using threads. "&" is dangerous!.
     [bin, element]()
     {
-      bin->addElement(element);
+      bin->addElement(*element);
     }
   );
 
@@ -201,7 +201,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ThrowingCallbackDoesNotPropagat
 
   // the exception must not unwind through the GLib signal emission into the caller
   auto element = ElementFactory::makeElement("fakesrc", "test-source");
-  BOOST_CHECK_NO_THROW(bin->addElement(element));
+  BOOST_CHECK_NO_THROW(bin->addElement(*element));
   BOOST_CHECK(signalEmitted);
 }
 

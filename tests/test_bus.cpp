@@ -48,7 +48,7 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
     TransferType::Full
   );
   // Post the message to the bus using the post function
-  bus->post(mockMessage);
+  bus->post(*mockMessage);
   BOOST_REQUIRE(signalReceived);
 }
 

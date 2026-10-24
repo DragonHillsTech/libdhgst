@@ -257,7 +257,7 @@ BOOST_FIXTURE_TEST_CASE(SignalEmissionCallbackControl, SignalConnectionTest)
   BOOST_REQUIRE(connection.connected());
 
   auto element1 = ElementFactory::makeElement("fakesrc", "src-1");
-  bin->addElement(element1);
+  bin->addElement(*element1);
 
   GMainContext* context = g_main_context_default();
   g_main_context_iteration(context, FALSE);
@@ -269,7 +269,7 @@ BOOST_FIXTURE_TEST_CASE(SignalEmissionCallbackControl, SignalConnectionTest)
   BOOST_CHECK(!connection.connected());
 
   auto element2 = ElementFactory::makeElement("fakesrc", "src-2");
-  bin->addElement(element2);
+  bin->addElement(*element2);
 
   g_main_context_iteration(context, FALSE);
 

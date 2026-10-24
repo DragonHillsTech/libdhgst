@@ -22,7 +22,7 @@
 #include "elementfactory.hpp"
 
 // std
-#include <cassert>
+#include <stdexcept>
 
 namespace dh::gst
 {
@@ -77,7 +77,10 @@ std::shared_ptr<Element> ElementFactory::createElement(const std::string& elemen
 std::shared_ptr<Element> ElementFactory::makeElement(const std::string& factoryName, const std::string& elementName)
 {
   // static version
-  assert(! factoryName.empty());
+  if(factoryName.empty())
+  {
+    throw std::invalid_argument("makeElement: empty factory name");
+  }
 
   GstElement* gstElement = gst_element_factory_make(
     factoryName.c_str(),

@@ -122,12 +122,11 @@ protected:
 
   /**
    * @brief Links this element with another element.
-   * @param other (transfer none): The Element to link with.
-   * @return Reference to the other Element for chaining.
+   * @param other The Element to link with.
+   * @return Reference to the other Element for chaining: a->link(b).link(c)
    * @throws std::runtime_error if the elements cannot be linked.
-   * @todo: add test
    */
- std::shared_ptr<Element>& link(std::shared_ptr<Element>& other);
+  Element& link(Element& other);
 
 
   /**
@@ -170,7 +169,7 @@ protected:
    * @brief Unlinks the element from another element.
    * @param other The Element to unlink from.
    */
-  void unlink(std::shared_ptr<Element>& other);
+  void unlink(Element& other);
 
   /**
    * @brief Synchronizes the state of the element with its parent.
