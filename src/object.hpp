@@ -46,11 +46,12 @@ namespace dh::gst
  */
 class Object : public std::enable_shared_from_this<Object>
 {
- Object(Object&& other) = delete;
- Object& operator=(Object&& other) = delete;
+public:
+  Object(Object&& other) = delete;
+  Object& operator=(Object&& other) = delete;
 
- Object(const Object& other) = delete; // we can not simply copy that thing
- Object& operator=(const Object&) = delete; // we can not simply copy that thing
+  Object(const Object& other) = delete; // we can not simply copy that thing
+  Object& operator=(const Object&) = delete; // we can not simply copy that thing
 
 protected:
   /**
