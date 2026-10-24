@@ -28,7 +28,6 @@
 #include <utility>
 
 // C
-#include <cassert>
 #include <unordered_set>
 
 namespace dh::gst
@@ -53,7 +52,7 @@ gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
 Element::Element(GstElement* gstElement, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstElement), transferType)
 {
-  assert(getGstElement() != nullptr);
+  requireType(GST_TYPE_ELEMENT);
 }
 
 std::shared_ptr<Element> Element::create(GstElementSPtr gstElement)
@@ -69,7 +68,7 @@ std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType tr
 Element::Element(GstElementSPtr gstElement)
 : Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
 {
-  assert(getGstElement() != nullptr);
+  requireType(GST_TYPE_ELEMENT);
 }
 
 GstElementSPtr Element::getGstElement()
