@@ -171,11 +171,26 @@ GstClockTime Element::getStartTime() const
   return gst_element_get_start_time(const_cast<GstElement*>(getRawGstElement()));
 }
 
-GstState Element::getState() const
+GstState Element::getState(GstClockTime timeout) const
 {
-  GstState state;
-  gst_element_get_state(const_cast<GstElement*>(getRawGstElement()), &state, nullptr, GST_CLOCK_TIME_NONE);
-  return state;
+  const StateQuery query = queryState(timeout);
+  if(query.result == GST_STATE_CHANGE_FAILURE)
+  {
+    throw std::runtime_error("Last state change of element " + getName() + " failed");
+  }
+  return query.current;
+}
+
+Element::StateQuery Element::queryState(GstClockTime timeout) const
+{
+  StateQuery query{GST_STATE_CHANGE_FAILURE, GST_STATE_VOID_PENDING, GST_STATE_VOID_PENDING};
+  query.result = gst_element_get_state(
+    const_cast<GstElement*>(getRawGstElement()),
+    &query.current,
+    &query.pending,
+    timeout
+  );
+  return query;
 }
 
 void Element::unlink(std::shared_ptr<Element>& other)
