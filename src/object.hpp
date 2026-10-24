@@ -22,6 +22,7 @@
 #define DH_GST_OBJECT_HPP
 
 // local includes
+#include "gvaluetraits.hpp"
 #include "objecttraits.hpp"
 #include "signalconnection.hpp"
 #include "sharedptrs.hpp"
@@ -117,11 +118,28 @@ public:
 
   void disconnectSignal(SignalConnection& connection) const;
 
- template<typename ValueType>
-  [[nodiscard]] inline ValueType getProperty(const std::string& name) const;
-
+  /**
+   * @brief Read a property of the GObject.
+   * @tparam ValueType must match the property type exactly, see GValueTraits for supported types.
+   * @param name The name of the property.
+   * @return the property value. Object and caps properties are returned as owning shared_ptr.
+   * @throws std::invalid_argument if the property does not exist, is not readable
+   *         or ValueType does not match the property type.
+   */
   template<typename ValueType>
-  inline void setProperty(const std::string& name, const ValueType& value);
+  [[nodiscard]] ValueType getProperty(const std::string& name) const;
+
+  /**
+   * @brief Write a property of the GObject.
+   * @tparam ValueType must match the property type exactly, see GValueTraits for supported types.
+   *         String literals are accepted for string properties.
+   * @param name The name of the property.
+   * @param value The new value.
+   * @throws std::invalid_argument if the property does not exist, is not writable, is construct-only
+   *         or ValueType does not match the property type.
+   */
+  template<typename ValueType>
+  void setProperty(const std::string& name, const ValueType& value);
 
 protected:
   [[nodiscard]] const GstObject* getRawGstObject() const;
@@ -138,6 +156,29 @@ SignalConnection connectGobjectSignal(
 ) const;
 
 private:
+  /**
+   * @brief Find a property by name.
+   * @throws std::invalid_argument if the name is empty or the property does not exist.
+   */
+  [[nodiscard]] const GParamSpec* findProperty(const std::string& name) const;
+
+  /**
+   * @brief Find a property that can be read.
+   * @throws std::invalid_argument if the property does not exist or is not readable.
+   */
+  [[nodiscard]] const GParamSpec* findReadableProperty(const std::string& name) const;
+
+  /**
+   * @brief Find a property that can be written after construction.
+   * @throws std::invalid_argument if the property does not exist, is not writable or is construct-only.
+   */
+  [[nodiscard]] const GParamSpec* findWritableProperty(const std::string& name) const;
+
+  /**
+   * @throws std::invalid_argument always, with a message about the type mismatch.
+   */
+  [[noreturn]] static void throwPropertyTypeMismatch(const GParamSpec* propertySpec);
+
   GstObjectSPtr gstObject;
 
   // SignalHandler to define the callback function
@@ -172,91 +213,43 @@ private:
 };
 
 template<typename ValueType>
-[[nodiscard]] inline ValueType Object::getProperty(const std::string& name) const
+ValueType Object::getProperty(const std::string& name) const
 {
-  if(name.empty())
+  using Traits = GValueTraits<ValueType>;
+
+  const GParamSpec* propertySpec = findReadableProperty(name);
+  if(! Traits::matches(propertySpec->value_type))
   {
-    throw std::invalid_argument("empty property name");
-  }
-  if(! propertyExists(name))
-  {
-    throw std::invalid_argument("No property with name " + name);
+    throwPropertyTypeMismatch(propertySpec);
   }
 
-  ValueType value{};
-  g_object_get(
-    G_OBJECT(getRawGstObject()),
+  detail::GValueHolder value(propertySpec->value_type);
+  g_object_get_property(
+    G_OBJECT(const_cast<GstObject*>(getRawGstObject())),
     name.c_str(),
-    &value,
-    nullptr
+    value.get()
   );
-  return value;
-}
-
-template<>
-[[nodiscard]] inline std::string Object::getProperty<std::string>(const std::string& name) const
-{
-  if(name.empty())
-  {
-    throw std::invalid_argument("empty property name");
-  }
-  if(! propertyExists(name))
-  {
-    throw std::invalid_argument("No property with name " + name);
-  }
-
-  gchar* value{nullptr};
-  g_object_get(
-    G_OBJECT(getRawGstObject()),
-    name.c_str(),
-    &value,
-    nullptr
-  );
-  std::string result(value ? value : "");
-  if(value)
-  {
-    g_free(value);
-  }
-  return result;
+  return Traits::get(value.get());
 }
 
 template<typename ValueType>
-  inline void Object::setProperty(const std::string& name, const ValueType& value)
+void Object::setProperty(const std::string& name, const ValueType& value)
 {
-  if(name.empty())
+  // decay so string literals (char arrays) map to const char*
+  using Traits = GValueTraits<std::decay_t<ValueType>>;
+
+  const GParamSpec* propertySpec = findWritableProperty(name);
+  if(! Traits::matches(propertySpec->value_type))
   {
-    throw std::invalid_argument("empty property name");
-  }
-  if(! propertyExists(name))
-  {
-    throw std::invalid_argument("No property with name " + name);
+    throwPropertyTypeMismatch(propertySpec);
   }
 
-  g_object_set(
+  detail::GValueHolder gvalue(propertySpec->value_type);
+  Traits::set(gvalue.get(), value);
+  g_object_set_property(
     G_OBJECT(getRawGstObject()),
     name.c_str(),
-    value,
-    nullptr
-  );
-}
-
-template<>
-inline void Object::setProperty<std::string>(const std::string& name, const std::string& value)
-{
-  if(name.empty())
-  {
-    throw std::invalid_argument("Property 'name' must not be empty");
-  }
-  if(! propertyExists(name))
-  {
-    throw std::invalid_argument("No property with name " + name);
-  }
-
-  g_object_set(
-    G_OBJECT(getRawGstObject()),
-    name.c_str(),
-    value.c_str(),
-    nullptr
+    gvalue.get()
   );
 }
 
