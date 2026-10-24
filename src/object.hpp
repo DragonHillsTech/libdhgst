@@ -28,6 +28,7 @@
 #include "transfertype.hpp"
 
 // std
+#include <exception>
 #include <functional>
 #include <memory>
 #include <string>
@@ -143,13 +144,28 @@ private:
   template<typename... Args>
   struct SignalHandler
   {
-    static void callback(GObject* /*object*/, Args... args, gpointer user_data)
+    static void callback(GObject* object, Args... args, gpointer user_data)
     {
       using Callback = std::function<void(typename ConvertToCppType<Args>::type...)>;
       auto* callback = static_cast<Callback*>(user_data);
-      if(callback)
+      if(! callback)
+      {
+        return;
+      }
+
+      // We are called from C code (GLib signal emission, often on a streaming thread).
+      // Exceptions must not unwind through it, so catch and log them here.
+      try
       {
         (*callback)(convertParamToCppType(args)...);
+      }
+      catch(const std::exception& e)
+      {
+        GST_ERROR_OBJECT(object, "Exception in signal callback: %s", e.what());
+      }
+      catch(...)
+      {
+        GST_ERROR_OBJECT(object, "Unknown exception in signal callback");
       }
     }
   };

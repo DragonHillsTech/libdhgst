@@ -167,3 +167,23 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, Obje
   BOOST_REQUIRE_EQUAL(weakBin.lock(), nullptr);
 }
 
+
+BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ThrowingCallbackDoesNotPropagate, ObjectTest)
+{
+  auto bin = Bin::create("test-bin");
+
+  bool signalEmitted = false;
+  auto elementAddedConnection = bin->connectSignalElementAdded(
+    [&](GstElementSPtr /*element*/)
+    {
+      signalEmitted = true;
+      throw std::runtime_error("exception from signal callback");
+    }
+  );
+  BOOST_REQUIRE(elementAddedConnection.connected());
+
+  // the exception must not unwind through the GLib signal emission into the caller
+  auto element = ElementFactory::makeElement("fakesrc", "test-source");
+  BOOST_CHECK_NO_THROW(bin->addElement(element));
+  BOOST_CHECK(signalEmitted);
+}
