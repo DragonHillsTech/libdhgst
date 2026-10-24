@@ -33,6 +33,22 @@
 namespace dh::gst
 {
 
+namespace
+{
+
+/**
+ * @brief GstElementForeachPadFunc that appends a referenced pad to a std::vector<GstPadSPtr>.
+ * The pad is only guaranteed to be valid during the callback, so take our own reference.
+ */
+gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
+{
+  auto& pads = *static_cast<std::vector<GstPadSPtr>*>(userData);
+  pads.push_back(makeGstSharedPtr(pad, TransferType::None));
+  return TRUE; // continue iteration
+}
+
+} // namespace
+
 Element::Element(GstElement* gstElement, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstElement), transferType)
 {
@@ -72,50 +88,24 @@ GstStateChangeReturn Element::setState(GstState newState)
   return gst_element_set_state(getRawGstElement(), newState);
 }
 
-std::vector<GstPad*> Element::getPads()
+std::vector<GstPadSPtr> Element::getPads()
 {
-  std::vector<GstPad*> pads;
-  gst_element_foreach_pad(
-    getRawGstElement(),
-    [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
-    {
-      auto& pads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
-      pads.push_back(pad);
-      return true; // Continue iteration
-    },
-    &pads
-  );
+  std::vector<GstPadSPtr> pads;
+  gst_element_foreach_pad(getRawGstElement(), collectPad, &pads);
   return pads;
 }
 
-std::vector<GstPad*> Element::getSinkPads()
+std::vector<GstPadSPtr> Element::getSinkPads()
 {
-  std::vector<GstPad*> sinkPads;
-  gst_element_foreach_sink_pad(
-    getRawGstElement(), [](GstElement* /*element*/,GstPad* pad, gpointer user_data) ->gboolean
-    {
-      auto& sinkPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
-      sinkPads.push_back(pad);
-      return true; // Continue iteration
-    },
-    &sinkPads
-  );
+  std::vector<GstPadSPtr> sinkPads;
+  gst_element_foreach_sink_pad(getRawGstElement(), collectPad, &sinkPads);
   return sinkPads;
 }
 
-std::vector<GstPad*> Element::getSrcPads()
+std::vector<GstPadSPtr> Element::getSrcPads()
 {
-  std::vector<GstPad*> srcPads;
-  gst_element_foreach_src_pad(
-    getRawGstElement(),
-    [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
-    {
-      auto& srcPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
-      srcPads.push_back(pad);
-      return true; // Continue iteration
-    },
-    &srcPads
-  );
+  std::vector<GstPadSPtr> srcPads;
+  gst_element_foreach_src_pad(getRawGstElement(), collectPad, &srcPads);
   return srcPads;
 }
 

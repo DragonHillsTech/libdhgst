@@ -76,24 +76,21 @@ protected:
 
  /**
   * @brief Gets all pads of the GStreamer element.
-  * @return (transfer none): A vector containing pointers to all GstPad objects.
-  * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
+  * @return A vector of all pads. Each pad is referenced, so it stays valid even if it is removed from the element.
   */
-  [[nodiscard]] std::vector<GstPad*> getPads();
+  [[nodiscard]] std::vector<GstPadSPtr> getPads();
 
  /**
   * @brief Gets all sink pads of the GStreamer element.
-  * @return (transfer none): A vector containing pointers to sink GstPad objects.
-  * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
+  * @return A vector of the sink pads. Each pad is referenced, so it stays valid even if it is removed from the element.
   */
-  [[nodiscard]] std::vector<GstPad*> getSinkPads();
+  [[nodiscard]] std::vector<GstPadSPtr> getSinkPads();
 
  /**
   * @brief Gets all source pads of the GStreamer element.
-  * @return (transfer none): A vector containing pointers to source GstPad objects.
-  * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
+  * @return A vector of the source pads. Each pad is referenced, so it stays valid even if it is removed from the element.
   */
-  [[nodiscard]] std::vector<GstPad*> getSrcPads();
+  [[nodiscard]] std::vector<GstPadSPtr> getSrcPads();
 
  /**
   * @brief Finds a compatible pad for a given pad and caps.

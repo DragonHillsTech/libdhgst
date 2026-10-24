@@ -62,7 +62,7 @@ BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  std::vector<GstPad*> pads = element->getPads();
+  std::vector<GstPadSPtr> pads = element->getPads();
   BOOST_REQUIRE_EQUAL(pads.size(), 1);  // fakesrc has one "src" pad
 }
 
@@ -70,7 +70,7 @@ BOOST_FIXTURE_TEST_CASE(GetSinkPads, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  std::vector<GstPad*> sinkPads = element->getSinkPads();
+  std::vector<GstPadSPtr> sinkPads = element->getSinkPads();
   BOOST_REQUIRE_EQUAL(sinkPads.size(), 0);  // fakesrc has no sink pads
 }
 
@@ -78,9 +78,27 @@ BOOST_FIXTURE_TEST_CASE(GetSrcPads, ElementTest)
 {
   auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
-  std::vector<GstPad*> srcPads = element->getSrcPads();
+  std::vector<GstPadSPtr> srcPads = element->getSrcPads();
   BOOST_REQUIRE_EQUAL(srcPads.size(), 1);  // fakesrc has one "src" pad
-  BOOST_REQUIRE_EQUAL(gst_pad_get_name(srcPads[0]), std::string("src"));  // Verify the pad name
+  BOOST_REQUIRE_EQUAL(gst_pad_get_name(srcPads[0].get()), std::string("src"));  // Verify the pad name
+}
+
+BOOST_FIXTURE_TEST_CASE(GetPadsReferencesPads, ElementTest)
+{
+  auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+  GstPad* pad = gst_element_get_static_pad(element->getGstElement().get(), "src"); // our own reference
+  BOOST_REQUIRE_NE(pad, nullptr);
+  const auto refCount = [pad]() -> int { return GST_OBJECT_REFCOUNT_VALUE(pad); };
+  const int baseline = refCount();
+
+  {
+    const auto pads = element->getPads();
+    const auto srcPads = element->getSrcPads();
+    BOOST_CHECK_EQUAL(refCount(), baseline + 2); // one reference per vector
+  }
+  BOOST_CHECK_EQUAL(refCount(), baseline); // released again, no leak
+
+  gst_object_unref(pad);
 }
 
 BOOST_FIXTURE_TEST_CASE(GetStaticPad, ElementTest)
@@ -109,7 +127,7 @@ BOOST_FIXTURE_TEST_CASE(GetCompatiblePad, ElementTest)
   // Call getCompatiblePad with the created pad and caps
   GstPad* resultPad = element->getCompatiblePad(sinkPad, caps);
 
-  BOOST_REQUIRE_EQUAL(resultPad, element->getSrcPads().at(0));
+  BOOST_REQUIRE_EQUAL(resultPad, element->getSrcPads().at(0).get());
 
   gst_caps_unref(caps);  // Unref the caps
 }
