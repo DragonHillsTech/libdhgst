@@ -68,11 +68,13 @@ private:
 Bus::Bus(GstBusSPtr gstBus)
 : Object(GST_OBJECT_CAST(gstBus.get()), TransferType::None) // no pointer_cast because C inheritance
 {
+  requireType(GST_TYPE_BUS);
 }
 
 Bus::Bus(GstBus* gstBus, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstBus),  transferType)
 {
+  requireType(GST_TYPE_BUS);
 }
 
 std::shared_ptr<Bus> Bus::create(GstBusSPtr gstBus)

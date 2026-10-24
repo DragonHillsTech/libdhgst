@@ -30,13 +30,13 @@ namespace dh::gst
 ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferType transferType)
 : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory), transferType)
 {
-  assert(getGstElementFactory() != nullptr);
+  requireType(GST_TYPE_ELEMENT_FACTORY);
 }
 
 ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
 : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
-  assert(getRawGstElementFactory() != nullptr);
+  requireType(GST_TYPE_ELEMENT_FACTORY);
 }
 
 std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transferType)

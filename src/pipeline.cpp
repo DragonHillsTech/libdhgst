@@ -30,11 +30,13 @@ namespace dh::gst
 Pipeline::Pipeline(GstPipelineSPtr gstPipeline)
 : Bin(GST_BIN_CAST(gstPipeline.get()), TransferType::None) // no pointer_cast because C inheritance
 {
+  requireType(GST_TYPE_PIPELINE);
 }
 
 Pipeline::Pipeline(GstPipeline* gstPipeline, TransferType transferType)
 : Bin(GST_BIN_CAST(gstPipeline), transferType)
 {
+  requireType(GST_TYPE_PIPELINE);
 }
 
 Pipeline::Pipeline(const std::string& name)
