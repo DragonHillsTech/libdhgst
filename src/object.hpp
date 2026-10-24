@@ -231,9 +231,14 @@ inline void Object::setProperty<std::string>(const std::string& name, const std:
   {
     throw std::invalid_argument("Property 'name' must not be empty");
   }
+  if(! propertyExists(name))
+  {
+    throw std::invalid_argument("No property with name " + name);
+  }
 
   g_object_set(
-    const_cast<char*>(name.c_str()),
+    G_OBJECT(getRawGstObject()),
+    name.c_str(),
     value.c_str(),
     nullptr
   );
