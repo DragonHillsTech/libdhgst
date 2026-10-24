@@ -21,22 +21,19 @@
 // local includes
 #include "pluginfeature.hpp"
 
-// C
-#include <cassert>
-
 namespace dh::gst
 {
 
 PluginFeature::PluginFeature(GstPluginFeature* gstPluginFeature, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstPluginFeature), transferType)
 {
-  assert(getRawGstPluginFeature() != nullptr);
+  requireType(GST_TYPE_PLUGIN_FEATURE);
 }
 
 PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
 : Object(GST_OBJECT_CAST(gstPluginFeature.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
-  assert(getGstPluginFeature() != nullptr);
+  requireType(GST_TYPE_PLUGIN_FEATURE);
 }
 
 std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferType)

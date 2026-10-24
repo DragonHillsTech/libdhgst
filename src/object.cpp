@@ -32,11 +32,17 @@ Object::Object(GstObjectSPtr gstObject)
   {
     throw std::runtime_error("No GstObject");
   }
+  requireType(GST_TYPE_OBJECT);
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
 : Object{makeGstSharedPtr(gstObject, transferType)}
 {
+}
+
+std::shared_ptr<Object> Object::create(GstObject* gstObject, TransferType transferType)
+{
+  return std::shared_ptr<Object>(new Object(gstObject, transferType));
 }
 
 Object::~Object() = default;
@@ -93,9 +99,90 @@ bool Object::propertyExists(const std::string& name) const
   return propertySpec != nullptr;
 }
 
+const GParamSpec* Object::findProperty(const std::string& name) const
+{
+  if(name.empty())
+  {
+    throw std::invalid_argument("empty property name");
+  }
+
+  const GParamSpec* propertySpec = g_object_class_find_property(
+    G_OBJECT_GET_CLASS(getRawGstObject()),
+    name.c_str()
+  );
+  if(! propertySpec)
+  {
+    throw std::invalid_argument("No property with name " + name);
+  }
+  return propertySpec;
+}
+
+const GParamSpec* Object::findReadableProperty(const std::string& name) const
+{
+  const GParamSpec* propertySpec = findProperty(name);
+  if(! (propertySpec->flags & G_PARAM_READABLE))
+  {
+    throw std::invalid_argument("Property " + name + " is not readable");
+  }
+  return propertySpec;
+}
+
+const GParamSpec* Object::findWritableProperty(const std::string& name) const
+{
+  const GParamSpec* propertySpec = findProperty(name);
+  if(! (propertySpec->flags & G_PARAM_WRITABLE))
+  {
+    throw std::invalid_argument("Property " + name + " is not writable");
+  }
+  if(propertySpec->flags & G_PARAM_CONSTRUCT_ONLY)
+  {
+    throw std::invalid_argument("Property " + name + " can only be set at construction");
+  }
+  return propertySpec;
+}
+
+void Object::throwPropertyTypeMismatch(const GParamSpec* propertySpec)
+{
+  throw std::invalid_argument(
+    std::string("Requested type does not match type ") + g_type_name(propertySpec->value_type)
+    + " of property " + g_param_spec_get_name(const_cast<GParamSpec*>(propertySpec))
+  );
+}
+
+void Object::throwSignalSignatureMismatch(const GSignalQuery& query)
+{
+  std::string signature = g_type_name(query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE);
+  signature += std::string(" ") + query.signal_name + "(";
+  for(guint i = 0; i < query.n_params; ++i)
+  {
+    if(i > 0)
+    {
+      signature += ", ";
+    }
+    signature += g_type_name(query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE);
+  }
+  signature += ")";
+
+  throw std::invalid_argument(
+    "Callback does not match signal " + signature
+    + ": it must return void and take exactly these parameter types"
+  );
+}
+
 void Object::disconnectSignal(SignalConnection& connection) const
 {
   connection.disconnect();
+}
+
+void Object::requireType(GType expectedType) const
+{
+  if(! G_TYPE_CHECK_INSTANCE_TYPE(getRawGstObject(), expectedType))
+  {
+    throw std::invalid_argument(
+      std::string("Expected a ") + g_type_name(expectedType)
+      + ", got a " + G_OBJECT_TYPE_NAME(getRawGstObject())
+    );
+  }
 }
 
 const GstObject* Object::getRawGstObject() const

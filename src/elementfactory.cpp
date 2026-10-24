@@ -22,7 +22,7 @@
 #include "elementfactory.hpp"
 
 // std
-#include <cassert>
+#include <stdexcept>
 
 namespace dh::gst
 {
@@ -30,13 +30,13 @@ namespace dh::gst
 ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferType transferType)
 : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory), transferType)
 {
-  assert(getGstElementFactory() != nullptr);
+  requireType(GST_TYPE_ELEMENT_FACTORY);
 }
 
 ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
 : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
-  assert(getRawGstElementFactory() != nullptr);
+  requireType(GST_TYPE_ELEMENT_FACTORY);
 }
 
 std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transferType)
@@ -77,7 +77,10 @@ std::shared_ptr<Element> ElementFactory::createElement(const std::string& elemen
 std::shared_ptr<Element> ElementFactory::makeElement(const std::string& factoryName, const std::string& elementName)
 {
   // static version
-  assert(! factoryName.empty());
+  if(factoryName.empty())
+  {
+    throw std::invalid_argument("makeElement: empty factory name");
+  }
 
   GstElement* gstElement = gst_element_factory_make(
     factoryName.c_str(),

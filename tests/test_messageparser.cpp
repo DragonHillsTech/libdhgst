@@ -9,6 +9,11 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
+
+#include <functional>
+#include <vector>
 
 using namespace dh::gst;
 
@@ -19,8 +24,6 @@ public:
   // Setup before first test case
   MessageParserTest()
   {
-    // Set G_DEBUG to fatal_warnings to make warnings crash the program
-    setenv("G_DEBUG", "fatal_warnings", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
 
@@ -235,6 +238,28 @@ BOOST_FIXTURE_TEST_CASE(StreamStatusSignalEmitted, MessageParserTest)
   gst_object_unref(element);
 }
 
+BOOST_FIXTURE_TEST_CASE(SourceNameOfNonElementSource, MessageParserTest)
+{
+  // message sources are GstObjects, not necessarily elements
+  auto parser = MessageParser::create();
+  std::string sourceName;
+  auto conn = parser->connectSignalEndOfStream([&](const std::string& src) { sourceName = src; });
+
+  GstBus* bus = gst_bus_new();
+  gst_object_set_name(GST_OBJECT(bus), "test_bus");
+  GstMessage* message = gst_message_new_eos(GST_OBJECT(bus));
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(sourceName, "test_bus");
+
+  // the current name is used
+  gst_object_set_name(GST_OBJECT(bus), "renamed_bus");
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(sourceName, "renamed_bus");
+
+  gst_message_unref(message);
+  gst_object_unref(bus);
+}
+
 BOOST_FIXTURE_TEST_CASE(StreamStartSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
@@ -412,4 +437,61 @@ BOOST_FIXTURE_TEST_CASE(EmptyCallbackThrowsInvalidArgument, MessageParserTest)
 {
   auto parser = MessageParser::create();
   BOOST_CHECK_THROW((void)parser->connectSignalEndOfStream(nullptr), std::invalid_argument);
+}
+
+BOOST_FIXTURE_TEST_CASE(AsyncTaskRunAfterParserDestroyedIsSafe, MessageParserTest)
+{
+  std::vector<std::function<void()>> queuedTasks;
+  bool signalCalled = false;
+
+  auto parser = MessageParser::create(
+    [&queuedTasks](std::function<void()> task)
+    {
+      queuedTasks.push_back(std::move(task));
+    }
+  );
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      signalCalled = true;
+    }
+  );
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  parser->parse(*message);
+  BOOST_REQUIRE_EQUAL(queuedTasks.size(), 1);
+
+  // destroy the parser while the task is still queued (e.g. main loop drains after teardown)
+  parser.reset();
+
+  // running the queued task must neither touch the destroyed parser nor emit signals
+  for(auto& task : queuedTasks)
+  {
+    task();
+  }
+  queuedTasks.clear(); // the task owns a message reference until it is destroyed
+  BOOST_CHECK(!signalCalled);
+  const int refCount = GST_MINI_OBJECT_REFCOUNT_VALUE(message);
+  BOOST_CHECK_EQUAL(refCount, 1);
+
+  gst_message_unref(message);
+}
+
+BOOST_FIXTURE_TEST_CASE(AsyncTaskDroppedDoesNotLeakMessage, MessageParserTest)
+{
+  // handler that discards the task without running it (e.g. main loop already stopped)
+  auto parser = MessageParser::create(
+    [](std::function<void()> /*task*/)
+    {
+    }
+  );
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  parser->parse(*message);
+
+  // the parser must not hold a reference to the message once the task is gone
+  const int refCount = GST_MINI_OBJECT_REFCOUNT_VALUE(message);
+  BOOST_CHECK_EQUAL(refCount, 1);
+
+  gst_message_unref(message);
 }

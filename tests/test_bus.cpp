@@ -8,6 +8,8 @@
 #include "bus.hpp"
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 using namespace dh::gst;
 
@@ -20,8 +22,6 @@ public:
  // Setup before first test case
  BusTest()
  {
-  // Set G_DEBUG to fatal_warnings to make warnings crash the program
-  setenv("G_DEBUG", "fatal_warnings", 1);
   gst_init(nullptr, nullptr);  // Initialize GStreamer
  }
 };
@@ -48,7 +48,7 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
     TransferType::Full
   );
   // Post the message to the bus using the post function
-  bus->post(mockMessage);
+  bus->post(*mockMessage);
   BOOST_REQUIRE(signalReceived);
 }
 
@@ -88,10 +88,11 @@ BOOST_FIXTURE_TEST_CASE(DisconnectDisablesSyncMessageEmission, BusTest)
 
   auto postMessage = [&bus]()
   {
-    bus->post(makeGstSharedPtr(
+    const auto message = makeGstSharedPtr(
       gst_message_new_application(nullptr, gst_structure_new_empty("TestMessage")),
       TransferType::Full
-    ));
+    );
+    bus->post(*message);
   };
 
   {

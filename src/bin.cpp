@@ -29,11 +29,13 @@ namespace dh::gst
 Bin::Bin(GstBinSPtr gstBin)
 : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
 {
+  requireType(GST_TYPE_BIN);
 }
 
 Bin::Bin(GstBin* gstBin, TransferType transferType)
 : Element(GST_ELEMENT_CAST(gstBin), transferType)
 {
+  requireType(GST_TYPE_BIN);
 }
 
 Bin::Bin(const std::string& name)
@@ -96,10 +98,10 @@ const GstBinSPtr Bin::getGstBin() const
   return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::None);
 }
 
-void Bin::addElement(GstElementSPtr element)
+void Bin::addElement(GstElement& element)
 {
   // gst_bin_add: transfer: full
-  auto* refIncreasedRawPtr = GST_ELEMENT(gst_object_ref(GST_OBJECT(element.get())));
+  auto* refIncreasedRawPtr = GST_ELEMENT(gst_object_ref(GST_OBJECT(&element)));
   if(gst_bin_add(getRawGstBin(), refIncreasedRawPtr) == FALSE)
   {
     gst_object_unref(refIncreasedRawPtr);
@@ -107,9 +109,9 @@ void Bin::addElement(GstElementSPtr element)
   }
 }
 
-void Bin::addElement(std::shared_ptr<Element> element)
+void Bin::addElement(Element& element)
 {
-  addElement(element->getGstElement());
+  addElement(*element.getGstElement());
 }
 
 std::shared_ptr<Element> Bin::getElementByName(const std::string& name)
@@ -137,20 +139,17 @@ std::shared_ptr<Element> Bin::getElementByNameRecurseUp(const std::string& name)
   return Element::create(gstElement, TransferType::Full);
 }
 
-void Bin::removeElement(GstElementSPtr element)
+void Bin::removeElement(GstElement& element)
 {
-  if (gst_bin_remove(getRawGstBin(), element.get()) == FALSE)
+  if (gst_bin_remove(getRawGstBin(), &element) == FALSE)
   {
     throw std::runtime_error("Failed to remove element from GstBin.");
   }
 }
 
-void Bin::removeElement(const std::shared_ptr<Element>& element)
+void Bin::removeElement(Element& element)
 {
-  if(gst_bin_remove(getRawGstBin(), element->getGstElement().get()) == FALSE)
-  {
-    throw std::runtime_error("Failed to remove element from GstBin.");
-  }
+  removeElement(*element.getGstElement());
 }
 
 SignalConnection Bin::connectSignalElementAdded(std::function<void(GstElementSPtr)> callback) const
