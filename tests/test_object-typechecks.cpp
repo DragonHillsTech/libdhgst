@@ -8,9 +8,10 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 #include <gst/gst.h>
 
-#include <cstdlib>
 #include <stdexcept>
 
 using namespace dh::gst;
@@ -26,8 +27,6 @@ class ObjectTypeChecksTest
 public:
   ObjectTypeChecksTest()
   {
-    // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
-    setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);
   }
 
