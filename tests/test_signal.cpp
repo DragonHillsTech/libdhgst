@@ -23,7 +23,9 @@
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
 
+#include <atomic>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace dh::gst;
@@ -202,4 +204,44 @@ BOOST_AUTO_TEST_CASE(MultipleArgumentsAndTypes)
 
   sig("test", 42, 3.14159, dummyPtr);
   BOOST_CHECK_EQUAL(called, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ConcurrentConnectDisconnectAndEmission)
+{
+  // MessageParser emits on the thread calling parse() (e.g. a streaming thread)
+  // while the application connects and disconnects on another thread.
+  Signal<int> sig;
+  std::atomic<bool> stop{false};
+  std::atomic<int> persistentCalls{0};
+  std::atomic<int> temporaryCalls{0};
+
+  const auto persistentId = sig.connect([&](int) { ++persistentCalls; });
+
+  auto emitter = [&]()
+  {
+    while(!stop)
+    {
+      sig(1);
+    }
+  };
+  std::thread emitter1(emitter);
+  std::thread emitter2(emitter);
+
+  for(int i = 0; i < 20000; ++i)
+  {
+    const auto id = sig.connect([&](int) { ++temporaryCalls; });
+    sig.disconnect(id);
+  }
+
+  stop = true;
+  emitter1.join();
+  emitter2.join();
+
+  BOOST_CHECK_GT(persistentCalls.load(), 0);
+
+  // after all emitters are done, only the persistent slot is left
+  sig.disconnect(persistentId);
+  const int callsBefore = temporaryCalls + persistentCalls;
+  sig(1);
+  BOOST_CHECK_EQUAL(temporaryCalls + persistentCalls, callsBefore);
 }

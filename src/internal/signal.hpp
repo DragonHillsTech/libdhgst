@@ -24,6 +24,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <iterator>
+#include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -32,6 +35,12 @@ namespace dh::gst
 
 /**
  * @brief Lightweight multi-cast signal template for internal callback dispatching.
+ *
+ * Thread-safe: connect(), disconnect() and emission may be called concurrently from different threads.
+ * Each emission works on a snapshot of the connected slots, taken when the emission starts.
+ * Therefore a slot disconnected while an emission is running (in this or another thread)
+ * may still be called once by that emission, also after disconnect() has returned.
+ * Slots are called without holding the internal lock, so they may connect and disconnect slots themselves.
  */
 template<typename... Args>
 class Signal
@@ -42,34 +51,52 @@ public:
 
   Id connect(Slot slot)
   {
+    auto sharedSlot = std::make_shared<const Slot>(std::move(slot));
+    std::lock_guard<std::mutex> lock(mutex);
     const Id id = nextId++;
-    slots.emplace_back(id, std::move(slot));
+    slots.emplace_back(id, std::move(sharedSlot));
     return id;
   }
 
   void disconnect(Id id)
   {
-    slots.erase(
-      std::remove_if(slots.begin(), slots.end(), [id](const auto& pair) { return pair.first == id; }),
-      slots.end()
-    );
+    // destroy the removed slot outside the lock, its captures may run arbitrary code
+    std::vector<std::pair<Id, SharedSlot>> removed;
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      const auto it = std::stable_partition(
+        slots.begin(),
+        slots.end(),
+        [id](const auto& pair) { return pair.first != id; }
+      );
+      removed.assign(std::make_move_iterator(it), std::make_move_iterator(slots.end()));
+      slots.erase(it, slots.end());
+    }
   }
 
   void operator()(Args... args) const
   {
-    auto slotsCopy = slots;
+    std::vector<std::pair<Id, SharedSlot>> slotsCopy;
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      slotsCopy = slots;
+    }
+
     for(const auto& [id, slot] : slotsCopy)
     {
-      if(slot)
+      if(slot && *slot)
       {
-        slot(args...);
+        (*slot)(args...);
       }
     }
   }
 
 private:
-  Id nextId{1};
-  std::vector<std::pair<Id, Slot>> slots;
+  using SharedSlot = std::shared_ptr<const Slot>;
+
+  mutable std::mutex mutex;
+  Id nextId{1}; // guarded by mutex
+  std::vector<std::pair<Id, SharedSlot>> slots; // guarded by mutex
 };
 
 } // namespace dh::gst
