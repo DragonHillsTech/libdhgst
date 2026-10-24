@@ -61,6 +61,17 @@ protected:
   Element(GstElement* gstElement, TransferType transferType);
 
  public:
+  /**
+   * @brief Result of queryState().
+   */
+  struct StateQuery
+  {
+    /// SUCCESS, ASYNC (a state change is still pending), NO_PREROLL (live element) or FAILURE (last change failed)
+    GstStateChangeReturn result;
+    GstState current; ///< the current state
+    GstState pending; ///< the pending state, GST_STATE_VOID_PENDING if no state change is pending
+  };
+
  [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
  [[nodiscard]] static std::shared_ptr<Element> create(GstElement* gstElement, TransferType transferType);
 
@@ -141,9 +152,19 @@ protected:
 
   /**
    * @brief Gets the current state of the element.
-   * @return The current GstState of the element.
+   * By default this does not wait for a pending asynchronous state change.
+   * @param timeout How long to wait for a pending state change to complete. 0 (default) returns immediately.
+   *        GST_CLOCK_TIME_NONE waits forever: never do that on a streaming thread, it deadlocks.
+   * @return The current state. While an asynchronous state change is pending, this is the state before the change.
+   * @throws std::runtime_error if the last state change failed.
    */
-  [[nodiscard]] GstState getState() const;
+  [[nodiscard]] GstState getState(GstClockTime timeout = 0) const;
+
+  /**
+   * @brief Gets the current and pending state and the result of the last state change.
+   * @param timeout see getState()
+   */
+  [[nodiscard]] StateQuery queryState(GstClockTime timeout = 0) const;
 
   /**
    * @brief Unlinks the element from another element.
