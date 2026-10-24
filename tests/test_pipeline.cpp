@@ -3,10 +3,11 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
 
-#include <cstdlib>
 
 using namespace dh::gst;
 
@@ -19,8 +20,6 @@ public:
   // Setup before first test case
   PipelineTest()
   {
-    // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
-    setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
 };

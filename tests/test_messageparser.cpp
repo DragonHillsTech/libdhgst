@@ -9,6 +9,8 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 #include <functional>
 #include <vector>
@@ -22,8 +24,6 @@ public:
   // Setup before first test case
   MessageParserTest()
   {
-    // Set G_DEBUG to fatal_warnings to make warnings crash the program
-    setenv("G_DEBUG", "fatal_warnings", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
 
