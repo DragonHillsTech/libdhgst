@@ -60,14 +60,8 @@ struct GstObjectDeleter
 
     if constexpr (IsGstObject<T>::value)
     {
-      // Set GstElement state to NULL before unref if it's the last ref to the GstElement
-      // This does not work always because setting a pipeline to "playing" increases ref counts.
-      // But it is a layer of safety.
-      if(GST_IS_ELEMENT(obj) && GST_OBJECT_REFCOUNT(obj) == 1)
-      {
-        gst_element_set_state(GST_ELEMENT(obj), GST_STATE_NULL);
-      }
-
+      // No state change here: the deleter may run on any thread, also on a streaming thread,
+      // where setting an element to NULL deadlocks. Elements must be set to NULL by their owner.
       gst_object_unref(GST_OBJECT(obj));
     }
     else

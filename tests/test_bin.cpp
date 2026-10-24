@@ -60,7 +60,8 @@ BOOST_FIXTURE_TEST_CASE(SetState, BinTest)
   BOOST_REQUIRE_EQUAL(bin1->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   BOOST_REQUIRE_EQUAL(bin1->getState(), GST_STATE_PLAYING);
 
-  // here we would get a gstreamer error if the Element is destroyed when state != null.
+  // the owner must set the bin to NULL before it is destroyed
+  BOOST_REQUIRE_EQUAL(bin1->setState(GST_STATE_NULL), GST_STATE_CHANGE_SUCCESS);
 }
 
 BOOST_FIXTURE_TEST_CASE(AddAndRemoveElementSharedPtr, BinTest)
