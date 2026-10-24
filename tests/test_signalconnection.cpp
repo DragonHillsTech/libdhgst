@@ -315,3 +315,31 @@ BOOST_FIXTURE_TEST_CASE(CustomDisconnectHandlerMove, SignalConnectionTest)
   BOOST_CHECK_EQUAL(disconnectCount, 1);
   BOOST_CHECK(!conn2.connected());
 }
+
+BOOST_FIXTURE_TEST_CASE(CustomIsConnectedHandler, SignalConnectionTest)
+{
+  bool sourceAlive = true;
+  int isConnectedCalls = 0;
+  SignalConnection conn(
+    []() {},
+    [&]() { ++isConnectedCalls; return sourceAlive; }
+  );
+  BOOST_CHECK(conn.connected());
+
+  // the source went away without disconnect() being called
+  sourceAlive = false;
+  BOOST_CHECK(!conn.connected());
+  BOOST_CHECK(!static_cast<bool>(conn));
+
+  // the handler is moved along
+  SignalConnection moved(std::move(conn));
+  sourceAlive = true;
+  BOOST_CHECK(moved.connected());
+  BOOST_CHECK(!conn.connected());
+
+  // after disconnect() the handler is not asked anymore
+  moved.disconnect();
+  const int callsBefore = isConnectedCalls;
+  BOOST_CHECK(!moved.connected());
+  BOOST_CHECK_EQUAL(isConnectedCalls, callsBefore);
+}

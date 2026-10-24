@@ -65,6 +65,15 @@ public:
     return id;
   }
 
+  /**
+   * @brief Check whether the slot with the given id is still connected.
+   */
+  [[nodiscard]] bool isConnected(Id id) const
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    return std::any_of(slots.begin(), slots.end(), [id](const auto& pair) { return pair.first == id; });
+  }
+
   void disconnect(Id id)
   {
     // destroy the removed slot outside the locks, its captures may run arbitrary code

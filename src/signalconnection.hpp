@@ -35,7 +35,16 @@ class SignalConnection
 public:
   SignalConnection() = default;
   SignalConnection(GObject* object, gulong handlerId);
-  explicit SignalConnection(std::function<void()> disconnectHandler);
+  /**
+   * @brief Connection that is managed by custom functions instead of a GObject signal handler.
+   * @param disconnectHandler called once by disconnect() or the destructor.
+   * @param isConnectedHandler answers connected() until disconnect() is called.
+   *        If empty, connected() is true until disconnect() is called.
+   */
+  explicit SignalConnection(
+    std::function<void()> disconnectHandler,
+    std::function<bool()> isConnectedHandler = {}
+  );
   SignalConnection(const SignalConnection&) = delete;
   SignalConnection& operator=(const SignalConnection&) = delete;
   SignalConnection(SignalConnection&& other) noexcept;
@@ -54,6 +63,7 @@ private:
   gulong handlerId{0};
   bool weakRefInitialized{false};
   std::function<void()> customDisconnectHandler;
+  std::function<bool()> customIsConnectedHandler;
 };
 
 } // namespace dh::gst

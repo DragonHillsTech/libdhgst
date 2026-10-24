@@ -389,6 +389,25 @@ BOOST_FIXTURE_TEST_CASE(ParserDestroyedFirstSafety, MessageParserTest)
   BOOST_CHECK(!conn.connected());
 }
 
+BOOST_FIXTURE_TEST_CASE(ConnectionReportsDisconnectedAfterParserDestroyed, MessageParserTest)
+{
+  SignalConnection conn;
+  {
+    auto parser = MessageParser::create();
+    conn = parser->connectSignalEndOfStream([](const std::string&) {});
+    BOOST_CHECK(conn.connected());
+
+    // a second connection to the same signal is independent
+    auto otherConn = parser->connectSignalEndOfStream([](const std::string&) {});
+    otherConn.disconnect();
+    BOOST_CHECK(!otherConn.connected());
+    BOOST_CHECK(conn.connected());
+  }
+
+  // no callback can arrive anymore, without calling disconnect()
+  BOOST_CHECK(!conn.connected());
+}
+
 BOOST_FIXTURE_TEST_CASE(EmptyCallbackThrowsInvalidArgument, MessageParserTest)
 {
   auto parser = MessageParser::create();

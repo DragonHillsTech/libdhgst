@@ -335,3 +335,17 @@ BOOST_AUTO_TEST_CASE(SlotMayDisconnectItselfWhileRunning)
   sig(2);
   BOOST_CHECK_EQUAL(count, 1);
 }
+
+BOOST_AUTO_TEST_CASE(IsConnected)
+{
+  Signal<int> sig;
+  const auto id1 = sig.connect([](int) {});
+  const auto id2 = sig.connect([](int) {});
+  BOOST_CHECK(sig.isConnected(id1));
+  BOOST_CHECK(sig.isConnected(id2));
+  BOOST_CHECK(!sig.isConnected(12345));
+
+  sig.disconnect(id1);
+  BOOST_CHECK(!sig.isConnected(id1));
+  BOOST_CHECK(sig.isConnected(id2));
+}

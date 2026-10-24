@@ -64,6 +64,11 @@ public:
         {
           ((*locked).*signalMember).disconnect(id);
         }
+      },
+      [weakSelf, signalMember, id]()
+      {
+        const auto locked = weakSelf.lock();
+        return locked && ((*locked).*signalMember).isConnected(id);
       }
     );
   }
