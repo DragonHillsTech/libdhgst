@@ -49,6 +49,8 @@ namespace dh::gst
  * - connect() and SignalConnection::connected() never wait for a running callback.
  * - The callback may disconnect itself while it runs. Its captures are destroyed after all
  *   locks are released, so their destructors may use this slot again.
+ * - The callback may release the last owner of the slot (e.g. destroy the object holding it):
+ *   the slot stays alive until call() has returned.
  * Because disconnecting may wait for the running callback, do not disconnect while holding a lock
  * that the callback needs, and do not let two concurrently running callbacks disconnect each other.
  *
@@ -114,6 +116,9 @@ public:
   template<typename... CallArgs>
   void call(CallArgs&&... args)
   {
+    // keeps the slot alive if the callback releases its last owner (e.g. destroys the MessageParser);
+    // declared first, so the slot is destroyed only after the locks are released
+    const auto self = this->shared_from_this();
     // a copy keeps the callback alive if it disconnects itself. Declared before the locks,
     // so it is destroyed after unlocking: its captures may run arbitrary code
     Callback callback;

@@ -304,3 +304,24 @@ BOOST_AUTO_TEST_CASE(SelfDisconnectedCallbackIsDestroyedAfterUnlocking)
   otherThread.join(); // finishes once the slot is unlocked
   BOOST_CHECK(slotUsableWhileDestroyed);
 }
+
+BOOST_AUTO_TEST_CASE(CallbackMayDestroyTheSlot)
+{
+  // e.g. a MessageParser callback that tears everything down when the stream ends:
+  // the slot must stay alive until call() has returned and released its locks
+  auto slot = IntSlot::create("test");
+  const std::weak_ptr<IntSlot> weakSlot = slot;
+  bool aliveDuringCallback = false;
+  auto conn = slot->connect(
+    [&](int)
+    {
+      slot.reset(); // drops the last owner
+      aliveDuringCallback = !weakSlot.expired();
+    }
+  );
+
+  slot->call(1); // no other owner: the callback releases the only one
+  BOOST_CHECK(aliveDuringCallback);
+  BOOST_CHECK(weakSlot.expired()); // destroyed once call() returned
+  BOOST_CHECK(!conn.connected());
+}

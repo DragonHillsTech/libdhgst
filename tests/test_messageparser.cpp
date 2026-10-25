@@ -13,6 +13,7 @@
 #include <atomic>
 #include <chrono>
 #include <future>
+#include <memory>
 #include <stdexcept>
 #include <thread>
 
@@ -480,6 +481,28 @@ BOOST_FIXTURE_TEST_CASE(ReplaceCallbackByAssignmentThrows, MessageParserTest)
   GstMessage* message = gst_message_new_eos(nullptr);
   parser->parse(*message);
   BOOST_CHECK_EQUAL(firstCalls, 1);
+  gst_message_unref(message);
+}
+
+BOOST_FIXTURE_TEST_CASE(CallbackMayDestroyTheParser, MessageParserTest)
+{
+  // tear down on EOS: the parser is destroyed from inside its own callback
+  auto parser = MessageParser::create();
+  const std::weak_ptr<MessageParser> weakParser = parser;
+  bool called = false;
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      parser.reset();
+      called = true;
+    }
+  );
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  parser->parse(*message); // no other owner: the callback releases the only one
+  BOOST_CHECK(called);
+  BOOST_CHECK(weakParser.expired());
+  BOOST_CHECK(!conn.connected());
   gst_message_unref(message);
 }
 

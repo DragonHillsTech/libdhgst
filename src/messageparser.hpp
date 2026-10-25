@@ -53,6 +53,7 @@ namespace dh::gst
  * disconnections of other message types. A callback is never called concurrently with itself:
  * if parse() is called from several threads, the callbacks of one message type run one after the other.
  * A callback may disconnect itself or connect and disconnect other callbacks.
+ * A callback may also destroy the parser (e.g. tear down when the stream ends).
  * Because disconnecting waits for a running callback of its own type, do not disconnect while holding
  * a lock that this callback needs, and do not let two concurrently running callbacks disconnect each other.
  *
