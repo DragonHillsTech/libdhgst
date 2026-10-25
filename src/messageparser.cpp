@@ -19,12 +19,10 @@
  */
 
 #include "messageparser.hpp"
-#include "internal/signal.hpp"
+#include "internal/callbackslot.hpp"
 
-#include <algorithm>
-#include <cstdint>
-#include <stdexcept>
-#include <vector>
+#include <memory>
+#include <string>
 
 namespace dh::gst
 {
@@ -34,44 +32,25 @@ class MessageParser::Private
 public:
   MessageParser::AsyncHandler asyncHandler;
 
-  Signal<const std::string&> endOfStreamSignal;
-  Signal<const std::string&, const std::string&, const std::string&> errorSignal;
-  Signal<const std::string&, GstState, GstState, GstState> stateChangedSignal;
-  Signal<const std::string&, const std::string&, const std::string&> warningSignal;
-  Signal<const std::string&> durationChangedSignal;
-  Signal<const std::string&, const std::string&, const std::string&> infoSignal;
-  Signal<const std::string&, GstStreamStatusType, const std::string&> streamStatusSignal;
-  Signal<const std::string&> streamStartSignal;
-  Signal<const std::string&, const GstStructure*> elementMessageSignal;
-  Signal<const std::string&, GstClockTime> asyncDoneSignal;
+  // callback signatures, all start with the name of the message source
+  using SourceSlot = CallbackSlot<const std::string&>;
+  using TextMessageSlot = CallbackSlot<const std::string&, const std::string&, const std::string&>;
+  using StateChangedSlot = CallbackSlot<const std::string&, GstState, GstState, GstState>;
+  using StreamStatusSlot = CallbackSlot<const std::string&, GstStreamStatusType, const std::string&>;
+  using ElementMessageSlot = CallbackSlot<const std::string&, const GstStructure*>;
+  using AsyncDoneSlot = CallbackSlot<const std::string&, GstClockTime>;
 
-  template<typename SignalType, typename CallbackType>
-  SignalConnection connect(std::shared_ptr<Private> self, SignalType Private::* signalMember, CallbackType callback)
-  {
-    if(!callback)
-    {
-      throw std::invalid_argument("empty signal callback");
-    }
-
-    auto& signal = (*this).*signalMember;
-    const auto id = signal.connect(std::move(callback));
-
-    std::weak_ptr<Private> weakSelf = self;
-    return SignalConnection(
-      [weakSelf, signalMember, id]()
-      {
-        if(auto locked = weakSelf.lock())
-        {
-          ((*locked).*signalMember).disconnect(id);
-        }
-      },
-      [weakSelf, signalMember, id]()
-      {
-        const auto locked = weakSelf.lock();
-        return locked && ((*locked).*signalMember).isConnected(id);
-      }
-    );
-  }
+  // one callback slot per message type
+  const std::shared_ptr<SourceSlot> endOfStreamSlot = SourceSlot::create("EOS");
+  const std::shared_ptr<TextMessageSlot> errorSlot = TextMessageSlot::create("ERROR");
+  const std::shared_ptr<StateChangedSlot> stateChangedSlot = StateChangedSlot::create("STATE_CHANGED");
+  const std::shared_ptr<TextMessageSlot> warningSlot = TextMessageSlot::create("WARNING");
+  const std::shared_ptr<SourceSlot> durationChangedSlot = SourceSlot::create("DURATION_CHANGED");
+  const std::shared_ptr<TextMessageSlot> infoSlot = TextMessageSlot::create("INFO");
+  const std::shared_ptr<StreamStatusSlot> streamStatusSlot = StreamStatusSlot::create("STREAM_STATUS");
+  const std::shared_ptr<SourceSlot> streamStartSlot = SourceSlot::create("STREAM_START");
+  const std::shared_ptr<ElementMessageSlot> elementMessageSlot = ElementMessageSlot::create("ELEMENT");
+  const std::shared_ptr<AsyncDoneSlot> asyncDoneSlot = AsyncDoneSlot::create("ASYNC_DONE");
 };
 
 MessageParser::MessageParser()
@@ -83,52 +62,52 @@ MessageParser::~MessageParser() = default;
 
 SignalConnection MessageParser::connectSignalEndOfStream(std::function<void(const std::string& sourceName)> callback)
 {
-  return prv->connect(prv, &Private::endOfStreamSignal, std::move(callback));
+  return prv->endOfStreamSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalError(std::function<void(const std::string& sourceName, const std::string& errorMessage, const std::string& debugInfo)> callback)
 {
-  return prv->connect(prv, &Private::errorSignal, std::move(callback));
+  return prv->errorSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalStateChanged(std::function<void(const std::string& sourceName, GstState oldState, GstState newState, GstState pendingState)> callback)
 {
-  return prv->connect(prv, &Private::stateChangedSignal, std::move(callback));
+  return prv->stateChangedSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalWarning(std::function<void(const std::string& sourceName, const std::string& warningMessage, const std::string& debugInfo)> callback)
 {
-  return prv->connect(prv, &Private::warningSignal, std::move(callback));
+  return prv->warningSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalDurationChanged(std::function<void(const std::string& sourceName)> callback)
 {
-  return prv->connect(prv, &Private::durationChangedSignal, std::move(callback));
+  return prv->durationChangedSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalInfo(std::function<void(const std::string& sourceName, const std::string& infoMessage, const std::string& debugInfo)> callback)
 {
-  return prv->connect(prv, &Private::infoSignal, std::move(callback));
+  return prv->infoSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalStreamStatus(std::function<void(const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)> callback)
 {
-  return prv->connect(prv, &Private::streamStatusSignal, std::move(callback));
+  return prv->streamStatusSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalStreamStart(std::function<void(const std::string& sourceName)> callback)
 {
-  return prv->connect(prv, &Private::streamStartSignal, std::move(callback));
+  return prv->streamStartSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalElementMessage(std::function<void(const std::string& sourceName, const GstStructure* structure)> callback)
 {
-  return prv->connect(prv, &Private::elementMessageSignal, std::move(callback));
+  return prv->elementMessageSlot->connect(std::move(callback));
 }
 
 SignalConnection MessageParser::connectSignalAsyncDone(std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback)
 {
-  return prv->connect(prv, &Private::asyncDoneSignal, std::move(callback));
+  return prv->asyncDoneSlot->connect(std::move(callback));
 }
 
 void MessageParser::parse(const GstMessage& message)
@@ -160,7 +139,7 @@ void MessageParser::parseSync(const GstMessage& message)
   {
     case GST_MESSAGE_EOS:
     {
-      prv->endOfStreamSignal(sourceName);
+      prv->endOfStreamSlot->call(sourceName);
       break;
     }
 
@@ -169,7 +148,7 @@ void MessageParser::parseSync(const GstMessage& message)
       GError* error = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_error(messagePtr, &error, &debugInfo);
-      prv->errorSignal(sourceName, error->message, debugInfo ? debugInfo : "");
+      prv->errorSlot->call(sourceName, std::string(error->message), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&error);
       g_free(debugInfo);
       break;
@@ -180,7 +159,7 @@ void MessageParser::parseSync(const GstMessage& message)
       GError* warning = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_warning(messagePtr, &warning, &debugInfo);
-      prv->warningSignal(sourceName, warning->message, debugInfo ? debugInfo : "");
+      prv->warningSlot->call(sourceName, std::string(warning->message), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&warning);
       g_free(debugInfo);
       break;
@@ -191,7 +170,7 @@ void MessageParser::parseSync(const GstMessage& message)
       GError* info = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_info(messagePtr, &info, &debugInfo);
-      prv->infoSignal(sourceName, info->message, debugInfo ? debugInfo : "");
+      prv->infoSlot->call(sourceName, std::string(info->message), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&info);
       g_free(debugInfo);
       break;
@@ -201,13 +180,13 @@ void MessageParser::parseSync(const GstMessage& message)
     {
       GstState oldState, newState, pendingState;
       gst_message_parse_state_changed(messagePtr, &oldState, &newState, &pendingState);
-      prv->stateChangedSignal(sourceName, oldState, newState, pendingState);
+      prv->stateChangedSlot->call(sourceName, oldState, newState, pendingState);
       break;
     }
 
     case GST_MESSAGE_DURATION_CHANGED:
     {
-      prv->durationChangedSignal(sourceName);
+      prv->durationChangedSlot->call(sourceName);
       break;
     }
 
@@ -217,20 +196,20 @@ void MessageParser::parseSync(const GstMessage& message)
       GstElement* ownerElement;
       gst_message_parse_stream_status(messagePtr, &statusType, &ownerElement);
       std::string ownerName = ownerElement ? GST_OBJECT_NAME(ownerElement) : "unknown";
-      prv->streamStatusSignal(sourceName, statusType, ownerName);
+      prv->streamStatusSlot->call(sourceName, statusType, ownerName);
       break;
     }
 
     case GST_MESSAGE_STREAM_START:
     {
-      prv->streamStartSignal(sourceName);
+      prv->streamStartSlot->call(sourceName);
       break;
     }
 
     case GST_MESSAGE_ELEMENT:
     {
       const GstStructure* structure = gst_message_get_structure(messagePtr);
-      prv->elementMessageSignal(sourceName, structure);
+      prv->elementMessageSlot->call(sourceName, structure);
       break;
     }
 
@@ -238,7 +217,7 @@ void MessageParser::parseSync(const GstMessage& message)
     {
       GstClockTime runningTime;
       gst_message_parse_async_done(messagePtr, &runningTime);
-      prv->asyncDoneSignal(sourceName, runningTime);
+      prv->asyncDoneSlot->call(sourceName, runningTime);
       break;
     }
 
