@@ -38,7 +38,9 @@ namespace dh::gst
  *
  * connect() returns a SignalConnection that disconnects the callback when it is destroyed.
  * Only one callback can be connected at once: connect() throws std::logic_error until the
- * connected callback is disconnected.
+ * connected callback is disconnected. To replace a callback, disconnect the old connection before
+ * connecting the new one; `connection = slot->connect(newFunction);` throws, because the new
+ * callback is connected before the assignment releases the old connection.
  *
  * Thread safety: call(), connect() and disconnecting may be called from different threads.
  * - When SignalConnection::disconnect() returns, the callback is not running and will not be

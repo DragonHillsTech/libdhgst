@@ -447,6 +447,42 @@ BOOST_FIXTURE_TEST_CASE(OnlyOneCallbackPerMessageType, MessageParserTest)
   gst_message_unref(message);
 }
 
+BOOST_FIXTURE_TEST_CASE(ReplaceCallbackByDisconnectingFirst, MessageParserTest)
+{
+  // the documented way to replace a callback
+  auto parser = MessageParser::create();
+  int firstCalls = 0;
+  int secondCalls = 0;
+  auto conn = parser->connectSignalEndOfStream([&](const std::string&) { ++firstCalls; });
+
+  conn.disconnect();
+  conn = parser->connectSignalEndOfStream([&](const std::string&) { ++secondCalls; });
+  BOOST_CHECK(conn.connected());
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(firstCalls, 0);
+  BOOST_CHECK_EQUAL(secondCalls, 1);
+  gst_message_unref(message);
+}
+
+BOOST_FIXTURE_TEST_CASE(ReplaceCallbackByAssignmentThrows, MessageParserTest)
+{
+  // documented: the new callback is connected before the assignment releases the old connection
+  auto parser = MessageParser::create();
+  int firstCalls = 0;
+  auto conn = parser->connectSignalEndOfStream([&](const std::string&) { ++firstCalls; });
+
+  BOOST_CHECK_THROW(conn = parser->connectSignalEndOfStream([](const std::string&) {}), std::logic_error);
+
+  // the old callback stays connected
+  BOOST_CHECK(conn.connected());
+  GstMessage* message = gst_message_new_eos(nullptr);
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(firstCalls, 1);
+  gst_message_unref(message);
+}
+
 // --- thread safety: the locking itself is tested in test_callbackslot.cpp, these tests check how MessageParser uses it ---
 
 BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)

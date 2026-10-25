@@ -38,6 +38,14 @@ namespace dh::gst
  * One callback per message type: connecting a second callback for the same type throws
  * std::logic_error until the first one is disconnected. Callbacks for different types are independent.
  *
+ * To replace a callback, disconnect the old connection first:
+ * @code
+ * connection.disconnect();
+ * connection = parser->connectSignalEndOfStream(newCallback);
+ * @endcode
+ * Assigning directly (`connection = parser->connectSignalEndOfStream(newCallback);`) throws,
+ * because the new callback is connected before the assignment releases the old connection.
+ *
  * Thread safety: parse(), connecting and disconnecting may be called from different threads.
  * When SignalConnection::disconnect() (or its destructor) returns, the callback is not running
  * and will not be called again; if it runs in another thread, disconnect() waits for it.
