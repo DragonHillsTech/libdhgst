@@ -10,6 +10,11 @@
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <stdexcept>
+#include <thread>
+
 using namespace dh::gst;
 
 
@@ -396,12 +401,6 @@ BOOST_FIXTURE_TEST_CASE(ConnectionReportsDisconnectedAfterParserDestroyed, Messa
     auto parser = MessageParser::create();
     conn = parser->connectSignalEndOfStream([](const std::string&) {});
     BOOST_CHECK(conn.connected());
-
-    // a second connection to the same signal is independent
-    auto otherConn = parser->connectSignalEndOfStream([](const std::string&) {});
-    otherConn.disconnect();
-    BOOST_CHECK(!otherConn.connected());
-    BOOST_CHECK(conn.connected());
   }
 
   // no callback can arrive anymore, without calling disconnect()
@@ -412,4 +411,177 @@ BOOST_FIXTURE_TEST_CASE(EmptyCallbackThrowsInvalidArgument, MessageParserTest)
 {
   auto parser = MessageParser::create();
   BOOST_CHECK_THROW((void)parser->connectSignalEndOfStream(nullptr), std::invalid_argument);
+}
+
+BOOST_FIXTURE_TEST_CASE(OnlyOneCallbackPerMessageType, MessageParserTest)
+{
+  auto parser = MessageParser::create();
+  int firstCalls = 0;
+  int secondCalls = 0;
+
+  auto conn = parser->connectSignalEndOfStream([&](const std::string&) { ++firstCalls; });
+  BOOST_CHECK_THROW(
+    (void)parser->connectSignalEndOfStream([&](const std::string&) { ++secondCalls; }),
+    std::logic_error
+  );
+  // the failed attempt does not affect the connected callback
+  BOOST_CHECK(conn.connected());
+
+  // other message types are independent
+  auto errorConn = parser->connectSignalError([](const std::string&, const std::string&, const std::string&) {});
+  BOOST_CHECK(errorConn.connected());
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(firstCalls, 1);
+  BOOST_CHECK_EQUAL(secondCalls, 0);
+
+  // after disconnecting, a new callback can be connected
+  conn.disconnect();
+  auto newConn = parser->connectSignalEndOfStream([&](const std::string&) { ++secondCalls; });
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(firstCalls, 1);
+  BOOST_CHECK_EQUAL(secondCalls, 1);
+
+  gst_message_unref(message);
+}
+
+// --- thread safety and disconnect guarantees (parse() is often called on a streaming thread) ---
+
+BOOST_FIXTURE_TEST_CASE(ConcurrentConnectDisconnectAndParse, MessageParserTest)
+{
+  auto parser = MessageParser::create();
+  GstMessage* eos = gst_message_new_eos(nullptr);
+  GstMessage* durationChanged = gst_message_new_duration_changed(nullptr);
+  std::atomic<bool> stop{false};
+  std::atomic<int> persistentCalls{0};
+
+  auto persistentConn = parser->connectSignalDurationChanged([&](const std::string&) { ++persistentCalls; });
+
+  auto parseLoop = [&]()
+  {
+    while(!stop)
+    {
+      parser->parse(*eos);
+      parser->parse(*durationChanged);
+    }
+  };
+  std::thread parser1(parseLoop);
+  std::thread parser2(parseLoop);
+
+  for(int i = 0; i < 20000; ++i)
+  {
+    auto conn = parser->connectSignalEndOfStream([](const std::string&) {});
+    conn.disconnect();
+  }
+
+  stop = true;
+  parser1.join();
+  parser2.join();
+  BOOST_CHECK_GT(persistentCalls.load(), 0);
+
+  gst_message_unref(durationChanged);
+  gst_message_unref(eos);
+}
+
+BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)
+{
+  // an object that disconnects in its destructor must not be used by its callback after disconnect() returned
+  auto parser = MessageParser::create();
+  std::atomic<bool> entered{false};
+  std::atomic<bool> finished{false};
+
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      entered = true;
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      finished = true;
+    }
+  );
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  std::thread parserThread([&]() { parser->parse(*message); });
+  while(!entered)
+  {
+    std::this_thread::yield();
+  }
+
+  conn.disconnect();
+  BOOST_CHECK(finished); // disconnect() returned only after the running call finished
+
+  parserThread.join();
+  gst_message_unref(message);
+}
+
+BOOST_FIXTURE_TEST_CASE(NoCallAfterDisconnectReturned, MessageParserTest)
+{
+  auto parser = MessageParser::create();
+  GstMessage* message = gst_message_new_eos(nullptr);
+  std::atomic<bool> stop{false};
+  std::atomic<int> callsAfterDisconnect{0};
+
+  auto parseLoop = [&]()
+  {
+    while(!stop)
+    {
+      parser->parse(*message);
+    }
+  };
+  std::thread parser1(parseLoop);
+  std::thread parser2(parseLoop);
+
+  for(int i = 0; i < 2000; ++i)
+  {
+    // stands for the state of an object that is destroyed after disconnecting
+    auto alive = std::make_shared<std::atomic<bool>>(true);
+    auto conn = parser->connectSignalEndOfStream(
+      [alive, &callsAfterDisconnect](const std::string&)
+      {
+        if(!*alive)
+        {
+          ++callsAfterDisconnect;
+        }
+      }
+    );
+    std::this_thread::yield();
+    conn.disconnect();
+    *alive = false;
+  }
+
+  stop = true;
+  parser1.join();
+  parser2.join();
+  BOOST_CHECK_EQUAL(callsAfterDisconnect.load(), 0);
+
+  gst_message_unref(message);
+}
+
+BOOST_FIXTURE_TEST_CASE(CallbackMayDisconnectItself, MessageParserTest)
+{
+  // must neither deadlock nor destroy the callback while it runs
+  auto parser = MessageParser::create();
+  SignalConnection conn;
+  auto token = std::make_shared<int>(42);
+  int seen = 0;
+  conn = parser->connectSignalEndOfStream(
+    [&conn, &seen, token](const std::string&)
+    {
+      conn.disconnect();
+      seen = *token; // the captures must still be alive after disconnecting itself
+    }
+  );
+
+  GstMessage* message = gst_message_new_eos(nullptr);
+  std::thread parserThread([&]() { parser->parse(*message); });
+  parserThread.join();
+  BOOST_CHECK_EQUAL(seen, 42);
+  BOOST_CHECK(!conn.connected());
+
+  // disconnected: not called again
+  seen = 0;
+  parser->parse(*message);
+  BOOST_CHECK_EQUAL(seen, 0);
+
+  gst_message_unref(message);
 }

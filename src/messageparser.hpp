@@ -33,13 +33,22 @@ namespace dh::gst
 {
 
 /**
- * @brief parser for GstMessages. After parsing, the matching signal is emitted.
+ * @brief parser for GstMessages. After parsing, the callback for the message type is called.
+ *
+ * One callback per message type: connecting a second callback for the same type throws
+ * std::logic_error until the first one is disconnected. Callbacks for different types are independent.
+ *
+ * Thread safety: parse(), connecting and disconnecting may be called from different threads.
+ * When SignalConnection::disconnect() (or its destructor) returns, the callback is not running
+ * and will not be called again; if it runs in another thread, disconnect() waits for it.
+ * Callbacks are called one at a time, also when parse() is called from several threads.
+ * A callback may disconnect itself or connect and disconnect other callbacks.
+ * Because disconnecting may wait, do not disconnect while holding a lock that a callback needs.
  *
  * Callbacks must not throw. parse() is typically called from C code: a bus sync handler,
  * a bus watch, or a main loop source that runs the task of the async handler.
  * An exception from a callback would propagate out of parse() and unwind through these C frames,
  * which terminates the program or leaves GStreamer/GLib locks held.
- * It also stops the emission: the remaining callbacks for that message are not called.
  * Catch exceptions inside the callback.
  */
 class MessageParser
@@ -82,7 +91,7 @@ public:
   ~MessageParser();
 
   /**
-   * @brief Parses a GStreamer message and emits corresponding signals based on its type.
+   * @brief Parses a GStreamer message and calls the callback for its type, if one is connected.
    * If no async handler is set, the message is processed synchronously.
    * The callbacks must not throw, see the class description.
    * @param message The GStreamer message to parse.
@@ -92,60 +101,80 @@ public:
   /**
    * @brief Connect a callback to the End-Of-Stream (EOS) signal.
    * @param callback The callback invoked when an EOS message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalEndOfStream(std::function<void(const std::string& sourceName)> callback);
 
   /**
    * @brief Connect a callback to the error signal.
    * @param callback The callback invoked when an error message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalError(std::function<void(const std::string& sourceName, const std::string& errorMessage, const std::string& debugInfo)> callback);
 
   /**
    * @brief Connect a callback to the state change signal.
    * @param callback The callback invoked when a state change message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalStateChanged(std::function<void(const std::string& sourceName, GstState oldState, GstState newState, GstState pendingState)> callback);
 
   /**
    * @brief Connect a callback to the warning signal.
    * @param callback The callback invoked when a warning message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalWarning(std::function<void(const std::string& sourceName, const std::string& warningMessage, const std::string& debugInfo)> callback);
 
   /**
    * @brief Connect a callback to the duration change signal.
    * @param callback The callback invoked when a duration change message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalDurationChanged(std::function<void(const std::string& sourceName)> callback);
 
   /**
    * @brief Connect a callback to the info signal.
    * @param callback The callback invoked when an info message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalInfo(std::function<void(const std::string& sourceName, const std::string& infoMessage, const std::string& debugInfo)> callback);
 
   /**
    * @brief Connect a callback to the stream status signal.
    * @param callback The callback invoked when a stream status message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalStreamStatus(std::function<void(const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)> callback);
 
   /**
    * @brief Connect a callback to the stream start signal.
    * @param callback The callback invoked when a stream start message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalStreamStart(std::function<void(const std::string& sourceName)> callback);
 
   /**
    * @brief Connect a callback to the element message signal.
    * @param callback The callback invoked when an element specific message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalElementMessage(std::function<void(const std::string& sourceName, const GstStructure* structure)> callback);
 
   /**
    * @brief Connect a callback to the ASYNC_DONE signal.
    * @param callback The callback invoked when an ASYNC_DONE message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
    */
   [[nodiscard]] SignalConnection connectSignalAsyncDone(std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback);
 
