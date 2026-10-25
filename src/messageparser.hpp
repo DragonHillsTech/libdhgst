@@ -41,9 +41,12 @@ namespace dh::gst
  * Thread safety: parse(), connecting and disconnecting may be called from different threads.
  * When SignalConnection::disconnect() (or its destructor) returns, the callback is not running
  * and will not be called again; if it runs in another thread, disconnect() waits for it.
- * Callbacks are called one at a time, also when parse() is called from several threads.
+ * Message types are independent: a running callback never blocks callbacks, connections or
+ * disconnections of other message types. A callback is never called concurrently with itself:
+ * if parse() is called from several threads, the callbacks of one message type run one after the other.
  * A callback may disconnect itself or connect and disconnect other callbacks.
- * Because disconnecting may wait, do not disconnect while holding a lock that a callback needs.
+ * Because disconnecting waits for a running callback of its own type, do not disconnect while holding
+ * a lock that this callback needs, and do not let two concurrently running callbacks disconnect each other.
  *
  * Callbacks must not throw. parse() is typically called from C code: a bus sync handler,
  * a bus watch, or a main loop source that runs the task of the async handler.

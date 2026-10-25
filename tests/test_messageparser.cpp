@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <future>
 #include <stdexcept>
 #include <thread>
 
@@ -446,43 +447,7 @@ BOOST_FIXTURE_TEST_CASE(OnlyOneCallbackPerMessageType, MessageParserTest)
   gst_message_unref(message);
 }
 
-// --- thread safety and disconnect guarantees (parse() is often called on a streaming thread) ---
-
-BOOST_FIXTURE_TEST_CASE(ConcurrentConnectDisconnectAndParse, MessageParserTest)
-{
-  auto parser = MessageParser::create();
-  GstMessage* eos = gst_message_new_eos(nullptr);
-  GstMessage* durationChanged = gst_message_new_duration_changed(nullptr);
-  std::atomic<bool> stop{false};
-  std::atomic<int> persistentCalls{0};
-
-  auto persistentConn = parser->connectSignalDurationChanged([&](const std::string&) { ++persistentCalls; });
-
-  auto parseLoop = [&]()
-  {
-    while(!stop)
-    {
-      parser->parse(*eos);
-      parser->parse(*durationChanged);
-    }
-  };
-  std::thread parser1(parseLoop);
-  std::thread parser2(parseLoop);
-
-  for(int i = 0; i < 20000; ++i)
-  {
-    auto conn = parser->connectSignalEndOfStream([](const std::string&) {});
-    conn.disconnect();
-  }
-
-  stop = true;
-  parser1.join();
-  parser2.join();
-  BOOST_CHECK_GT(persistentCalls.load(), 0);
-
-  gst_message_unref(durationChanged);
-  gst_message_unref(eos);
-}
+// --- thread safety: the locking itself is tested in test_callbackslot.cpp, these tests check how MessageParser uses it ---
 
 BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)
 {
@@ -514,74 +479,56 @@ BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)
   gst_message_unref(message);
 }
 
-BOOST_FIXTURE_TEST_CASE(NoCallAfterDisconnectReturned, MessageParserTest)
+BOOST_FIXTURE_TEST_CASE(CallbacksOfDifferentTypesDoNotBlockEachOther, MessageParserTest)
 {
+  // a callback that waits for another thread that also parses (e.g. a streaming thread) must not deadlock
   auto parser = MessageParser::create();
-  GstMessage* message = gst_message_new_eos(nullptr);
-  std::atomic<bool> stop{false};
-  std::atomic<int> callsAfterDisconnect{0};
+  GstMessage* durationChanged = gst_message_new_duration_changed(nullptr);
+  GstMessage* eos = gst_message_new_eos(nullptr);
 
-  auto parseLoop = [&]()
-  {
-    while(!stop)
+  std::promise<void> durationHandled;
+  auto durationConn = parser->connectSignalDurationChanged([&](const std::string&) { durationHandled.set_value(); });
+
+  bool otherTypeRan = false;
+  std::thread otherThread;
+  auto eosConn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
     {
-      parser->parse(*message);
-    }
-  };
-  std::thread parser1(parseLoop);
-  std::thread parser2(parseLoop);
-
-  for(int i = 0; i < 2000; ++i)
-  {
-    // stands for the state of an object that is destroyed after disconnecting
-    auto alive = std::make_shared<std::atomic<bool>>(true);
-    auto conn = parser->connectSignalEndOfStream(
-      [alive, &callsAfterDisconnect](const std::string&)
-      {
-        if(!*alive)
-        {
-          ++callsAfterDisconnect;
-        }
-      }
-    );
-    std::this_thread::yield();
-    conn.disconnect();
-    *alive = false;
-  }
-
-  stop = true;
-  parser1.join();
-  parser2.join();
-  BOOST_CHECK_EQUAL(callsAfterDisconnect.load(), 0);
-
-  gst_message_unref(message);
-}
-
-BOOST_FIXTURE_TEST_CASE(CallbackMayDisconnectItself, MessageParserTest)
-{
-  // must neither deadlock nor destroy the callback while it runs
-  auto parser = MessageParser::create();
-  SignalConnection conn;
-  auto token = std::make_shared<int>(42);
-  int seen = 0;
-  conn = parser->connectSignalEndOfStream(
-    [&conn, &seen, token](const std::string&)
-    {
-      conn.disconnect();
-      seen = *token; // the captures must still be alive after disconnecting itself
+      otherThread = std::thread([&]() { parser->parse(*durationChanged); });
+      otherTypeRan = durationHandled.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
-  GstMessage* message = gst_message_new_eos(nullptr);
-  std::thread parserThread([&]() { parser->parse(*message); });
-  parserThread.join();
-  BOOST_CHECK_EQUAL(seen, 42);
-  BOOST_CHECK(!conn.connected());
+  parser->parse(*eos);
+  otherThread.join();
+  BOOST_CHECK(otherTypeRan);
 
-  // disconnected: not called again
-  seen = 0;
-  parser->parse(*message);
-  BOOST_CHECK_EQUAL(seen, 0);
+  gst_message_unref(eos);
+  gst_message_unref(durationChanged);
+}
 
-  gst_message_unref(message);
+BOOST_FIXTURE_TEST_CASE(DisconnectOfOtherTypeDoesNotWaitForRunningCallback, MessageParserTest)
+{
+  auto parser = MessageParser::create();
+  GstMessage* eos = gst_message_new_eos(nullptr);
+  auto errorConn = parser->connectSignalError([](const std::string&, const std::string&, const std::string&) {});
+
+  std::promise<void> disconnected;
+  bool disconnectReturned = false;
+  std::thread otherThread;
+  auto eosConn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      // while this callback runs, another thread disconnects a callback of a different type
+      otherThread = std::thread([&]() { errorConn.disconnect(); disconnected.set_value(); });
+      disconnectReturned = disconnected.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
+    }
+  );
+
+  parser->parse(*eos);
+  otherThread.join();
+  BOOST_CHECK(disconnectReturned);
+  BOOST_CHECK(!errorConn.connected());
+
+  gst_message_unref(eos);
 }
