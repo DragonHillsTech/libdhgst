@@ -9,11 +9,13 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "timedthread.hpp"
 
 #include <atomic>
 #include <chrono>
 #include <future>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <thread>
 
@@ -549,17 +551,17 @@ BOOST_FIXTURE_TEST_CASE(CallbacksOfDifferentTypesDoNotBlockEachOther, MessagePar
   auto durationConn = parser->connectSignalDurationChanged([&](const std::string&) { durationHandled.set_value(); });
 
   bool otherTypeRan = false;
-  std::thread otherThread;
+  std::optional<TimedThread> otherThread;
   auto eosConn = parser->connectSignalEndOfStream(
     [&](const std::string&)
     {
-      otherThread = std::thread([&]() { parser->parse(*durationChanged); });
+      otherThread.emplace([&]() { parser->parse(*durationChanged); });
       otherTypeRan = durationHandled.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
   parser->parse(*eos);
-  otherThread.join();
+  otherThread->join();
   BOOST_CHECK(otherTypeRan);
 
   gst_message_unref(eos);
@@ -574,18 +576,18 @@ BOOST_FIXTURE_TEST_CASE(DisconnectOfOtherTypeDoesNotWaitForRunningCallback, Mess
 
   std::promise<void> disconnected;
   bool disconnectReturned = false;
-  std::thread otherThread;
+  std::optional<TimedThread> otherThread;
   auto eosConn = parser->connectSignalEndOfStream(
     [&](const std::string&)
     {
       // while this callback runs, another thread disconnects a callback of a different type
-      otherThread = std::thread([&]() { errorConn.disconnect(); disconnected.set_value(); });
+      otherThread.emplace([&]() { errorConn.disconnect(); disconnected.set_value(); });
       disconnectReturned = disconnected.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
   parser->parse(*eos);
-  otherThread.join();
+  otherThread->join();
   BOOST_CHECK(disconnectReturned);
   BOOST_CHECK(!errorConn.connected());
 

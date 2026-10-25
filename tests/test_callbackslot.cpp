@@ -22,12 +22,14 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "timedthread.hpp"
 
 #include <atomic>
 #include <chrono>
 #include <functional>
 #include <future>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -227,19 +229,19 @@ BOOST_AUTO_TEST_CASE(ConnectedDoesNotWaitForRunningCallback)
   SignalConnection conn;
   std::promise<void> queried;
   bool connectedReturned = false;
-  std::thread queryThread;
+  std::optional<TimedThread> queryThread;
 
   conn = slot->connect(
     [&](int)
     {
       // while this callback runs, another thread asks whether it is connected
-      queryThread = std::thread([&]() { (void)conn.connected(); queried.set_value(); });
+      queryThread.emplace([&]() { (void)conn.connected(); queried.set_value(); });
       connectedReturned = queried.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
   slot->call(1);
-  queryThread.join();
+  queryThread->join();
   BOOST_CHECK(connectedReturned);
 }
 
@@ -282,12 +284,12 @@ BOOST_AUTO_TEST_CASE(SelfDisconnectedCallbackIsDestroyedAfterUnlocking)
   auto slot = IntSlot::create("test");
   bool slotUsableWhileDestroyed = false;
   std::promise<void> called;
-  std::thread otherThread;
+  std::optional<TimedThread> otherThread;
 
   auto probe = std::make_shared<DestructorProbe>();
   probe->onDestroy = [&]()
   {
-    otherThread = std::thread([&]() { slot->call(2); called.set_value(); });
+    otherThread.emplace([&]() { slot->call(2); called.set_value(); });
     slotUsableWhileDestroyed = called.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
   };
 
@@ -301,7 +303,7 @@ BOOST_AUTO_TEST_CASE(SelfDisconnectedCallbackIsDestroyedAfterUnlocking)
   probe.reset();
 
   slot->call(1);
-  otherThread.join(); // finishes once the slot is unlocked
+  otherThread->join(); // finishes once the slot is unlocked
   BOOST_CHECK(slotUsableWhileDestroyed);
 }
 
