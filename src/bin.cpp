@@ -100,11 +100,10 @@ const GstBinSPtr Bin::getGstBin() const
 
 void Bin::addElement(GstElement& element)
 {
-  // gst_bin_add: transfer: full
-  auto* refIncreasedRawPtr = GST_ELEMENT(gst_object_ref(GST_OBJECT(&element)));
-  if(gst_bin_add(getRawGstBin(), refIncreasedRawPtr) == FALSE)
+  // gst_bin_add: transfer: floating
+  // The bin sinks a floating reference, otherwise it takes its own reference.
+  if(gst_bin_add(getRawGstBin(), &element) == FALSE)
   {
-    gst_object_unref(refIncreasedRawPtr);
     throw std::runtime_error("Failed to add element to GstBin.");
   }
 }
