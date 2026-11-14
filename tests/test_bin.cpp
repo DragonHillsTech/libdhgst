@@ -3,12 +3,13 @@
 
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
 
 #include <stdexcept>
 
-#include <cstdlib>
 
 using namespace dh::gst;
 
@@ -21,8 +22,6 @@ public:
   // Setup before first test case
   BinTest()
   {
-    // Set G_DEBUG to fatal_criticals to make critical warnings crash the program
-    setenv("G_DEBUG", "fatal_criticals", 1);
     gst_init(nullptr, nullptr);  // Initialize GStreamer
   }
 };
@@ -60,24 +59,25 @@ BOOST_FIXTURE_TEST_CASE(SetState, BinTest)
   BOOST_REQUIRE_EQUAL(bin1->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   BOOST_REQUIRE_EQUAL(bin1->getState(), GST_STATE_PLAYING);
 
-  // here we would get a gstreamer error if the Element is destroyed when state != null.
+  // the owner must set the bin to NULL before it is destroyed
+  BOOST_REQUIRE_EQUAL(bin1->setState(GST_STATE_NULL), GST_STATE_CHANGE_SUCCESS);
 }
 
-BOOST_FIXTURE_TEST_CASE(AddAndRemoveElementSharedPtr, BinTest)
+BOOST_FIXTURE_TEST_CASE(AddAndRemoveGstElement, BinTest)
 {
   auto bin1 = Bin::create("bin1");
   auto element1SPtr = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // add
-  BOOST_CHECK_NO_THROW(bin1->addElement(element1SPtr));
+  BOOST_CHECK_NO_THROW(bin1->addElement(*element1SPtr));
   BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), GST_ELEMENT_NAME(element1SPtr.get())) != nullptr);
 
   // remove
-  BOOST_CHECK_NO_THROW(bin1->removeElement(element1SPtr));
+  BOOST_CHECK_NO_THROW(bin1->removeElement(*element1SPtr));
   BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), GST_ELEMENT_NAME(element1SPtr.get())) == nullptr);
 }
 
-BOOST_FIXTURE_TEST_CASE(AddAndRemoveElementByReference, BinTest)
+BOOST_FIXTURE_TEST_CASE(AddAndRemoveElement, BinTest)
 {
   auto bin1 = Bin::create("bin1");
   auto element1 = Element::create(
@@ -86,11 +86,11 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveElementByReference, BinTest)
   );
 
   // add
-  BOOST_CHECK_NO_THROW(bin1->addElement(element1));
+  BOOST_CHECK_NO_THROW(bin1->addElement(*element1));
   BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), element1->getName().c_str()) != nullptr);
 
   // remove
-  BOOST_CHECK_NO_THROW(bin1->removeElement(element1));
+  BOOST_CHECK_NO_THROW(bin1->removeElement(*element1));
   BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), element1->getName().c_str()) == nullptr);
 }
 
@@ -100,7 +100,7 @@ BOOST_FIXTURE_TEST_CASE(GetElementByName, BinTest)
   auto element1 = Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // find existing
-  bin1->addElement(element1);
+  bin1->addElement(*element1);
   auto element2 = bin1->getElementByName(element1->getName());
   BOOST_CHECK_EQUAL(element2->getName(), element1->getName());
   BOOST_CHECK_EQUAL(element2->getGstElement(), element1->getGstElement());
@@ -115,7 +115,7 @@ BOOST_FIXTURE_TEST_CASE(GetElementByNameRecurseUp, BinTest)
   auto element1 = Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // find existing
-  bin1->addElement(element1);
+  bin1->addElement(*element1);
   auto element2 = bin1->getElementByNameRecurseUp(element1->getName());
   BOOST_CHECK_EQUAL(element2->getName(), element1->getName());
   BOOST_CHECK_EQUAL(element2->getGstElement(), element1->getGstElement());

@@ -3,6 +3,8 @@
 #include "sharedptrs.hpp"
 #define BOOST_TEST_MODULE libdhgst_tests
 #include <boost/test/included/unit_test.hpp>
+#include "fatalgliblog.hpp"
+BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 using namespace dh::gst;
 // Test fixture for GStreamer tests
@@ -35,9 +37,12 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest
   // Ref count should remain the same because ownership was transferred fully
   BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawSource)), initialRefCount);
 
-  // Shared pointer goes out of scope and unrefs the object
+  // Shared pointer goes out of scope and unrefs the object. It held the only reference,
+  // so the object is destroyed: observe that with a weak pointer instead of reading freed memory.
+  gpointer weakSource = rawSource;
+  g_object_add_weak_pointer(G_OBJECT(rawSource), &weakSource);
   sourceSPtr.reset();
-  BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawSource)), 0);
+  BOOST_CHECK(weakSource == nullptr);
 }
 
 // Test makeGstSharedPtr with GstPad and TransferType::None

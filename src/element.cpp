@@ -23,20 +23,36 @@
 #include "elementfactory.hpp"
 
 // std
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 // C
-#include <cassert>
 #include <unordered_set>
 
 namespace dh::gst
 {
 
+namespace
+{
+
+/**
+ * @brief GstElementForeachPadFunc that appends a referenced pad to a std::vector<GstPadSPtr>.
+ * The pad is only guaranteed to be valid during the callback, so take our own reference.
+ */
+gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
+{
+  auto& pads = *static_cast<std::vector<GstPadSPtr>*>(userData);
+  pads.push_back(makeGstSharedPtr(pad, TransferType::None));
+  return TRUE; // continue iteration
+}
+
+} // namespace
+
 Element::Element(GstElement* gstElement, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstElement), transferType)
 {
-  assert(getGstElement() != nullptr);
+  requireType(GST_TYPE_ELEMENT);
 }
 
 std::shared_ptr<Element> Element::create(GstElementSPtr gstElement)
@@ -52,7 +68,7 @@ std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType tr
 Element::Element(GstElementSPtr gstElement)
 : Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
 {
-  assert(getGstElement() != nullptr);
+  requireType(GST_TYPE_ELEMENT);
 }
 
 GstElementSPtr Element::getGstElement()
@@ -72,69 +88,55 @@ GstStateChangeReturn Element::setState(GstState newState)
   return gst_element_set_state(getRawGstElement(), newState);
 }
 
-std::vector<GstPad*> Element::getPads()
+std::vector<GstPadSPtr> Element::getPads()
 {
-  std::vector<GstPad*> pads;
-  gst_element_foreach_pad(
-    getRawGstElement(),
-    [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
-    {
-      auto& pads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
-      pads.push_back(pad);
-      return true; // Continue iteration
-    },
-    &pads
-  );
+  std::vector<GstPadSPtr> pads;
+  gst_element_foreach_pad(getRawGstElement(), collectPad, &pads);
   return pads;
 }
 
-std::vector<GstPad*> Element::getSinkPads()
+std::vector<GstPadSPtr> Element::getSinkPads()
 {
-  std::vector<GstPad*> sinkPads;
-  gst_element_foreach_sink_pad(
-    getRawGstElement(), [](GstElement* /*element*/,GstPad* pad, gpointer user_data) ->gboolean
-    {
-      auto& sinkPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
-      sinkPads.push_back(pad);
-      return true; // Continue iteration
-    },
-    &sinkPads
-  );
+  std::vector<GstPadSPtr> sinkPads;
+  gst_element_foreach_sink_pad(getRawGstElement(), collectPad, &sinkPads);
   return sinkPads;
 }
 
-std::vector<GstPad*> Element::getSrcPads()
+std::vector<GstPadSPtr> Element::getSrcPads()
 {
-  std::vector<GstPad*> srcPads;
-  gst_element_foreach_src_pad(
-    getRawGstElement(),
-    [](GstElement* /*element*/, GstPad* pad, gpointer user_data) ->gboolean
-    {
-      auto& srcPads = *reinterpret_cast<std::vector<GstPad*>*>(user_data);
-      srcPads.push_back(pad);
-      return true; // Continue iteration
-    },
-    &srcPads
-  );
+  std::vector<GstPadSPtr> srcPads;
+  gst_element_foreach_src_pad(getRawGstElement(), collectPad, &srcPads);
   return srcPads;
 }
 
-GstPad* Element::getCompatiblePad(GstPad* pad, GstCaps* caps)
+GstPadSPtr Element::getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps)
 {
-  return gst_element_get_compatible_pad(getRawGstElement(), pad, caps);
+  if(! pad)
+  {
+    throw std::invalid_argument("getCompatiblePad: pad must not be nullptr");
+  }
+  // gst_element_get_compatible_pad: transfer full, nullable
+  return makeGstSharedPtr(
+    gst_element_get_compatible_pad(getRawGstElement(), pad.get(), caps.get()),
+    TransferType::Full
+  );
 }
 
-GstPad* Element::getStaticPad(const std::string& name)
+GstPadSPtr Element::getStaticPad(const std::string& name)
 {
-  return gst_element_get_static_pad(getRawGstElement(), name.c_str());
+  // gst_element_get_static_pad: transfer full, nullable
+  return makeGstSharedPtr(
+    gst_element_get_static_pad(getRawGstElement(), name.c_str()),
+    TransferType::Full
+  );
 }
 
-std::shared_ptr<Element>& Element::link(std::shared_ptr<Element>& other)
+Element& Element::link(Element& other)
 {
-  if (!gst_element_link(getRawGstElement(), other->getRawGstElement()))
+  if (!gst_element_link(getRawGstElement(), other.getRawGstElement()))
   {
     std::string errorMessage = "Failed to link GstElements: ";
-    errorMessage += getName() + " -> " + other->getName();
+    errorMessage += getName() + " -> " + other.getName();
 
     // Throw an exception with the detailed error message
     throw std::runtime_error(errorMessage);
@@ -169,16 +171,31 @@ GstClockTime Element::getStartTime() const
   return gst_element_get_start_time(const_cast<GstElement*>(getRawGstElement()));
 }
 
-GstState Element::getState() const
+GstState Element::getState(GstClockTime timeout) const
 {
-  GstState state;
-  gst_element_get_state(const_cast<GstElement*>(getRawGstElement()), &state, nullptr, GST_CLOCK_TIME_NONE);
-  return state;
+  const StateQuery query = queryState(timeout);
+  if(query.result == GST_STATE_CHANGE_FAILURE)
+  {
+    throw std::runtime_error("Last state change of element " + getName() + " failed");
+  }
+  return query.current;
 }
 
-void Element::unlink(std::shared_ptr<Element>& other)
+Element::StateQuery Element::queryState(GstClockTime timeout) const
 {
-  gst_element_unlink(getRawGstElement(), other->getRawGstElement());
+  StateQuery query{GST_STATE_CHANGE_FAILURE, GST_STATE_VOID_PENDING, GST_STATE_VOID_PENDING};
+  query.result = gst_element_get_state(
+    const_cast<GstElement*>(getRawGstElement()),
+    &query.current,
+    &query.pending,
+    timeout
+  );
+  return query;
+}
+
+void Element::unlink(Element& other)
+{
+  gst_element_unlink(getRawGstElement(), other.getRawGstElement());
 }
 
 void Element::syncStateWithParent()

@@ -61,6 +61,17 @@ protected:
   Element(GstElement* gstElement, TransferType transferType);
 
  public:
+  /**
+   * @brief Result of queryState().
+   */
+  struct StateQuery
+  {
+    /// SUCCESS, ASYNC (a state change is still pending), NO_PREROLL (live element) or FAILURE (last change failed)
+    GstStateChangeReturn result;
+    GstState current; ///< the current state
+    GstState pending; ///< the pending state, GST_STATE_VOID_PENDING if no state change is pending
+  };
+
  [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
  [[nodiscard]] static std::shared_ptr<Element> create(GstElement* gstElement, TransferType transferType);
 
@@ -76,50 +87,46 @@ protected:
 
  /**
   * @brief Gets all pads of the GStreamer element.
-  * @return (transfer none): A vector containing pointers to all GstPad objects.
-  * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
+  * @return A vector of all pads. Each pad is referenced, so it stays valid even if it is removed from the element.
   */
-  [[nodiscard]] std::vector<GstPad*> getPads();
+  [[nodiscard]] std::vector<GstPadSPtr> getPads();
 
  /**
   * @brief Gets all sink pads of the GStreamer element.
-  * @return (transfer none): A vector containing pointers to sink GstPad objects.
-  * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
+  * @return A vector of the sink pads. Each pad is referenced, so it stays valid even if it is removed from the element.
   */
-  [[nodiscard]] std::vector<GstPad*> getSinkPads();
+  [[nodiscard]] std::vector<GstPadSPtr> getSinkPads();
 
  /**
   * @brief Gets all source pads of the GStreamer element.
-  * @return (transfer none): A vector containing pointers to source GstPad objects.
-  * @note The caller does not own the returned GstPad pointers. Use gst_object_ref() if you need to keep them.
+  * @return A vector of the source pads. Each pad is referenced, so it stays valid even if it is removed from the element.
   */
-  [[nodiscard]] std::vector<GstPad*> getSrcPads();
+  [[nodiscard]] std::vector<GstPadSPtr> getSrcPads();
 
  /**
-  * @brief Finds a compatible pad for a given pad and caps.
-  * @param pad (transfer none): The GstPad to find a compatible pad for.
-  * @param caps (transfer none): The GstCaps that the compatible pad must match.
-  * @return (transfer none): A pointer to the compatible GstPad, or nullptr if none found.
-  * @note The caller does not own the returned GstPad pointer. Use gst_object_ref() if you need to keep it.
+  * @brief Finds a pad of this element that is compatible with the given pad and caps.
+  * May request a new pad from a request pad template.
+  * @param pad The pad to find a compatible pad for.
+  * @param caps The caps the compatible pad must match. nullptr (default) means any caps.
+  * @return The compatible pad, or nullptr if none was found.
+  * @throws std::invalid_argument if pad is nullptr.
   */
-  [[nodiscard]] GstPad* getCompatiblePad(GstPad* pad, GstCaps* caps);
+  [[nodiscard]] GstPadSPtr getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps = nullptr);
 
  /**
-  * @brief Gets a static pad by name.
+  * @brief Gets a static (always or sometimes) pad by name.
   * @param name The name of the pad to retrieve.
-  * @return (transfer none): A pointer to the GstPad if found, nullptr otherwise.
-  * @note The caller does not own the returned GstPad pointer. Use gst_object_ref() if you need to keep it.
+  * @return The pad, or nullptr if the element has no static pad with that name.
   */
-  [[nodiscard]] GstPad* getStaticPad(const std::string& name);
+  [[nodiscard]] GstPadSPtr getStaticPad(const std::string& name);
 
   /**
    * @brief Links this element with another element.
-   * @param other (transfer none): The Element to link with.
-   * @return Reference to the other Element for chaining.
+   * @param other The Element to link with.
+   * @return Reference to the other Element for chaining: a->link(b).link(c)
    * @throws std::runtime_error if the elements cannot be linked.
-   * @todo: add test
    */
- std::shared_ptr<Element>& link(std::shared_ptr<Element>& other);
+  Element& link(Element& other);
 
 
   /**
@@ -144,15 +151,25 @@ protected:
 
   /**
    * @brief Gets the current state of the element.
-   * @return The current GstState of the element.
+   * By default this does not wait for a pending asynchronous state change.
+   * @param timeout How long to wait for a pending state change to complete. 0 (default) returns immediately.
+   *        GST_CLOCK_TIME_NONE waits forever: never do that on a streaming thread, it deadlocks.
+   * @return The current state. While an asynchronous state change is pending, this is the state before the change.
+   * @throws std::runtime_error if the last state change failed.
    */
-  [[nodiscard]] GstState getState() const;
+  [[nodiscard]] GstState getState(GstClockTime timeout = 0) const;
+
+  /**
+   * @brief Gets the current and pending state and the result of the last state change.
+   * @param timeout see getState()
+   */
+  [[nodiscard]] StateQuery queryState(GstClockTime timeout = 0) const;
 
   /**
    * @brief Unlinks the element from another element.
    * @param other The Element to unlink from.
    */
-  void unlink(std::shared_ptr<Element>& other);
+  void unlink(Element& other);
 
   /**
    * @brief Synchronizes the state of the element with its parent.

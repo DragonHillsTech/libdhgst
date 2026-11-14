@@ -40,6 +40,7 @@ set(HEADERS
   src/element.hpp
   src/elementfactory.hpp
   src/gilview.hpp
+  src/gvaluetraits.hpp
   src/helpers.hpp
   src/object.hpp
   src/objecttraits.hpp
