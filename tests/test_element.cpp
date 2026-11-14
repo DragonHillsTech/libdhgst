@@ -136,7 +136,9 @@ BOOST_FIXTURE_TEST_CASE(GetSrcPads, ElementTest)
 
   std::vector<GstPadSPtr> srcPads = element->getSrcPads();
   BOOST_REQUIRE_EQUAL(srcPads.size(), 1);  // fakesrc has one "src" pad
-  BOOST_REQUIRE_EQUAL(gst_pad_get_name(srcPads[0].get()), std::string("src"));  // Verify the pad name
+  gchar* padName = gst_pad_get_name(srcPads[0].get());  // transfer full
+  BOOST_CHECK_EQUAL(padName, std::string("src"));  // Verify the pad name
+  g_free(padName);
 }
 
 BOOST_FIXTURE_TEST_CASE(GetPadsReferencesPads, ElementTest)
