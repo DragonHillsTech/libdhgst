@@ -18,7 +18,7 @@ jobs:
     steps:
       # Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       # Install dependencies
       - name: Install dependencies
@@ -28,11 +28,9 @@ jobs:
           sudo apt-get install -y \
             cmake \
             g++ \
-            libboost-all-dev \
-            libspdlog-dev \
+            libboost-dev \
             libgstreamer1.0-dev \
             libgstreamer-plugins-base1.0-dev \
-            libgstreamer-plugins-bad1.0-dev \
             gstreamer1.0-plugins-base
 
       # Create build directory
@@ -53,4 +51,3 @@ jobs:
         run: |
           cd build/tests
           ctest --output-on-failure
-

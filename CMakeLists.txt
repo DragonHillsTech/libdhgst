@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
-project(libdhgst VERSION 1.0.0 LANGUAGES CXX)
+
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/ReadVersion.cmake)
+read_version(${CMAKE_CURRENT_LIST_DIR}/VERSION.txt LIBDHGST_VERSION)
+
+project(libdhgst VERSION ${LIBDHGST_VERSION} LANGUAGES CXX)
 
 include(GNUInstallDirs)
 

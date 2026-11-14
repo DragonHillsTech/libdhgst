@@ -1,7 +1,12 @@
 name: Documentation
 
 on:
-  push:
+  # build the docs only after CI (build and tests) succeeded on master
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - master
   workflow_dispatch:
@@ -19,10 +24,17 @@ jobs:
   build:
     name: Build Doxygen documentation
     runs-on: ubuntu-latest
+    # workflow_run: only for a successful CI run of a push, not of a pull request from a branch named master
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          # the commit that CI tested, not the newest one on master
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Install documentation dependencies
         run: |

@@ -1,0 +1,79 @@
+name: Version
+
+on:
+  # pull requests to master must bump VERSION.txt
+  pull_request:
+    branches:
+      - master
+  # tag master only after CI (build and tests) succeeded
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  # The tag vX.Y.Z for the version X.Y.Z in VERSION.txt must not exist yet
+  check-version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Check that VERSION.txt was updated
+        run: |
+          version="$(tr -d '[:space:]' < VERSION.txt)"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error file=VERSION.txt::Invalid version '$version', expected MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "::error file=VERSION.txt::Tag v$version already exists, update VERSION.txt"
+            exit 1
+          fi
+          echo "Version $version is not tagged yet"
+
+  # Tag the commit that CI tested with vX.Y.Z from VERSION.txt
+  tag-version:
+    # workflow_run: only for a successful CI run of a push, not of a pull request from a branch named master
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # the commit that CI tested, not the newest one on master
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Create tag
+        env:
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          version="$(tr -d '[:space:]' < VERSION.txt)"
+          tag="v$version"
+          if git fetch --depth=1 origin "refs/tags/$tag:refs/tags/$tag" 2> /dev/null; then
+            # a re-run of this job for the same commit is fine, anything else is an error
+            if [ "$(git rev-parse "$tag^{commit}")" = "$COMMIT_SHA" ]; then
+              echo "Tag $tag already points to $COMMIT_SHA"
+              exit 0
+            fi
+            echo "::error file=VERSION.txt::Tag $tag already exists on another commit, VERSION.txt was not updated"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag" "$COMMIT_SHA"
+          git push origin "refs/tags/$tag"
