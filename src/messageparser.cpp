@@ -20,7 +20,7 @@
 
 #include "messageparser.hpp"
 #include "internal/callbackslot.hpp"
-#include "object.hpp"
+#include "internal/objectname.hpp"
 #include "sharedptrs.hpp"
 
 #include <memory>
@@ -34,7 +34,6 @@ namespace
 
 /**
  * @brief Name of a GstObject, or "unknown" if there is no object or it has no name.
- * Object::getName() takes the object lock: the object may be renamed by another thread.
  */
 std::string getObjectNameOrUnknown(GstObject* object)
 {
@@ -42,7 +41,7 @@ std::string getObjectNameOrUnknown(GstObject* object)
   {
     return "unknown";
   }
-  const std::string name = Object::create(object, TransferType::None)->getName();
+  const std::string name = getObjectName(*object);
   return name.empty() ? "unknown" : name;
 }
 

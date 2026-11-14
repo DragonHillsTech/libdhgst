@@ -19,6 +19,7 @@
  */
 
 #include "object.hpp"
+#include "internal/objectname.hpp"
 
 #include <stdexcept>
 
@@ -59,11 +60,7 @@ const GstObjectSPtr Object::getGstObject() const
 
 std::string Object::getName() const
 {
-  // Get the name from the GstElement
-  gchar* name = gst_object_get_name(const_cast<GstObject*>(getRawGstObject()));
-  std::string ret = name ? name : "";
-  g_free(name);
-  return ret;
+  return getObjectName(*getRawGstObject());
 }
 
 void Object::setName(const std::string& name)
