@@ -51,3 +51,48 @@ jobs:
         run: |
           cd build/tests
           ctest --output-on-failure
+
+  # Pull requests to master: build and run the tests with AddressSanitizer (incl. LeakSanitizer)
+  # and UndefinedBehaviorSanitizer. Any finding fails the job.
+  sanitizers:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    env:
+      SANITIZE_FLAGS: -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer
+      ASAN_OPTIONS: detect_leaks=1:strict_string_checks=1:detect_stack_use_after_return=1
+      UBSAN_OPTIONS: print_stacktrace=1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get remove libunwind-*
+          sudo apt-get install -y \
+            cmake \
+            g++ \
+            libboost-dev \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTS=ON \
+            -DBUILD_EXAMPLES=OFF \
+            -DCMAKE_CXX_FLAGS="$SANITIZE_FLAGS" \
+            -DCMAKE_EXE_LINKER_FLAGS="$SANITIZE_FLAGS" \
+            -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZE_FLAGS"
+
+      - name: Build the project
+        run: cmake --build build
+
+      - name: Run tests
+        run: |
+          cd build/tests
+          ctest --output-on-failure
