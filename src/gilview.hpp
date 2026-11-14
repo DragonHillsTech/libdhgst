@@ -44,7 +44,15 @@ ViewType createGilView(GstVideoFrame& frame)
   using pixel_t         = typename ViewType::value_type;
   using non_const_pix_t = std::remove_const_t<pixel_t>;
 
-  // 1) Ensure only RGB8 or GRAY8
+  // 1) The frame must be mapped. Checked first: the format check dereferences frame.info.finfo,
+  //    which is null in a frame that was never mapped.
+  void* const planeData = GST_VIDEO_FRAME_PLANE_DATA(&frame, 0);
+  if(!frame.info.finfo || !planeData)
+  {
+    throw std::runtime_error("createGilView: frame is not mapped");
+  }
+
+  // 2) Ensure only RGB8 or GRAY8
   if constexpr (std::is_same_v<non_const_pix_t, boost::gil::rgb8_pixel_t>)
   {
     if(GST_VIDEO_INFO_FORMAT(&frame.info) != GST_VIDEO_FORMAT_RGB)
@@ -63,13 +71,6 @@ ViewType createGilView(GstVideoFrame& frame)
   {
     static_assert(!std::is_same_v<non_const_pix_t, non_const_pix_t>,
                   "createGilView only supports RGB8 or GRAY8 pixels");
-  }
-
-  // 2) The frame must be mapped
-  void* const planeData = GST_VIDEO_FRAME_PLANE_DATA(&frame, 0);
-  if(!planeData)
-  {
-    throw std::runtime_error("createGilView: frame is not mapped");
   }
 
   // 3) A mutable view may only be created for a frame mapped for writing

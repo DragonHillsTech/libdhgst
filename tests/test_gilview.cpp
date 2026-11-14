@@ -172,3 +172,12 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnUnmappedFrame, GilViewTest) {
 
   BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8c_view_t>(frame), std::runtime_error);
 }
+
+BOOST_FIXTURE_TEST_CASE(ThrowsOnZeroedFrame, GilViewTest) {
+  // a frame that was never mapped and has no video info (frame.info.finfo is null)
+  GstVideoFrame frame{};
+
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8c_view_t>(frame), std::runtime_error);
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::gray8c_view_t>(frame), std::runtime_error);
+  BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8_view_t>(frame), std::runtime_error);
+}
