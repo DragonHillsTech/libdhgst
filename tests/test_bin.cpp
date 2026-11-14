@@ -26,6 +26,21 @@ public:
   }
 };
 
+/**
+ * @brief Whether the bin contains an element with the given name.
+ * gst_bin_get_by_name returns a new reference, which is released here.
+ */
+bool binContains(Bin& bin, const std::string& name)
+{
+  GstElement* element = gst_bin_get_by_name(bin.getGstBin().get(), name.c_str());
+  if(! element)
+  {
+    return false;
+  }
+  gst_object_unref(element);
+  return true;
+}
+
 BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, BinTest)
 {
   // ctor GstBinSPtr
@@ -70,11 +85,11 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveGstElement, BinTest)
 
   // add
   BOOST_CHECK_NO_THROW(bin1->addElement(*element1SPtr));
-  BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), GST_ELEMENT_NAME(element1SPtr.get())) != nullptr);
+  BOOST_CHECK(binContains(*bin1, GST_ELEMENT_NAME(element1SPtr.get())));
 
   // remove
   BOOST_CHECK_NO_THROW(bin1->removeElement(*element1SPtr));
-  BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), GST_ELEMENT_NAME(element1SPtr.get())) == nullptr);
+  BOOST_CHECK(! binContains(*bin1, GST_ELEMENT_NAME(element1SPtr.get())));
 }
 
 BOOST_FIXTURE_TEST_CASE(AddAndRemoveElement, BinTest)
@@ -87,11 +102,11 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveElement, BinTest)
 
   // add
   BOOST_CHECK_NO_THROW(bin1->addElement(*element1));
-  BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), element1->getName().c_str()) != nullptr);
+  BOOST_CHECK(binContains(*bin1, element1->getName()));
 
   // remove
   BOOST_CHECK_NO_THROW(bin1->removeElement(*element1));
-  BOOST_CHECK(gst_bin_get_by_name(bin1->getGstBin().get(), element1->getName().c_str()) == nullptr);
+  BOOST_CHECK(! binContains(*bin1, element1->getName()));
 }
 
 BOOST_FIXTURE_TEST_CASE(GetElementByName, BinTest)

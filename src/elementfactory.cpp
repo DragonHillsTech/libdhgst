@@ -107,7 +107,8 @@ std::string ElementFactory::getMetaData(const std::string& key) const
 std::vector<std::string> ElementFactory::getMetadataKeys() const
 {
   std::vector<std::string> keys;
-  const gchar* const* rawKeys = gst_element_factory_get_metadata_keys(
+  // gst_element_factory_get_metadata_keys: transfer full, free with g_strfreev
+  gchar** rawKeys = gst_element_factory_get_metadata_keys(
     const_cast<GstElementFactory*>(getRawGstElementFactory())
   );
 
@@ -117,6 +118,7 @@ std::vector<std::string> ElementFactory::getMetadataKeys() const
     {
       keys.emplace_back(rawKeys[i]);
     }
+    g_strfreev(rawKeys);
   }
 
   return keys;
