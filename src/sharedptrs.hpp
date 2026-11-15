@@ -234,7 +234,8 @@ struct GlibDeleter
     }
     else if constexpr (std::is_same_v<T, GHashTable>)
     {
-      g_hash_table_destroy(obj);  // Destroy GHashTable
+      // not g_hash_table_destroy: that would empty the table for other reference holders, too
+      g_hash_table_unref(obj);
     }
     else
     {
@@ -254,8 +255,10 @@ using GHashTableSPtr = std::shared_ptr<GHashTable>;
  * This function only participates in overload resolution if T is a known GLib type.
  * @tparam T Type of GLib object.
  * @param obj Raw pointer to the GLib object.
+ * @param transferType Full takes over the caller's ownership. None takes an own reference, which is only
+ *        possible for GHashTable: GError and GList are not reference counted. GLib types have no floating references.
  * @return std::shared_ptr<T> A shared pointer to the GLib object with a custom deleter.
- * @todo: test
+ * @throws std::invalid_argument if transferType is not supported for T. obj is not taken over then.
  */
 template <typename T>
 std::enable_if_t<std::is_same_v<T, GError> || std::is_same_v<T, GList> || std::is_same_v<T, GHashTable>, std::shared_ptr<T>>
@@ -270,13 +273,22 @@ makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::Full)
   {
     case TransferType::Full:
       // Full ownership is transferred; nothing extra to do
-        break;
-    case TransferType::None:
-      // No ownership is transferred; we need to increase the ref count
-      object_ref(obj);
       break;
-    default:
-      throw std::invalid_argument("makeGlibSharedPtr: Unsupoported transfer type for GObject");
+    case TransferType::None:
+      // No ownership is transferred; we need our own reference
+      if constexpr (std::is_same_v<T, GHashTable>)
+      {
+        g_hash_table_ref(obj);
+      }
+      else
+      {
+        throw std::invalid_argument(
+          "makeGlibSharedPtr: TransferType::None is only supported for GHashTable, GError and GList are not reference counted"
+        );
+      }
+      break;
+    case TransferType::Floating:
+      throw std::invalid_argument("makeGlibSharedPtr: GLib types have no floating references");
   }
   return std::shared_ptr<T>(obj, GlibDeleter());
 }
