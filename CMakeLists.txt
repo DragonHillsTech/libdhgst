@@ -5,11 +5,9 @@ read_version(${CMAKE_CURRENT_LIST_DIR}/VERSION.txt LIBDHGST_VERSION)
 
 project(libdhgst VERSION ${LIBDHGST_VERSION} LANGUAGES CXX)
 
-include(GNUInstallDirs)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(GNUInstallDirs)
 
 
 # Options
@@ -79,6 +77,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 # Create the shared library
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+
+# PUBLIC: the headers use C++17 features, so consumers need at least C++17, too
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
 
