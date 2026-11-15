@@ -66,10 +66,6 @@ public:
   */
   [[nodiscard]] static std::shared_ptr<ElementFactory> fromFactoryName(const std::string& factoryName);
 
-  // bring move semantics back
-  ElementFactory(ElementFactory&& other) noexcept = default;
-  ElementFactory& operator=(ElementFactory&&) noexcept = default;
-
   /**
    * @brief Retrieves metadata of the element factory for a given key
    * @param key The metadata key to retrieve
