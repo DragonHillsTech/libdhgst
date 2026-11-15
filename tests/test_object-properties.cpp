@@ -42,8 +42,9 @@ BOOST_FIXTURE_TEST_CASE(SetStringProperty, ObjectPropertiesTest)
 }
 
 /*
- * Strict type checking for getProperty / setProperty (see todo.md #3).
+ * Strict type checking for getProperty / setProperty.
  * ValueType must match the GType of the property exactly, otherwise std::invalid_argument is thrown.
+ * GstObject types may also be a subtype in the safe direction, see the "object subtypes" tests.
  *
  * Properties used (all from GStreamer core elements):
  *   queue      max-size-time         guint64, read/write, default 1000000000
@@ -160,6 +161,54 @@ BOOST_FIXTURE_TEST_CASE(SetPropertyIntForBooleanThrows, ObjectPropertiesTest)
 {
   auto fakesrc = ElementFactory::makeElement("fakesrc", "test_source");
   BOOST_CHECK_THROW(fakesrc->setProperty<int>("is-live", 1), std::invalid_argument);
+}
+
+// --- object subtypes: playbin video-sink is a GstElement property ---
+
+BOOST_FIXTURE_TEST_CASE(SetObjectPropertyAcceptsSubtype, ObjectPropertiesTest)
+{
+  auto playbin = ElementFactory::makeElement("playbin", "test_playbin");
+  const GstAppSinkSPtr appsink = makeGstSharedPtr(
+    GST_APP_SINK(gst_element_factory_make("appsink", nullptr)),
+    TransferType::Floating
+  );
+  BOOST_CHECK_NO_THROW(playbin->setProperty("video-sink", appsink));
+  BOOST_CHECK_EQUAL(
+    static_cast<void*>(playbin->getProperty<GstElementSPtr>("video-sink").get()),
+    static_cast<void*>(appsink.get())
+  );
+}
+
+BOOST_FIXTURE_TEST_CASE(GetObjectPropertyAsBaseType, ObjectPropertiesTest)
+{
+  auto playbin = ElementFactory::makeElement("playbin", "test_playbin");
+  GstElement* sink = gst_element_factory_make("fakesink", nullptr);
+  g_object_set(playbin->getGstElement().get(), "video-sink", sink, nullptr);
+
+  // a GstElement is a GstObject
+  const auto result = playbin->getProperty<GstObjectSPtr>("video-sink");
+  BOOST_CHECK_EQUAL(static_cast<void*>(result.get()), static_cast<void*>(sink));
+}
+
+BOOST_FIXTURE_TEST_CASE(GetObjectPropertyAsSubtypeThrows, ObjectPropertiesTest)
+{
+  // the property may hold any GstElement, not necessarily a GstAppSink
+  auto playbin = ElementFactory::makeElement("playbin", "test_playbin");
+  BOOST_CHECK_THROW((void)playbin->getProperty<GstAppSinkSPtr>("video-sink"), std::invalid_argument);
+}
+
+BOOST_FIXTURE_TEST_CASE(SetObjectPropertyWithBaseOrUnrelatedTypeThrows, ObjectPropertiesTest)
+{
+  auto playbin = ElementFactory::makeElement("playbin", "test_playbin");
+  // a GstObject is not necessarily a GstElement
+  const GstObjectSPtr object = makeGstSharedPtr(
+    GST_OBJECT(gst_element_factory_make("fakesink", nullptr)),
+    TransferType::Floating
+  );
+  BOOST_CHECK_THROW(playbin->setProperty("video-sink", object), std::invalid_argument);
+  // a GstPad is no GstElement
+  const GstPadSPtr pad = makeGstSharedPtr(gst_pad_new("test_pad", GST_PAD_SRC), TransferType::Floating);
+  BOOST_CHECK_THROW(playbin->setProperty("video-sink", pad), std::invalid_argument);
 }
 
 // --- access flags ---
