@@ -61,13 +61,10 @@ public:
   /**
   * @brief Creates an ElementFactory from the factory name
   * @param factoryName The name of the element factory
-  * @return An ElementFactory instance wrapping the corresponding GstElementFactory
+  * @return An ElementFactory wrapping the corresponding GstElementFactory
+  * @throws std::runtime_error if there is no factory with that name
   */
-  [[nodiscard]] static ElementFactory fromFactoryName(const std::string& factoryName);
-
-  // bring move semantics back
-  ElementFactory(ElementFactory&& other) noexcept = default;
-  ElementFactory& operator=(ElementFactory&&) noexcept = default;
+  [[nodiscard]] static std::shared_ptr<ElementFactory> fromFactoryName(const std::string& factoryName);
 
   /**
    * @brief Retrieves metadata of the element factory for a given key

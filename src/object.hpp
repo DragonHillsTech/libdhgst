@@ -157,10 +157,21 @@ protected:
 
   /**
    * @brief Check that the wrapped object is an instance of expectedType (or a subclass).
-   * Wrapper constructors call this, because the GST_*_CAST macros used to pass C pointers do not check types.
+   * The create() functions call this once for the most-derived wrapper (the type check of a subclass
+   * covers its base classes), because the GST_*_CAST macros used to pass C pointers do not check types.
+   * Subclasses outside this library that are constructed differently should call it themselves.
    * @throws std::invalid_argument if the wrapped object has a different type.
    */
   void requireType(GType expectedType) const;
+
+  /**
+   * @brief requireType for the GType of the C type GstType, see GstTypeOf.
+   */
+  template<typename GstType>
+  void requireType() const
+  {
+    requireType(GstTypeOf<GstType>::get());
+  }
 
 /**
 * @brief Connect a callback directly to the GObject signal with the matching name.

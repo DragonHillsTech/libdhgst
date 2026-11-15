@@ -27,23 +27,25 @@ namespace dh::gst
 PluginFeature::PluginFeature(GstPluginFeature* gstPluginFeature, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstPluginFeature), transferType)
 {
-  requireType(GST_TYPE_PLUGIN_FEATURE);
 }
 
 PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
 : Object(GST_OBJECT_CAST(gstPluginFeature.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
-  requireType(GST_TYPE_PLUGIN_FEATURE);
 }
 
 std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferType)
 {
-  return std::shared_ptr<PluginFeature>(new PluginFeature(gstPluginFeature, transferType));
+  std::shared_ptr<PluginFeature> pluginFeature(new PluginFeature(gstPluginFeature, transferType));
+  pluginFeature->requireType<GstPluginFeature>();
+  return pluginFeature;
 }
 
 std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeatureSPtr gstPluginFeature)
 {
-  return std::shared_ptr<PluginFeature>(new PluginFeature(gstPluginFeature));
+  std::shared_ptr<PluginFeature> pluginFeature(new PluginFeature(gstPluginFeature));
+  pluginFeature->requireType<GstPluginFeature>();
+  return pluginFeature;
 }
 
 GstPluginFeatureSPtr PluginFeature::getGstPluginFeature()

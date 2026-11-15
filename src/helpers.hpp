@@ -46,11 +46,15 @@ std::string gstStreamStatusTypeToString(GstStreamStatusType type);
 GstVideoInfo createVideoInfo(const GstCaps& caps);
 
 /**
- * @brief Creates and initializes a GstVideoInfo structure from the given GstBuffer.
+ * @brief Creates and initializes a GstVideoInfo structure from the GstVideoMeta of the given GstBuffer.
  *
+ * Format, width, height and the memory layout (plane strides, offsets and frame size) come from the meta.
+ * The meta has no frame rate, pixel aspect ratio, colorimetry or interlacing, so these keep the defaults
+ * of gst_video_info_set_format; use createVideoInfo(const GstCaps&) if you need them.
+ * For tiled formats, the frame size is the buffer size.
  * @param buffer Reference to GstBuffer object containing video metadata.
  * @return A GstVideoInfo structure initialized with the provided buffer.
- * @throws std::runtime_error if initialization from buffer fails.
+ * @throws std::runtime_error if the buffer has no video meta or the meta is invalid.
  */
 GstVideoInfo createVideoInfo(const GstBuffer& buffer);
 

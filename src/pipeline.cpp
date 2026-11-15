@@ -23,6 +23,7 @@
 
 // std
 #include <stdexcept>
+#include <string>
 
 namespace dh::gst
 {
@@ -30,13 +31,11 @@ namespace dh::gst
 Pipeline::Pipeline(GstPipelineSPtr gstPipeline)
 : Bin(GST_BIN_CAST(gstPipeline.get()), TransferType::None) // no pointer_cast because C inheritance
 {
-  requireType(GST_TYPE_PIPELINE);
 }
 
 Pipeline::Pipeline(GstPipeline* gstPipeline, TransferType transferType)
 : Bin(GST_BIN_CAST(gstPipeline), transferType)
 {
-  requireType(GST_TYPE_PIPELINE);
 }
 
 Pipeline::Pipeline(const std::string& name)
@@ -46,7 +45,9 @@ Pipeline::Pipeline(const std::string& name)
 
 std::shared_ptr<Pipeline> Pipeline::create(GstPipelineSPtr gstPipeline)
 {
-  return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline));
+  std::shared_ptr<Pipeline> pipeline(new Pipeline(gstPipeline));
+  pipeline->requireType<GstPipeline>();
+  return pipeline;
 }
 
 std::shared_ptr<Pipeline> Pipeline::create(const std::string& name)
@@ -56,33 +57,35 @@ std::shared_ptr<Pipeline> Pipeline::create(const std::string& name)
 
 std::shared_ptr<Pipeline> Pipeline::create(GstPipeline* gstPipeline, TransferType transferType)
 {
-  return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline, transferType));
+  std::shared_ptr<Pipeline> pipeline(new Pipeline(gstPipeline, transferType));
+  pipeline->requireType<GstPipeline>();
+  return pipeline;
 }
 
-Pipeline Pipeline::fromDescription(const std::string& description)
+std::shared_ptr<Pipeline> Pipeline::fromDescription(const std::string& description)
 {
   // gst_parse_launch: transfer:floating
+  // Owned (and sunk) right away, so every error path below releases it.
   GError* error = nullptr;
-  GstElement* pipeline = gst_parse_launch(description.c_str(), &error);
+  const GstElementSPtr element = makeGstSharedPtr(gst_parse_launch(description.c_str(), &error), TransferType::Floating);
+  const GErrorSPtr errorSPtr = makeGlibSharedPtr(error, TransferType::Full);
 
-  if(error)
+  // gst_parse_launch can return a partly built pipeline and still report an error
+  // (e.g. an element that doesn't exist or a link that failed): don't hand out a broken pipeline
+  if(errorSPtr || !element)
   {
-    GST_WARNING("Failed to parse pipeline description: '%s'", error->message);
-    g_error_free(error);
+    throw std::runtime_error(
+      "Failed to create pipeline from description: "
+      + std::string(errorSPtr && errorSPtr->message ? errorSPtr->message : "unknown error")
+    );
   }
 
-  if(!pipeline)
+  if(!GST_IS_PIPELINE(element.get()))
   {
-    throw std::runtime_error("Failed to create pipeline from description");
-  }
-
-  if(!GST_IS_PIPELINE(pipeline))
-  {
-    gst_object_unref(pipeline);
     throw std::runtime_error("Pipeline description does not create a GstPipeline");
   }
 
-  return Pipeline(GST_PIPELINE(pipeline), TransferType::Floating);
+  return create(GST_PIPELINE_CAST(element.get()), TransferType::None);
 }
 
 GstClockSPtr Pipeline::getPipelineClock() const

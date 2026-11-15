@@ -6,6 +6,9 @@
 #include "fatalgliblog.hpp"
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
+#include <stdexcept>
+#include <string>
+
 using namespace dh::gst;
 // Test fixture for GStreamer tests
 class GStreamerSharedPtrTest {
@@ -155,3 +158,68 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
   gst_buffer_unref(rawBuffer); // Clean up the initial ref
 }
 
+// --- makeGlibSharedPtr ---
+
+BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_Null)
+{
+  BOOST_CHECK_EQUAL(makeGlibSharedPtr(static_cast<GError*>(nullptr), TransferType::Full), nullptr);
+  BOOST_CHECK_EQUAL(makeGlibSharedPtr(static_cast<GHashTable*>(nullptr), TransferType::None), nullptr);
+}
+
+BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_None)
+{
+  GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
+  g_hash_table_insert(table, const_cast<char*>("key"), const_cast<char*>("value"));
+
+  auto tableSPtr = makeGlibSharedPtr(table, TransferType::None);
+  BOOST_REQUIRE_EQUAL(tableSPtr.get(), table);
+  tableSPtr.reset();
+
+  // only our reference was released; the caller's table is still alive and unchanged
+  BOOST_CHECK_EQUAL(g_hash_table_size(table), 1U);
+  g_hash_table_unref(table);
+}
+
+BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_Full)
+{
+  GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
+  g_hash_table_ref(table); // keep the table alive to check that the shared_ptr releases exactly one reference
+  g_hash_table_insert(table, const_cast<char*>("key"), const_cast<char*>("value"));
+
+  auto tableSPtr = makeGlibSharedPtr(table, TransferType::Full);
+  tableSPtr.reset();
+
+  BOOST_CHECK_EQUAL(g_hash_table_size(table), 1U);
+  g_hash_table_unref(table);
+}
+
+BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_NotReferenceCountedNoneThrows)
+{
+  GError* error = g_error_new_literal(g_quark_from_static_string("test"), 1, "test");
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(error, TransferType::None), std::invalid_argument);
+  g_error_free(error);
+
+  GList* list = g_list_append(nullptr, nullptr);
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(list, TransferType::None), std::invalid_argument);
+  g_list_free(list);
+}
+
+BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_FloatingThrows)
+{
+  GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(table, TransferType::Floating), std::invalid_argument);
+  g_hash_table_unref(table);
+
+  GError* error = g_error_new_literal(g_quark_from_static_string("test"), 1, "test");
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(error, TransferType::Floating), std::invalid_argument);
+  g_error_free(error);
+}
+
+BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GError_Full)
+{
+  GError* error = g_error_new_literal(g_quark_from_static_string("test"), 1, "test message");
+  const auto errorSPtr = makeGlibSharedPtr(error, TransferType::Full);
+  BOOST_REQUIRE_EQUAL(errorSPtr.get(), error);
+  BOOST_CHECK_EQUAL(std::string(errorSPtr->message), "test message");
+  // freed by the deleter; LeakSanitizer reports it otherwise
+}

@@ -30,26 +30,28 @@ namespace dh::gst
 ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferType transferType)
 : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory), transferType)
 {
-  requireType(GST_TYPE_ELEMENT_FACTORY);
 }
 
 ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
 : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()), TransferType::None) // No pointer_cast due to C inheritance
 {
-  requireType(GST_TYPE_ELEMENT_FACTORY);
 }
 
 std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transferType)
 {
-  return std::shared_ptr<ElementFactory>(new ElementFactory(gstElementFactory, transferType));
+  std::shared_ptr<ElementFactory> elementFactory(new ElementFactory(gstElementFactory, transferType));
+  elementFactory->requireType<GstElementFactory>();
+  return elementFactory;
 }
 
 std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactorySPtr gstElementFactory)
 {
-  return std::shared_ptr<ElementFactory>(new ElementFactory(gstElementFactory));
+  std::shared_ptr<ElementFactory> elementFactory(new ElementFactory(gstElementFactory));
+  elementFactory->requireType<GstElementFactory>();
+  return elementFactory;
 }
 
-ElementFactory ElementFactory::fromFactoryName(const std::string& factoryName)
+std::shared_ptr<ElementFactory> ElementFactory::fromFactoryName(const std::string& factoryName)
 {
   GstElementFactory* factory = gst_element_factory_find(factoryName.c_str());
   if (!factory)
@@ -57,7 +59,8 @@ ElementFactory ElementFactory::fromFactoryName(const std::string& factoryName)
     throw std::runtime_error("ElementFactory with name '" + factoryName + "' not found");
   }
 
-  return ElementFactory(factory, TransferType::Full);
+  // gst_element_factory_find: transfer full
+  return create(factory, TransferType::Full);
 }
 
 std::shared_ptr<Element> ElementFactory::createElement(const std::string& elementName) const

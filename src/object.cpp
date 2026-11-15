@@ -33,7 +33,6 @@ Object::Object(GstObjectSPtr gstObject)
   {
     throw std::runtime_error("No GstObject");
   }
-  requireType(GST_TYPE_OBJECT);
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
@@ -43,7 +42,9 @@ Object::Object(GstObject* gstObject, TransferType transferType)
 
 std::shared_ptr<Object> Object::create(GstObject* gstObject, TransferType transferType)
 {
-  return std::shared_ptr<Object>(new Object(gstObject, transferType));
+  std::shared_ptr<Object> object(new Object(gstObject, transferType));
+  object->requireType<GstObject>();
+  return object;
 }
 
 Object::~Object() = default;

@@ -155,6 +155,42 @@ BOOST_FIXTURE_TEST_CASE(InfoSignalEmitted, MessageParserTest)
   g_error_free(info);
 }
 
+// GStreamer allows error, warning and info messages without a GError; parse must not dereference it
+BOOST_FIXTURE_TEST_CASE(MessagesWithoutGErrorEmitEmptyMessage, MessageParserTest)
+{
+  auto parser = MessageParser::create();
+  std::vector<std::string> receivedMessages;
+  std::vector<std::string> receivedDebugInfos;
+  const auto store = [&](const std::string& /*src*/, const std::string& text, const std::string& debug)
+  {
+    receivedMessages.push_back(text);
+    receivedDebugInfos.push_back(debug);
+  };
+  auto errorConn = parser->connectSignalError(store);
+  auto warningConn = parser->connectSignalWarning(store);
+  auto infoConn = parser->connectSignalInfo(store);
+
+  for(GstMessage* message : {
+        gst_message_new_error(nullptr, nullptr, "error debug"),
+        gst_message_new_warning(nullptr, nullptr, "warning debug"),
+        gst_message_new_info(nullptr, nullptr, "info debug")
+      })
+  {
+    BOOST_REQUIRE(message);
+    parser->parse(*message);
+    gst_message_unref(message);
+  }
+
+  BOOST_REQUIRE_EQUAL(receivedMessages.size(), 3U);
+  for(const auto& text : receivedMessages)
+  {
+    BOOST_CHECK_EQUAL(text, "");
+  }
+  BOOST_CHECK_EQUAL(receivedDebugInfos[0], "error debug");
+  BOOST_CHECK_EQUAL(receivedDebugInfos[1], "warning debug");
+  BOOST_CHECK_EQUAL(receivedDebugInfos[2], "info debug");
+}
+
 BOOST_FIXTURE_TEST_CASE(DurationChangedSignalEmitted, MessageParserTest)
 {
   auto parser = MessageParser::create();
