@@ -20,6 +20,8 @@
 
 #include "helpers.hpp"
 
+#include <algorithm>
+
 namespace dh::gst::helpers
 {
 
@@ -59,16 +61,54 @@ GstVideoInfo createVideoInfo(const GstBuffer& buffer)
     throw std::runtime_error("Buffer does not contain video metadata");
   }
 
+  // format, size and the default layout of the format
   GstVideoInfo vinfo;
   gst_video_info_init(&vinfo);
-
-  vinfo.width = videoMeta->width;
-  vinfo.height = videoMeta->height;
-  vinfo.finfo = gst_video_format_get_info(videoMeta->format);
-  if (!vinfo.finfo)
+  if(!gst_video_info_set_format(&vinfo, videoMeta->format, videoMeta->width, videoMeta->height))
   {
-    throw std::runtime_error("Invalid video format in buffer metadata");
+    throw std::runtime_error("Invalid video format or size in buffer metadata");
   }
+  if(videoMeta->n_planes != GST_VIDEO_INFO_N_PLANES(&vinfo))
+  {
+    throw std::runtime_error("Number of planes in buffer metadata does not match the video format");
+  }
+
+  const guint nPlanes = videoMeta->n_planes;
+  gsize frameSize = 0;
+  if(GST_VIDEO_FORMAT_INFO_IS_TILED(vinfo.finfo))
+  {
+    // the strides of tiled formats describe tiles, not rows: assume the frame fills the buffer
+    frameSize = gst_buffer_get_size(const_cast<GstBuffer*>(&buffer));
+  }
+  else
+  {
+    // The default layout packs the planes without gaps, so the number of rows of a plane is the distance
+    // to the next plane (in memory, not by index: e.g. YV12 stores V before U) divided by its stride.
+    // With the strides and offsets of the meta, the frame ends where the last plane ends.
+    for(guint plane = 0; plane < nPlanes; ++plane)
+    {
+      const gsize defaultOffset = GST_VIDEO_INFO_PLANE_OFFSET(&vinfo, plane);
+      gsize defaultEnd = GST_VIDEO_INFO_SIZE(&vinfo);
+      for(guint other = 0; other < nPlanes; ++other)
+      {
+        const gsize otherOffset = GST_VIDEO_INFO_PLANE_OFFSET(&vinfo, other);
+        if(otherOffset > defaultOffset && otherOffset < defaultEnd)
+        {
+          defaultEnd = otherOffset;
+        }
+      }
+      const gsize rows = (defaultEnd - defaultOffset) / GST_VIDEO_INFO_PLANE_STRIDE(&vinfo, plane);
+      frameSize = std::max(frameSize, videoMeta->offset[plane] + rows * videoMeta->stride[plane]);
+    }
+  }
+
+  // the actual layout of the buffer, which may differ from the default one (e.g. padded rows)
+  for(guint plane = 0; plane < nPlanes; ++plane)
+  {
+    GST_VIDEO_INFO_PLANE_STRIDE(&vinfo, plane) = videoMeta->stride[plane];
+    GST_VIDEO_INFO_PLANE_OFFSET(&vinfo, plane) = videoMeta->offset[plane];
+  }
+  GST_VIDEO_INFO_SIZE(&vinfo) = frameSize;
 
   return vinfo;
 }
