@@ -2,6 +2,9 @@
 
 include_directories(../src)
 
+# Boost.Test, and Boost.GIL for gilview.hpp
+find_package(Boost REQUIRED)
+
 # Set the output directory for the test binaries
 set(TEST_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
 
@@ -17,7 +20,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
   add_executable(${TEST_NAME} ${TEST_SOURCE})
 
   # Link the test executable with libdhgst
-  target_link_libraries(${TEST_NAME} libdhgst ${GSTREAMER_LIBRARIES})
+  target_link_libraries(${TEST_NAME} libdhgst Boost::headers)
 
   # Set the output directory for the test binary
   set_target_properties(${TEST_NAME} PROPERTIES

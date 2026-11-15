@@ -15,7 +15,7 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
   add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
 
   target_link_libraries(${EXAMPLE_NAME}
-          libdhgst ${GSTREAMER_LIBRARIES}
+          libdhgst
   )
 
   # Set the output directory for the test binary

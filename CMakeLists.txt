@@ -65,15 +65,15 @@ if(BUILD_DOCUMENTATION)
 endif()
 
 # Find required packages
+# The imported targets are part of the exported link interface, so libdhgstConfig.cmake.in must
+# create them with the same names. The DHGST_ prefix avoids clashes with the consumer's own variables.
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0>=1.14)
-pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
-pkg_check_modules(GSTREAMER_VIDEO REQUIRED gstreamer-video-1.0)
-include_directories(${GSTREAMER_INCLUDE_DIRS})
-link_directories(${GSTREAMER_LIBRARY_DIRS})
+pkg_check_modules(DHGST_GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.14)
+pkg_check_modules(DHGST_GST_APP REQUIRED IMPORTED_TARGET gstreamer-app-1.0)
+pkg_check_modules(DHGST_GST_VIDEO REQUIRED IMPORTED_TARGET gstreamer-video-1.0)
 
-find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+# Boost is not a dependency of the library: only the header-only gilview.hpp uses it (Boost.GIL),
+# so users of that header link Boost themselves. The tests find Boost in tests/CMakeLists.txt.
 
 # Create the shared library
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -100,10 +100,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # Link libraries
-target_link_libraries(libdhgst
-  ${GSTREAMER_LIBRARIES}
-  ${GST_APP_LIBRARIES}
-  ${GSTREAMER_VIDEO_LIBRARIES}
+# PUBLIC: the public headers include the GStreamer headers
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    PkgConfig::DHGST_GSTREAMER
+    PkgConfig::DHGST_GST_APP
+    PkgConfig::DHGST_GST_VIDEO
 )
 
 # Installation directives
