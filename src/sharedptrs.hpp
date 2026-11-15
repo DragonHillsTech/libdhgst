@@ -208,6 +208,7 @@ makeGstSharedPtr(T* obj, TransferType transferType)
 /**
  * @brief Universal Deleter for GLib objects such as GError, GList, and GHashTable.
  * This deleter ensures the correct freeing of GLib resources.
+ * A GList is freed shallowly: only the list cells, not the elements (see GListSPtr).
  */
 struct GlibDeleter
 {
@@ -230,7 +231,7 @@ struct GlibDeleter
     }
     else if constexpr (std::is_same_v<T, GList>)
     {
-      g_list_free(obj);  // Free GList
+      g_list_free(obj);  // Free GList cells only, the elements stay untouched
     }
     else if constexpr (std::is_same_v<T, GHashTable>)
     {
@@ -247,6 +248,12 @@ struct GlibDeleter
 
 // Shared pointer typedefs for common GLib types
 using GErrorSPtr = std::shared_ptr<GError>;
+/**
+ * @brief Owns the cells of a GList, but not its elements: they are not freed with the list.
+ * For a list that owns its elements (e.g. strings or object references, "transfer full" in the GStreamer
+ * documentation), free the elements yourself before the last GListSPtr is released, e.g. with
+ * g_list_foreach(list, (GFunc)g_free, nullptr), or use g_list_free_full instead of a GListSPtr.
+ */
 using GListSPtr = std::shared_ptr<GList>;
 using GHashTableSPtr = std::shared_ptr<GHashTable>;
 
