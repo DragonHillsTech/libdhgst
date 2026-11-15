@@ -5,11 +5,9 @@ read_version(${CMAKE_CURRENT_LIST_DIR}/VERSION.txt LIBDHGST_VERSION)
 
 project(libdhgst VERSION ${LIBDHGST_VERSION} LANGUAGES CXX)
 
-include(GNUInstallDirs)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(GNUInstallDirs)
 
 
 # Options
@@ -58,54 +56,32 @@ set(HEADERS
 )
 
 if(BUILD_DOCUMENTATION)
-  find_package(Doxygen)
-  if(NOT DOXYGEN_FOUND)
-    message(FATAL_ERROR "Doxygen is required to build documentation")
-  endif()
-  set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  set(DOXYGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen")
-  set(DOXYGEN_INDEX_FILE "${DOXYGEN_OUTPUT_DIR}/html/index.html")
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    @ONLY
-  )
-  add_custom_command(
-    OUTPUT "${DOXYGEN_INDEX_FILE}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOXYGEN_OUTPUT_DIR}"
-    COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    MAIN_DEPENDENCY "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    DEPENDS
-      ${HEADERS}
-      ${SOURCES}
-    COMMENT "Generating Doxygen documentation"
-    VERBATIM
-  )
-  add_custom_target(
-    docs
-    ALL
-    DEPENDS "${DOXYGEN_INDEX_FILE}"
-  )
-  install(
-    DIRECTORY "${DOXYGEN_OUTPUT_DIR}/html"
-    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
-    COMPONENT documentation
+  include(${CMAKE_CURRENT_LIST_DIR}/cmake/Documentation.cmake)
+  # the public headers in src/
+  add_doxygen_docs(
+    INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    HEADERS ${HEADERS}
   )
 endif()
 
 # Find required packages
+# The imported targets are part of the exported link interface, so libdhgstConfig.cmake.in must
+# create them with the same names. The DHGST_ prefix avoids clashes with the consumer's own variables.
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0>=1.14)
-pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
-pkg_check_modules(GSTREAMER_VIDEO REQUIRED gstreamer-video-1.0)
-include_directories(${GSTREAMER_INCLUDE_DIRS})
-link_directories(${GSTREAMER_LIBRARY_DIRS})
+pkg_check_modules(DHGST_GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0>=1.14)
+pkg_check_modules(DHGST_GST_APP REQUIRED IMPORTED_TARGET gstreamer-app-1.0)
+pkg_check_modules(DHGST_GST_VIDEO REQUIRED IMPORTED_TARGET gstreamer-video-1.0)
 
-find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+# Boost is not a dependency of the library: only the header-only gilview.hpp uses it (Boost.GIL),
+# so users of that header link Boost themselves. The tests find Boost in tests/CMakeLists.txt.
 
 # Create the shared library
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+# Same name as the exported target, so in-tree users can link it the same way
+add_library(dh::gst::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+# PUBLIC: the headers use C++17 features, so consumers need at least C++17, too
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Werror)
 
@@ -126,10 +102,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # Link libraries
-target_link_libraries(libdhgst
-  ${GSTREAMER_LIBRARIES}
-  ${GST_APP_LIBRARIES}
-  ${GSTREAMER_VIDEO_LIBRARIES}
+# PUBLIC: the public headers include the GStreamer headers
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    PkgConfig::DHGST_GSTREAMER
+    PkgConfig::DHGST_GST_APP
+    PkgConfig::DHGST_GST_VIDEO
 )
 
 # Installation directives

@@ -9,18 +9,19 @@ on:
       - master
 
 jobs:
+  # Pushes to master: plain build and tests. Version tagging and the documentation wait for this job.
+  # Pull requests are covered by the build-and-test-sanitized job.
   build-and-test:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     env:
       CMAKE_BUILD_TYPE: Debug
 
     steps:
-      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # Install dependencies
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -33,28 +34,20 @@ jobs:
             libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-base
 
-      # Create build directory
-      - name: Create build directory
-        run: mkdir -p build
-
-      # Configure the project with CMake
       - name: Configure CMake
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
 
-      # Build the project
       - name: Build the project
-        run: cmake --build build
+        run: cmake --build build --parallel "$(nproc)"
 
-      # Run tests
       - name: Run tests
-        run: |
-          cd build/tests
-          ctest --output-on-failure
+        run: ctest --test-dir build --output-on-failure
 
   # Pull requests to master: build and run the tests with AddressSanitizer (incl. LeakSanitizer)
-  # and UndefinedBehaviorSanitizer. Any finding fails the job.
-  sanitizers:
+  # and UndefinedBehaviorSanitizer. Any finding fails the job. The examples are built too, so a pull
+  # request cannot break them before the push build on master.
+  build-and-test-sanitized:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
@@ -84,15 +77,13 @@ jobs:
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Debug \
             -DBUILD_TESTS=ON \
-            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_EXAMPLES=ON \
             -DCMAKE_CXX_FLAGS="$SANITIZE_FLAGS" \
             -DCMAKE_EXE_LINKER_FLAGS="$SANITIZE_FLAGS" \
             -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZE_FLAGS"
 
       - name: Build the project
-        run: cmake --build build
+        run: cmake --build build --parallel "$(nproc)"
 
       - name: Run tests
-        run: |
-          cd build/tests
-          ctest --output-on-failure
+        run: ctest --test-dir build --output-on-failure

@@ -51,7 +51,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          cmake --build build --target docs
+          cmake --build build --target docs --parallel "$(nproc)"
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
