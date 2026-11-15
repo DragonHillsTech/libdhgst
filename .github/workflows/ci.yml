@@ -16,11 +16,9 @@ jobs:
       CMAKE_BUILD_TYPE: Debug
 
     steps:
-      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # Install dependencies
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -33,24 +31,15 @@ jobs:
             libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-base
 
-      # Create build directory
-      - name: Create build directory
-        run: mkdir -p build
-
-      # Configure the project with CMake
       - name: Configure CMake
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
 
-      # Build the project
       - name: Build the project
         run: cmake --build build
 
-      # Run tests
       - name: Run tests
-        run: |
-          cd build/tests
-          ctest --output-on-failure
+        run: ctest --test-dir build --output-on-failure
 
   # Pull requests to master: build and run the tests with AddressSanitizer (incl. LeakSanitizer)
   # and UndefinedBehaviorSanitizer. Any finding fails the job.
@@ -93,6 +82,4 @@ jobs:
         run: cmake --build build
 
       - name: Run tests
-        run: |
-          cd build/tests
-          ctest --output-on-failure
+        run: ctest --test-dir build --output-on-failure
