@@ -45,6 +45,15 @@ std::string getObjectNameOrUnknown(GstObject* object)
   return name.empty() ? "unknown" : name;
 }
 
+/**
+ * @brief Message of a GError, or "" if there is none.
+ * Error, warning and info messages may be posted without a GError, so the parsed GError can be null.
+ */
+std::string getErrorMessageOrEmpty(const GError* error)
+{
+  return error && error->message ? std::string(error->message) : std::string();
+}
+
 } // namespace
 
 class MessageParser::Private
@@ -172,7 +181,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GError* error = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_error(messagePtr, &error, &debugInfo);
-      prv.errorSlot->call(sourceName, std::string(error->message), std::string(debugInfo ? debugInfo : ""));
+      prv.errorSlot->call(sourceName, getErrorMessageOrEmpty(error), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&error);
       g_free(debugInfo);
       break;
@@ -183,7 +192,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GError* warning = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_warning(messagePtr, &warning, &debugInfo);
-      prv.warningSlot->call(sourceName, std::string(warning->message), std::string(debugInfo ? debugInfo : ""));
+      prv.warningSlot->call(sourceName, getErrorMessageOrEmpty(warning), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&warning);
       g_free(debugInfo);
       break;
@@ -194,7 +203,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GError* info = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_info(messagePtr, &info, &debugInfo);
-      prv.infoSlot->call(sourceName, std::string(info->message), std::string(debugInfo ? debugInfo : ""));
+      prv.infoSlot->call(sourceName, getErrorMessageOrEmpty(info), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&info);
       g_free(debugInfo);
       break;
