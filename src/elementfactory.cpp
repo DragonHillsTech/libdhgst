@@ -49,7 +49,7 @@ std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactorySPtr gst
   return std::shared_ptr<ElementFactory>(new ElementFactory(gstElementFactory));
 }
 
-ElementFactory ElementFactory::fromFactoryName(const std::string& factoryName)
+std::shared_ptr<ElementFactory> ElementFactory::fromFactoryName(const std::string& factoryName)
 {
   GstElementFactory* factory = gst_element_factory_find(factoryName.c_str());
   if (!factory)
@@ -57,7 +57,8 @@ ElementFactory ElementFactory::fromFactoryName(const std::string& factoryName)
     throw std::runtime_error("ElementFactory with name '" + factoryName + "' not found");
   }
 
-  return ElementFactory(factory, TransferType::Full);
+  // gst_element_factory_find: transfer full
+  return create(factory, TransferType::Full);
 }
 
 std::shared_ptr<Element> ElementFactory::createElement(const std::string& elementName) const

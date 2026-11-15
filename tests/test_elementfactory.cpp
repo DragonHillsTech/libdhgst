@@ -29,7 +29,7 @@ BOOST_FIXTURE_TEST_CASE(FromFactoryNameTest, ElementFactoryTest)
 {
   const std::string factoryName="fakesrc";
   auto factory = ElementFactory::fromFactoryName(factoryName);
-  BOOST_REQUIRE_NE(factory.getGstElementFactory(), nullptr);
+  BOOST_REQUIRE_NE(factory->getGstElementFactory(), nullptr);
 }
 
 BOOST_FIXTURE_TEST_CASE(FromFactoryNameNotFoundTest, ElementFactoryTest)
@@ -47,7 +47,7 @@ BOOST_FIXTURE_TEST_CASE(GetMetaDataTest, ElementFactoryTest)
 {
   const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
-  const std::string longName = factory.getMetaData("long-name");
+  const std::string longName = factory->getMetaData("long-name");
   BOOST_REQUIRE(!longName.empty());
 }
 
@@ -56,7 +56,7 @@ BOOST_FIXTURE_TEST_CASE(GetMetadataKeysTest, ElementFactoryTest)
 {
   const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
-  const auto keys = factory.getMetadataKeys();
+  const auto keys = factory->getMetadataKeys();
   BOOST_REQUIRE(!keys.empty());
   BOOST_REQUIRE(std::find(keys.begin(), keys.end(), "long-name") != keys.end());
 }
@@ -67,7 +67,7 @@ BOOST_FIXTURE_TEST_CASE(CreateElementTest, ElementFactoryTest)
   const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
   const std::string elementName("myElement");
-  const auto element = factory.createElement(elementName);
+  const auto element = factory->createElement(elementName);
 
   // Check the type of the created element
   BOOST_CHECK_EQUAL(element->getName(), elementName);
@@ -93,7 +93,7 @@ BOOST_FIXTURE_TEST_CASE(GetElementTypeTest, ElementFactoryTest)
 {
   const auto factory = ElementFactory::fromFactoryName("fakesrc");
 
-  const GType elementType = factory.getElementType();
+  const GType elementType = factory->getElementType();
   BOOST_REQUIRE_NE(elementType, 0);
 }
 
