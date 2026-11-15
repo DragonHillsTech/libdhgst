@@ -46,6 +46,11 @@ template<> struct ConvertToGlibType<std::string>
 {
   using type = const gchar*;
 };
+// GLib passes a G_TYPE_BOOLEAN as gboolean (an int), not as a 1-byte bool
+template<> struct ConvertToGlibType<bool>
+{
+  using type = gboolean;
+};
 
 template<typename GlibType>
 struct ConvertToGlibType<std::shared_ptr<GlibType>,
@@ -63,28 +68,6 @@ struct ConvertToGlibType<std::shared_ptr<GlibType>,
   using type = GlibType*;
 };
 
-
-template<typename GlibType, typename = void>
-struct ConvertToCppType
-{
-  using type = GlibType; // Default: no conversion
-};
-
-template<> struct ConvertToCppType<gchar*>
-{
-  using type = std::string;
-};
-
-template<> struct ConvertToCppType<const gchar*>
-{
-  using type = std::string;
-};
-
-template<typename GlibType>
-struct ConvertToCppType<GlibType*, std::enable_if_t<IsGstObject<GlibType>::value || IsGstMiniObject<GlibType>::value>>
-{
-  using type = std::shared_ptr<GlibType>;
-};
 
 
 // General case: For types not needing special handling
