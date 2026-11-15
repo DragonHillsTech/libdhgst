@@ -9,7 +9,10 @@ on:
       - master
 
 jobs:
+  # Pushes to master: plain build and tests. Version tagging and the documentation wait for this job.
+  # Pull requests are covered by the sanitizers job.
   build-and-test:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     env:
@@ -42,7 +45,8 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
   # Pull requests to master: build and run the tests with AddressSanitizer (incl. LeakSanitizer)
-  # and UndefinedBehaviorSanitizer. Any finding fails the job.
+  # and UndefinedBehaviorSanitizer. Any finding fails the job. The examples are built too, so a pull
+  # request cannot break them before the push build on master.
   sanitizers:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -73,7 +77,7 @@ jobs:
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Debug \
             -DBUILD_TESTS=ON \
-            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_EXAMPLES=ON \
             -DCMAKE_CXX_FLAGS="$SANITIZE_FLAGS" \
             -DCMAKE_EXE_LINKER_FLAGS="$SANITIZE_FLAGS" \
             -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZE_FLAGS"
