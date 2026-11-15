@@ -63,11 +63,11 @@ public:
 
   /**
    * @brief Create a new Pipeline object from a pipeline description string.
-   * If there was a recoverable error, a warning is printed
-   * If parsing does not create a GstPipeline (could be a GstElement if only one entry), std::runtime_error is thrown.
    * @param description The GStreamer pipeline description.
    * @return A Pipeline created from the description.
-   * @throws std::runtime_error if the description is invalid or parsing fails.
+   * @throws std::runtime_error if the description is invalid or only partly parsed (e.g. an element
+   *         doesn't exist or a link failed), or if it does not create a GstPipeline (a single element
+   *         without links is returned by GStreamer as that element).
    */
   [[nodiscard]] static std::shared_ptr<Pipeline> fromDescription(const std::string& description);
 

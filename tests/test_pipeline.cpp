@@ -52,6 +52,24 @@ BOOST_FIXTURE_TEST_CASE(FromDescriptionInvalidTest, PipelineTest)
   );
 }
 
+// A partly parsed description must not return a broken pipeline
+BOOST_FIXTURE_TEST_CASE(FromDescriptionUnknownElementThrows, PipelineTest)
+{
+  BOOST_CHECK_THROW((void)Pipeline::fromDescription("fakesrc ! doesnotexist ! fakesink"), std::runtime_error);
+}
+
+BOOST_FIXTURE_TEST_CASE(FromDescriptionFailedLinkThrows, PipelineTest)
+{
+  // a sink has no source pad, so linking it to the next element fails
+  BOOST_CHECK_THROW((void)Pipeline::fromDescription("fakesrc ! fakesink name=a ! fakesink"), std::runtime_error);
+}
+
+// A single element is returned as that element, not as a pipeline; it must be released properly
+BOOST_FIXTURE_TEST_CASE(FromDescriptionSingleElementThrows, PipelineTest)
+{
+  BOOST_CHECK_THROW((void)Pipeline::fromDescription("fakesrc"), std::runtime_error);
+}
+
 #if DH_GST_HAS_PIPELINE_IS_LIVE
 BOOST_FIXTURE_TEST_CASE(IsLiveTest, PipelineTest)
 {
