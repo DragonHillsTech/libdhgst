@@ -32,6 +32,35 @@ BOOST_FIXTURE_TEST_CASE(EmptyPipelineConstructorTest, PipelineTest)
   BOOST_REQUIRE_EQUAL(pipeline->getName(), pipelineName);
 }
 
+// --- create() checks the type of the C object, because GST_*_CAST does not ---
+
+BOOST_FIXTURE_TEST_CASE(CreateWithWrongTypeThrowsAndReleasesTheObject, PipelineTest)
+{
+  // a GstBin is no GstPipeline
+  GstElement* bin = gst_bin_new("test_bin");
+  gst_object_ref_sink(bin);
+  gst_object_ref(bin); // the reference handed over below; the first one keeps it alive for the check
+  BOOST_CHECK_THROW((void)Pipeline::create(GST_PIPELINE_CAST(bin), TransferType::Full), std::invalid_argument);
+  // the handed over reference was released again
+  BOOST_CHECK_EQUAL(GST_OBJECT_REFCOUNT_VALUE(bin), 1);
+  gst_object_unref(bin);
+}
+
+BOOST_FIXTURE_TEST_CASE(CreateBaseClassWithWrongTypeThrows, PipelineTest)
+{
+  // a fakesrc is no GstBin
+  GstElement* element = gst_element_factory_make("fakesrc", nullptr);
+  BOOST_CHECK_THROW((void)Bin::create(GST_BIN_CAST(element), TransferType::Floating), std::invalid_argument);
+}
+
+BOOST_FIXTURE_TEST_CASE(CreateWithSubtypeIsAccepted, PipelineTest)
+{
+  // a GstPipeline is a GstBin
+  GstElement* pipeline = gst_pipeline_new("test_pipeline");
+  const auto bin = Bin::create(GST_BIN_CAST(pipeline), TransferType::Floating);
+  BOOST_CHECK_EQUAL(bin->getName(), "test_pipeline");
+}
+
 // Test the fromDescription method with a valid pipeline description
 BOOST_FIXTURE_TEST_CASE(FromDescriptionTest, PipelineTest)
 {
