@@ -119,7 +119,7 @@ int main(const int argc, const char **argv)
     }
   ));
 
-  auto bus = ppl.getBus();
+  auto bus = ppl->getBus();
   auto syncMessageConnection = bus->connectSignalNewSyncMessage(
     [&messageParser](dh::gst::GstMessageSPtr message)
     {
@@ -131,11 +131,11 @@ int main(const int argc, const char **argv)
     throw std::runtime_error("Failed to connect sync message signal");
   }
 
-  ppl.setState(GST_STATE_PLAYING);
+  ppl->setState(GST_STATE_PLAYING);
   g_main_loop_run(mainLoop);
 
   // Clean up after running.
-  ppl.setState(GST_STATE_NULL);
+  ppl->setState(GST_STATE_NULL);
   gst_deinit();
   g_main_loop_unref(mainLoop);
   return 0;

@@ -67,8 +67,8 @@ BOOST_FIXTURE_TEST_CASE(IsLiveTest, PipelineTest)
 
   auto livePipeline = Pipeline::fromDescription("videotestsrc is-live=true ! fakesink");
 
-  BOOST_REQUIRE_EQUAL(livePipeline.setState(GST_STATE_PAUSED), GST_STATE_CHANGE_NO_PREROLL);
-  BOOST_REQUIRE(livePipeline.isLive());
-  livePipeline.setState(GST_STATE_NULL);
+  BOOST_REQUIRE_EQUAL(livePipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_NO_PREROLL);
+  BOOST_REQUIRE(livePipeline->isLive());
+  livePipeline->setState(GST_STATE_NULL);
 }
 #endif

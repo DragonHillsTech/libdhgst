@@ -77,7 +77,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
 {
   auto pipeline = Pipeline::fromDescription("videotestsrc ! decodebin name=test-decodebin");
 
-  auto decodeBinElement = pipeline.getElementByName("test-decodebin");
+  auto decodeBinElement = pipeline->getElementByName("test-decodebin");
 
   // Connect to the "pad-added" signal
   bool signalEmitted = false;
@@ -92,7 +92,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
   BOOST_REQUIRE(padAddedConnection.connected());
 
   // Set pipeline to PLAYING to trigger the "pad-added" signal
-  const auto setStateResult = pipeline.setState(GST_STATE_PLAYING);
+  const auto setStateResult = pipeline->setState(GST_STATE_PLAYING);
   BOOST_REQUIRE_NE(setStateResult, GST_STATE_CHANGE_FAILURE);
 
   // Wait for the main loop to process events
@@ -106,7 +106,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
   // Check that the signal was emitted and the pad was captured
   BOOST_CHECK(signalEmitted);
   BOOST_REQUIRE_NE(capturedPad, nullptr);
-  pipeline.setState(GST_STATE_NULL);
+  pipeline->setState(GST_STATE_NULL);
 }
 
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ElementAdded, ObjectTest)

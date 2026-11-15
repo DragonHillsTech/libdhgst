@@ -59,7 +59,7 @@ std::shared_ptr<Pipeline> Pipeline::create(GstPipeline* gstPipeline, TransferTyp
   return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline, transferType));
 }
 
-Pipeline Pipeline::fromDescription(const std::string& description)
+std::shared_ptr<Pipeline> Pipeline::fromDescription(const std::string& description)
 {
   // gst_parse_launch: transfer:floating
   GError* error = nullptr;
@@ -82,7 +82,7 @@ Pipeline Pipeline::fromDescription(const std::string& description)
     throw std::runtime_error("Pipeline description does not create a GstPipeline");
   }
 
-  return Pipeline(GST_PIPELINE(pipeline), TransferType::Floating);
+  return create(GST_PIPELINE(pipeline), TransferType::Floating);
 }
 
 GstClockSPtr Pipeline::getPipelineClock() const

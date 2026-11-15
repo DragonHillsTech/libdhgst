@@ -66,10 +66,10 @@ public:
    * If there was a recoverable error, a warning is printed
    * If parsing does not create a GstPipeline (could be a GstElement if only one entry), std::runtime_error is thrown.
    * @param description The GStreamer pipeline description.
-   * @return A Pipeline object created from the description.
+   * @return A Pipeline created from the description.
    * @throws std::runtime_error if the description is invalid or parsing fails.
    */
-  [[nodiscard]] static Pipeline fromDescription(const std::string& description);
+  [[nodiscard]] static std::shared_ptr<Pipeline> fromDescription(const std::string& description);
 
  /**
    * @brief Gets the current clock used by the pipeline.
