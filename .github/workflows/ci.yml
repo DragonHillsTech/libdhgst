@@ -39,7 +39,7 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
 
       - name: Build the project
-        run: cmake --build build
+        run: cmake --build build --parallel "$(nproc)"
 
       - name: Run tests
         run: ctest --test-dir build --output-on-failure
@@ -83,7 +83,7 @@ jobs:
             -DCMAKE_SHARED_LINKER_FLAGS="$SANITIZE_FLAGS"
 
       - name: Build the project
-        run: cmake --build build
+        run: cmake --build build --parallel "$(nproc)"
 
       - name: Run tests
         run: ctest --test-dir build --output-on-failure
