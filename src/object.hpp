@@ -128,7 +128,8 @@ public:
 
   /**
    * @brief Read a property of the GObject.
-   * @tparam ValueType must match the property type exactly, see GValueTraits for supported types.
+   * @tparam ValueType must match the property type exactly; for GstObject types, the property type may
+   *         also be derived from it. See GValueTraits for supported types.
    * @param name The name of the property.
    * @return the property value. Object and caps properties are returned as owning shared_ptr.
    * @throws std::invalid_argument if the property does not exist, is not readable
@@ -139,7 +140,8 @@ public:
 
   /**
    * @brief Write a property of the GObject.
-   * @tparam ValueType must match the property type exactly, see GValueTraits for supported types.
+   * @tparam ValueType must match the property type exactly; for GstObject types, it may also be derived
+   *         from the property type. See GValueTraits for supported types.
    *         String literals are accepted for string properties.
    * @param name The name of the property.
    * @param value The new value.
@@ -163,7 +165,8 @@ protected:
 /**
 * @brief Connect a callback directly to the GObject signal with the matching name.
 * @tparam Args the parameter types of the signal, without the emitting object and user data.
-*         Number and types must match the signal exactly (see GValueTraits), and the signal must return void.
+*         Number and types must match the signal (see GValueTraits::matchesGet: for GstObject types, the
+*         signal parameter may be derived from Args), and the signal must return void.
 * @throws std::invalid_argument if the signal does not exist or its signature does not match Args
 * @throws std::runtime_error if signal could not be connected
 */
@@ -199,7 +202,7 @@ private:
 
   /**
    * @brief Check that a callback with parameters Args can be connected to the queried signal:
-   * same number of parameters, exactly matching types and no return value.
+   * same number of parameters, matching types (GValueTraits::matchesGet) and no return value.
    */
   template<typename... Args>
   [[nodiscard]] static bool signalSignatureMatches(const GSignalQuery& query);
@@ -250,7 +253,7 @@ ValueType Object::getProperty(const std::string& name) const
   using Traits = GValueTraits<ValueType>;
 
   const GParamSpec* propertySpec = findReadableProperty(name);
-  if(! Traits::matches(propertySpec->value_type))
+  if(! Traits::matchesGet(propertySpec->value_type))
   {
     throwPropertyTypeMismatch(propertySpec);
   }
@@ -271,7 +274,7 @@ void Object::setProperty(const std::string& name, const ValueType& value)
   using Traits = GValueTraits<std::decay_t<ValueType>>;
 
   const GParamSpec* propertySpec = findWritableProperty(name);
-  if(! Traits::matches(propertySpec->value_type))
+  if(! Traits::matchesSet(propertySpec->value_type))
   {
     throwPropertyTypeMismatch(propertySpec);
   }
@@ -293,7 +296,7 @@ bool Object::signalSignatureMatches(const GSignalQuery& query)
     return false;
   }
   [[maybe_unused]] guint index = 0;
-  return (true && ... && GValueTraits<std::decay_t<Args>>::matches(query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE));
+  return (true && ... && GValueTraits<std::decay_t<Args>>::matchesGet(query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE));
 }
 
 /** Connect a callback to a GObject signal.

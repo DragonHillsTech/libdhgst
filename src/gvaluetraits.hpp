@@ -71,13 +71,34 @@ template<> struct GstTypeOf<GstMessage> { static GType get() { return GST_TYPE_M
 template<> struct GstTypeOf<GstEvent> { static GType get() { return GST_TYPE_EVENT; } };
 template<> struct GstTypeOf<GstBuffer> { static GType get() { return GST_TYPE_BUFFER; } };
 
+namespace detail
+{
+
 /**
- * @brief Maps a C++ type to GObject properties, used by Object::getProperty and Object::setProperty.
+ * @brief Base for GValueTraits of types without subtypes: reading and writing need the same exact match.
+ * Derived provides `static bool matches(GType propertyType)`.
+ */
+template<typename Derived>
+struct ExactTypeMatch
+{
+  static bool matchesGet(GType propertyType) { return Derived::matches(propertyType); }
+  static bool matchesSet(GType propertyType) { return Derived::matches(propertyType); }
+};
+
+} // namespace detail
+
+/**
+ * @brief Maps a C++ type to GObject properties, used by Object::getProperty and Object::setProperty
+ * and for the parameters of Object::connectGobjectSignal.
  *
  * Each specialization provides
- *  - `static bool matches(GType propertyType)`: true if the C++ type exactly matches the property type
+ *  - `static bool matchesGet(GType propertyType)`: true if a value of the property type can be read as the C++ type
+ *    (getProperty, signal parameters)
+ *  - `static bool matchesSet(GType propertyType)`: true if a value of the C++ type can be stored in the property
+ *    (setProperty)
  *  - `static T get(const GValue* value)`
  *  - `static void set(GValue* value, const T& x)`
+ * Both checks are the same for all types except GstObject types, see below.
  *
  * Supported types:
  *  - bool (gboolean properties)
@@ -86,7 +107,8 @@ template<> struct GstTypeOf<GstBuffer> { static GType get() { return GST_TYPE_BU
  *  - std::string (and const char* for setProperty only)
  *  - C++ enums for GEnum and GFlags properties (the concrete enum type can not be verified)
  *  - std::shared_ptr<T> for GstMiniObject based types: GstCapsSPtr, GstMessageSPtr, GstEventSPtr, GstBufferSPtr
- *  - std::shared_ptr<T> for GstObject based types (property type must be exactly T)
+ *  - std::shared_ptr<T> for GstObject based types: get accepts a property type derived from T,
+ *    set accepts a property type T is derived from (e.g. a GstAppSink for a GstElement property)
  */
 template<typename T, typename = void>
 struct GValueTraits
@@ -98,7 +120,7 @@ struct GValueTraits
   );
 };
 
-template<> struct GValueTraits<bool>
+template<> struct GValueTraits<bool> : detail::ExactTypeMatch<GValueTraits<bool>>
 {
   static bool matches(GType propertyType) { return propertyType == G_TYPE_BOOLEAN; }
   static bool get(const GValue* value) { return g_value_get_boolean(value) != FALSE; }
@@ -107,6 +129,7 @@ template<> struct GValueTraits<bool>
 
 template<typename T>
 struct GValueTraits<T, std::enable_if_t<std::is_integral_v<T> && !std::is_same_v<T, bool>>>
+  : detail::ExactTypeMatch<GValueTraits<T>>
 {
   static bool matches(GType propertyType)
   {
@@ -159,21 +182,21 @@ struct GValueTraits<T, std::enable_if_t<std::is_integral_v<T> && !std::is_same_v
   }
 };
 
-template<> struct GValueTraits<float>
+template<> struct GValueTraits<float> : detail::ExactTypeMatch<GValueTraits<float>>
 {
   static bool matches(GType propertyType) { return propertyType == G_TYPE_FLOAT; }
   static float get(const GValue* value) { return g_value_get_float(value); }
   static void set(GValue* value, float x) { g_value_set_float(value, x); }
 };
 
-template<> struct GValueTraits<double>
+template<> struct GValueTraits<double> : detail::ExactTypeMatch<GValueTraits<double>>
 {
   static bool matches(GType propertyType) { return propertyType == G_TYPE_DOUBLE; }
   static double get(const GValue* value) { return g_value_get_double(value); }
   static void set(GValue* value, double x) { g_value_set_double(value, x); }
 };
 
-template<> struct GValueTraits<std::string>
+template<> struct GValueTraits<std::string> : detail::ExactTypeMatch<GValueTraits<std::string>>
 {
   static bool matches(GType propertyType) { return propertyType == G_TYPE_STRING; }
   static std::string get(const GValue* value)
@@ -185,7 +208,7 @@ template<> struct GValueTraits<std::string>
 };
 
 /// for setProperty with string literals; there is no getter because the result would dangle
-template<> struct GValueTraits<const char*>
+template<> struct GValueTraits<const char*> : detail::ExactTypeMatch<GValueTraits<const char*>>
 {
   static bool matches(GType propertyType) { return propertyType == G_TYPE_STRING; }
   static void set(GValue* value, const char* x) { g_value_set_string(value, x); }
@@ -194,7 +217,7 @@ template<> struct GValueTraits<const char*>
 template<> struct GValueTraits<char*> : GValueTraits<const char*> {};
 
 template<typename T>
-struct GValueTraits<T, std::enable_if_t<std::is_enum_v<T>>>
+struct GValueTraits<T, std::enable_if_t<std::is_enum_v<T>>> : detail::ExactTypeMatch<GValueTraits<T>>
 {
   static bool matches(GType propertyType)
   {
@@ -225,6 +248,7 @@ struct GValueTraits<T, std::enable_if_t<std::is_enum_v<T>>>
 
 template<typename T>
 struct GValueTraits<std::shared_ptr<T>, std::enable_if_t<IsGstMiniObject<T>::value>>
+  : detail::ExactTypeMatch<GValueTraits<std::shared_ptr<T>>>
 {
   static bool matches(GType propertyType) { return propertyType == GstTypeOf<T>::get(); }
   static std::shared_ptr<T> get(const GValue* value)
@@ -238,13 +262,29 @@ struct GValueTraits<std::shared_ptr<T>, std::enable_if_t<IsGstMiniObject<T>::val
 template<typename T>
 struct GValueTraits<std::shared_ptr<T>, std::enable_if_t<IsGstObject<T>::value>>
 {
-  static bool matches(GType propertyType) { return propertyType == GstTypeOf<T>::get(); }
+  // the property holds an object of propertyType (or derived),
+  // which is a T if propertyType is derived from T
+  static bool matchesGet(GType propertyType)
+  {
+    return g_type_is_a(propertyType, GstTypeOf<T>::get());
+  }
+
+  // the stored T (or derived) must be a propertyType
+  static bool matchesSet(GType propertyType)
+  {
+    return g_type_is_a(GstTypeOf<T>::get(), propertyType);
+  }
+
   static std::shared_ptr<T> get(const GValue* value)
   {
     // g_value_dup_object returns a new reference
     return makeGstSharedPtr(static_cast<T*>(g_value_dup_object(value)), TransferType::Full);
   }
-  static void set(GValue* value, const std::shared_ptr<T>& x) { g_value_set_object(value, x.get()); }
+
+  static void set(GValue* value, const std::shared_ptr<T>& x)
+  {
+    g_value_set_object(value, x.get());
+  }
 };
 
 namespace detail

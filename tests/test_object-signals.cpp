@@ -246,6 +246,18 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_MatchingSignature, ObjectTest)
   );
 }
 
+BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_BaseTypeParameter, ObjectTest)
+{
+  // pad-added passes a GstPad, which is a GstObject
+  auto element = std::make_shared<SignalTestElement>("identity");
+  BOOST_CHECK_NO_THROW(
+    (void)element->connectGobjectSignal<GstObjectSPtr>(
+      "pad-added",
+      std::function<void(GstObjectSPtr)>([](GstObjectSPtr) {})
+    )
+  );
+}
+
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_WrongNumberOfParametersThrows, ObjectTest)
 {
   auto element = std::make_shared<SignalTestElement>("identity");
