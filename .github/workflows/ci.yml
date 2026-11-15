@@ -10,7 +10,7 @@ on:
 
 jobs:
   # Pushes to master: plain build and tests. Version tagging and the documentation wait for this job.
-  # Pull requests are covered by the sanitizers job.
+  # Pull requests are covered by the build-and-test-sanitized job.
   build-and-test:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
   # Pull requests to master: build and run the tests with AddressSanitizer (incl. LeakSanitizer)
   # and UndefinedBehaviorSanitizer. Any finding fails the job. The examples are built too, so a pull
   # request cannot break them before the push build on master.
-  sanitizers:
+  build-and-test-sanitized:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
