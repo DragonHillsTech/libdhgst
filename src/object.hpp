@@ -212,12 +212,14 @@ private:
   GstObjectSPtr gstObject;
 
   // SignalHandler to define the callback function
+  // Args are the C++ parameter types of the callback; GLib calls the handler with the matching
+  // GLib types. Not derived back from the GLib types, because e.g. gboolean and gint are the same type.
   template<typename... Args>
   struct SignalHandler
   {
-    static void callback(GObject* object, Args... args, gpointer user_data)
+    static void callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer user_data)
     {
-      using Callback = std::function<void(typename ConvertToCppType<Args>::type...)>;
+      using Callback = std::function<void(Args...)>;
       auto* callback = static_cast<Callback*>(user_data);
       if(! callback)
       {
@@ -340,7 +342,7 @@ SignalConnection Object::connectGobjectSignal(
   const auto connectionId = g_signal_connect_data(
     const_cast<GstObject*>(getRawGstObject()),
     signalName.c_str(),
-    reinterpret_cast<GCallback>(SignalHandler<typename ConvertToGlibType<Args>::type...>::callback),
+    reinterpret_cast<GCallback>(SignalHandler<Args...>::callback),
     callbackData.get(),
     [](gpointer data, GClosure* /*closure*/)
     {

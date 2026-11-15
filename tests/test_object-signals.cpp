@@ -40,8 +40,38 @@ public:
   {
   }
 
+  explicit SignalTestElement(GstElement* element)
+  : Element(element, TransferType::Floating)
+  {
+  }
+
   using Object::connectGobjectSignal;
 };
+
+// Element type with a signal that passes a gboolean, for TestConnectGobjectSignal_BoolParameter
+struct BoolSignalElement
+{
+  GstElement parent;
+};
+
+struct BoolSignalElementClass
+{
+  GstElementClass parentClass;
+};
+
+G_DEFINE_TYPE(BoolSignalElement, bool_signal_element, GST_TYPE_ELEMENT)
+
+static void bool_signal_element_class_init(BoolSignalElementClass* klass)
+{
+  g_signal_new(
+    "bool-signal", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST, 0, nullptr, nullptr, nullptr,
+    G_TYPE_NONE, 1, G_TYPE_BOOLEAN
+  );
+}
+
+static void bool_signal_element_init(BoolSignalElement* /*self*/)
+{
+}
 
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
 {
@@ -246,6 +276,27 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_WrongParameterTypeThrows, Objec
     (void)element->connectGobjectSignal<int>("pad-added", std::function<void(int)>([](int) {})),
     std::invalid_argument
   );
+}
+
+BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_BoolParameter, ObjectTest)
+{
+  // GLib passes a gboolean (an int); the handler must read it as such and convert it to bool
+  auto element = std::make_shared<SignalTestElement>(
+    GST_ELEMENT(g_object_new(bool_signal_element_get_type(), nullptr))
+  );
+  std::vector<bool> received;
+  auto connection = element->connectGobjectSignal<bool>(
+    "bool-signal",
+    std::function<void(bool)>([&](bool value) { received.push_back(value); })
+  );
+  BOOST_REQUIRE(connection.connected());
+
+  g_signal_emit_by_name(element->getGstElement().get(), "bool-signal", TRUE);
+  g_signal_emit_by_name(element->getGstElement().get(), "bool-signal", FALSE);
+
+  BOOST_REQUIRE_EQUAL(received.size(), 2U);
+  BOOST_CHECK_EQUAL(received[0], true);
+  BOOST_CHECK_EQUAL(received[1], false);
 }
 
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_SignalWithReturnValueThrows, ObjectTest)
