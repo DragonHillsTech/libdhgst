@@ -20,7 +20,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
   add_executable(${TEST_NAME} ${TEST_SOURCE})
 
   # Link the test executable with libdhgst
-  target_link_libraries(${TEST_NAME} libdhgst Boost::headers)
+  target_link_libraries(${TEST_NAME} dh::gst::libdhgst Boost::headers)
 
   # Set the output directory for the test binary
   set_target_properties(${TEST_NAME} PROPERTIES

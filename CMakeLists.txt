@@ -77,6 +77,8 @@ pkg_check_modules(DHGST_GST_VIDEO REQUIRED IMPORTED_TARGET gstreamer-video-1.0)
 
 # Create the shared library
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+# Same name as the exported target, so in-tree users can link it the same way
+add_library(dh::gst::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 # PUBLIC: the headers use C++17 features, so consumers need at least C++17, too
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
