@@ -58,38 +58,11 @@ set(HEADERS
 )
 
 if(BUILD_DOCUMENTATION)
-  find_package(Doxygen)
-  if(NOT DOXYGEN_FOUND)
-    message(FATAL_ERROR "Doxygen is required to build documentation")
-  endif()
-  set(DOXYGEN_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  set(DOXYGEN_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen")
-  set(DOXYGEN_INDEX_FILE "${DOXYGEN_OUTPUT_DIR}/html/index.html")
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    @ONLY
-  )
-  add_custom_command(
-    OUTPUT "${DOXYGEN_INDEX_FILE}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DOXYGEN_OUTPUT_DIR}"
-    COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    MAIN_DEPENDENCY "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
-    DEPENDS
-      ${HEADERS}
-      ${SOURCES}
-    COMMENT "Generating Doxygen documentation"
-    VERBATIM
-  )
-  add_custom_target(
-    docs
-    ALL
-    DEPENDS "${DOXYGEN_INDEX_FILE}"
-  )
-  install(
-    DIRECTORY "${DOXYGEN_OUTPUT_DIR}/html"
-    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/${PROJECT_NAME}"
-    COMPONENT documentation
+  include(${CMAKE_CURRENT_LIST_DIR}/cmake/Documentation.cmake)
+  # the public headers in src/
+  add_doxygen_docs(
+    INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    HEADERS ${HEADERS}
   )
 endif()
 
