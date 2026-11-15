@@ -52,23 +52,25 @@ gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
 Element::Element(GstElement* gstElement, TransferType transferType)
 : Object(GST_OBJECT_CAST(gstElement), transferType)
 {
-  requireType(GST_TYPE_ELEMENT);
 }
 
 std::shared_ptr<Element> Element::create(GstElementSPtr gstElement)
 {
-  return std::shared_ptr<Element>(new Element(gstElement));
+  std::shared_ptr<Element> element(new Element(gstElement));
+  element->requireType<GstElement>();
+  return element;
 }
 
 std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType transferType)
 {
-  return std::shared_ptr<Element>(new Element(gstElement, transferType));
+  std::shared_ptr<Element> element(new Element(gstElement, transferType));
+  element->requireType<GstElement>();
+  return element;
 }
 
 Element::Element(GstElementSPtr gstElement)
 : Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
 {
-  requireType(GST_TYPE_ELEMENT);
 }
 
 GstElementSPtr Element::getGstElement()

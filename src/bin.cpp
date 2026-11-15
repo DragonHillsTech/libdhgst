@@ -29,13 +29,11 @@ namespace dh::gst
 Bin::Bin(GstBinSPtr gstBin)
 : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
 {
-  requireType(GST_TYPE_BIN);
 }
 
 Bin::Bin(GstBin* gstBin, TransferType transferType)
 : Element(GST_ELEMENT_CAST(gstBin), transferType)
 {
-  requireType(GST_TYPE_BIN);
 }
 
 Bin::Bin(const std::string& name)
@@ -48,12 +46,16 @@ Bin::Bin(const std::string& name)
 
 std::shared_ptr<Bin> Bin::create(GstBinSPtr gstBin)
 {
-  return std::shared_ptr<Bin>(new Bin(gstBin));
+  std::shared_ptr<Bin> bin(new Bin(gstBin));
+  bin->requireType<GstBin>();
+  return bin;
 }
 
 std::shared_ptr<Bin> Bin::create(GstBin* gstBin, TransferType transferType)
 {
-  return std::shared_ptr<Bin>(new Bin(gstBin, transferType));
+  std::shared_ptr<Bin> bin(new Bin(gstBin, transferType));
+  bin->requireType<GstBin>();
+  return bin;
 }
 
 std::shared_ptr<Bin> Bin::create(const std::string& name)

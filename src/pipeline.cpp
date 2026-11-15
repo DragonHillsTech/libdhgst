@@ -31,13 +31,11 @@ namespace dh::gst
 Pipeline::Pipeline(GstPipelineSPtr gstPipeline)
 : Bin(GST_BIN_CAST(gstPipeline.get()), TransferType::None) // no pointer_cast because C inheritance
 {
-  requireType(GST_TYPE_PIPELINE);
 }
 
 Pipeline::Pipeline(GstPipeline* gstPipeline, TransferType transferType)
 : Bin(GST_BIN_CAST(gstPipeline), transferType)
 {
-  requireType(GST_TYPE_PIPELINE);
 }
 
 Pipeline::Pipeline(const std::string& name)
@@ -47,7 +45,9 @@ Pipeline::Pipeline(const std::string& name)
 
 std::shared_ptr<Pipeline> Pipeline::create(GstPipelineSPtr gstPipeline)
 {
-  return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline));
+  std::shared_ptr<Pipeline> pipeline(new Pipeline(gstPipeline));
+  pipeline->requireType<GstPipeline>();
+  return pipeline;
 }
 
 std::shared_ptr<Pipeline> Pipeline::create(const std::string& name)
@@ -57,7 +57,9 @@ std::shared_ptr<Pipeline> Pipeline::create(const std::string& name)
 
 std::shared_ptr<Pipeline> Pipeline::create(GstPipeline* gstPipeline, TransferType transferType)
 {
-  return std::shared_ptr<Pipeline>(new Pipeline(gstPipeline, transferType));
+  std::shared_ptr<Pipeline> pipeline(new Pipeline(gstPipeline, transferType));
+  pipeline->requireType<GstPipeline>();
+  return pipeline;
 }
 
 std::shared_ptr<Pipeline> Pipeline::fromDescription(const std::string& description)
