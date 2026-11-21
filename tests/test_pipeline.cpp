@@ -2,12 +2,11 @@
 #include "pipeline.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
-
 
 using namespace dh::gst;
 
@@ -20,7 +19,7 @@ public:
   // Setup before first test case
   PipelineTest()
   {
-    gst_init(nullptr, nullptr);  // Initialize GStreamer
+    gst_init(nullptr, nullptr); // Initialize GStreamer
   }
 };
 
@@ -39,8 +38,13 @@ BOOST_FIXTURE_TEST_CASE(CreateWithWrongTypeThrowsAndReleasesTheObject, PipelineT
   // a GstBin is no GstPipeline
   GstElement* bin = gst_bin_new("test_bin");
   gst_object_ref_sink(bin);
-  gst_object_ref(bin); // the reference handed over below; the first one keeps it alive for the check
-  BOOST_CHECK_THROW((void)Pipeline::create(GST_PIPELINE_CAST(bin), TransferType::Full), std::invalid_argument);
+  gst_object_ref(
+    bin
+  ); // the reference handed over below; the first one keeps it alive for the check
+  BOOST_CHECK_THROW(
+    (void)Pipeline::create(GST_PIPELINE_CAST(bin), TransferType::Full),
+    std::invalid_argument
+  );
   // the handed over reference was released again
   BOOST_CHECK_EQUAL(GST_OBJECT_REFCOUNT_VALUE(bin), 1);
   gst_object_unref(bin);
@@ -50,7 +54,10 @@ BOOST_FIXTURE_TEST_CASE(CreateBaseClassWithWrongTypeThrows, PipelineTest)
 {
   // a fakesrc is no GstBin
   GstElement* element = gst_element_factory_make("fakesrc", nullptr);
-  BOOST_CHECK_THROW((void)Bin::create(GST_BIN_CAST(element), TransferType::Floating), std::invalid_argument);
+  BOOST_CHECK_THROW(
+    (void)Bin::create(GST_BIN_CAST(element), TransferType::Floating),
+    std::invalid_argument
+  );
 }
 
 BOOST_FIXTURE_TEST_CASE(CreateWithSubtypeIsAccepted, PipelineTest)
@@ -64,33 +71,34 @@ BOOST_FIXTURE_TEST_CASE(CreateWithSubtypeIsAccepted, PipelineTest)
 // Test the fromDescription method with a valid pipeline description
 BOOST_FIXTURE_TEST_CASE(FromDescriptionTest, PipelineTest)
 {
-  BOOST_REQUIRE_NO_THROW(
-    {
-      auto descPipeline = Pipeline::fromDescription("fakesrc ! fakesink");
-    }
-  );
+  BOOST_REQUIRE_NO_THROW({ auto descPipeline = Pipeline::fromDescription("fakesrc ! fakesink"); });
 }
 
 // Test fromDescription with an invalid description (should throw)
 BOOST_FIXTURE_TEST_CASE(FromDescriptionInvalidTest, PipelineTest)
 {
   BOOST_REQUIRE_THROW(
-    {
-      auto pipeline = Pipeline::fromDescription("invalid_description");
-    }, std::runtime_error
+    { auto pipeline = Pipeline::fromDescription("invalid_description"); },
+    std::runtime_error
   );
 }
 
 // A partly parsed description must not return a broken pipeline
 BOOST_FIXTURE_TEST_CASE(FromDescriptionUnknownElementThrows, PipelineTest)
 {
-  BOOST_CHECK_THROW((void)Pipeline::fromDescription("fakesrc ! doesnotexist ! fakesink"), std::runtime_error);
+  BOOST_CHECK_THROW(
+    (void)Pipeline::fromDescription("fakesrc ! doesnotexist ! fakesink"),
+    std::runtime_error
+  );
 }
 
 BOOST_FIXTURE_TEST_CASE(FromDescriptionFailedLinkThrows, PipelineTest)
 {
   // a sink has no source pad, so linking it to the next element fails
-  BOOST_CHECK_THROW((void)Pipeline::fromDescription("fakesrc ! fakesink name=a ! fakesink"), std::runtime_error);
+  BOOST_CHECK_THROW(
+    (void)Pipeline::fromDescription("fakesrc ! fakesink name=a ! fakesink"),
+    std::runtime_error
+  );
 }
 
 // A single element is returned as that element, not as a pipeline; it must be released properly

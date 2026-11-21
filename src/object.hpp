@@ -24,8 +24,8 @@
 // local includes
 #include "gvaluetraits.hpp"
 #include "objecttraits.hpp"
-#include "signalconnection.hpp"
 #include "sharedptrs.hpp"
+#include "signalconnection.hpp"
 #include "transfertype.hpp"
 
 // std
@@ -62,7 +62,7 @@ protected:
    */
   Object(GstObjectSPtr gstObject);
 
-   /**
+  /**
    * @brief Create a new Object that wraps a GstObject.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstObject
@@ -77,7 +77,8 @@ public:
    * @param transferType see if None, then increase use count
    * @throws std::runtime_error if gstObject is nullptr
    */
-  [[nodiscard]] static std::shared_ptr<Object> create(GstObject* gstObject, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<Object>
+  create(GstObject* gstObject, TransferType transferType);
 
   virtual ~Object();
 
@@ -128,8 +129,8 @@ public:
 
   /**
    * @brief Read a property of the GObject.
-   * @tparam ValueType must match the property type exactly; for GstObject types, the property type may
-   *         also be derived from it. See GValueTraits for supported types.
+   * @tparam ValueType must match the property type exactly; for GstObject types, the property type
+   * may also be derived from it. See GValueTraits for supported types.
    * @param name The name of the property.
    * @return the property value. Object and caps properties are returned as owning shared_ptr.
    * @throws std::invalid_argument if the property does not exist, is not readable
@@ -140,13 +141,13 @@ public:
 
   /**
    * @brief Write a property of the GObject.
-   * @tparam ValueType must match the property type exactly; for GstObject types, it may also be derived
-   *         from the property type. See GValueTraits for supported types.
-   *         String literals are accepted for string properties.
+   * @tparam ValueType must match the property type exactly; for GstObject types, it may also be
+   *         derived from the property type. See GValueTraits for supported types. String literals
+   *         are accepted for string properties.
    * @param name The name of the property.
    * @param value The new value.
-   * @throws std::invalid_argument if the property does not exist, is not writable, is construct-only
-   *         or ValueType does not match the property type.
+   * @throws std::invalid_argument if the property does not exist, is not writable, is
+   *         construct-only or ValueType does not match the property type.
    */
   template<typename ValueType>
   void setProperty(const std::string& name, const ValueType& value);
@@ -157,9 +158,10 @@ protected:
 
   /**
    * @brief Check that the wrapped object is an instance of expectedType (or a subclass).
-   * The create() functions call this once for the most-derived wrapper (the type check of a subclass
-   * covers its base classes), because the GST_*_CAST macros used to pass C pointers do not check types.
-   * Subclasses outside this library that are constructed differently should call it themselves.
+   * The create() functions call this once for the most-derived wrapper (the type check of a
+   * subclass covers its base classes), because the GST_*_CAST macros used to pass C pointers do not
+   * check types. Subclasses outside this library that are constructed differently should call it
+   * themselves.
    * @throws std::invalid_argument if the wrapped object has a different type.
    */
   void requireType(GType expectedType) const;
@@ -173,19 +175,18 @@ protected:
     requireType(GstTypeOf<GstType>::get());
   }
 
-/**
-* @brief Connect a callback directly to the GObject signal with the matching name.
-* @tparam Args the parameter types of the signal, without the emitting object and user data.
-*         Number and types must match the signal (see GValueTraits::matchesGet: for GstObject types, the
-*         signal parameter may be derived from Args), and the signal must return void.
-* @throws std::invalid_argument if the signal does not exist or its signature does not match Args
-* @throws std::runtime_error if signal could not be connected
-*/
-template<typename... Args>
-SignalConnection connectGobjectSignal(
-  const std::string& signalName,
-  std::function<void(Args...)> callback
-) const;
+  /**
+   * @brief Connect a callback directly to the GObject signal with the matching name.
+   * @tparam Args the parameter types of the signal, without the emitting object and user data.
+   *         Number and types must match the signal (see GValueTraits::matchesGet: for GstObject
+   *         types, the signal parameter may be derived from Args), and the signal must return
+   *         void.
+   * @throws std::invalid_argument if the signal does not exist or its signature does not match Args
+   * @throws std::runtime_error if signal could not be connected
+   */
+  template<typename... Args>
+  SignalConnection
+  connectGobjectSignal(const std::string& signalName, std::function<void(Args...)> callback) const;
 
 private:
   /**
@@ -202,7 +203,8 @@ private:
 
   /**
    * @brief Find a property that can be written after construction.
-   * @throws std::invalid_argument if the property does not exist, is not writable or is construct-only.
+   * @throws std::invalid_argument if the property does not exist, is not writable or is
+   *         construct-only.
    */
   [[nodiscard]] const GParamSpec* findWritableProperty(const std::string& name) const;
 
@@ -227,15 +229,17 @@ private:
 
   // SignalHandler to define the callback function
   // Args are the C++ parameter types of the callback; GLib calls the handler with the matching
-  // GLib types. Not derived back from the GLib types, because e.g. gboolean and gint are the same type.
+  // GLib types. Not derived back from the GLib types, because e.g. gboolean and gint are the same
+  // type.
   template<typename... Args>
   struct SignalHandler
   {
-    static void callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer user_data)
+    static void
+    callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer user_data)
     {
       using Callback = std::function<void(Args...)>;
       auto* callback = static_cast<Callback*>(user_data);
-      if(! callback)
+      if (!callback)
       {
         return;
       }
@@ -246,11 +250,11 @@ private:
       {
         (*callback)(convertParamToCppType(args)...);
       }
-      catch(const std::exception& e)
+      catch (const std::exception& e)
       {
         GST_ERROR_OBJECT(object, "Exception in signal callback: %s", e.what());
       }
-      catch(...)
+      catch (...)
       {
         GST_ERROR_OBJECT(object, "Unknown exception in signal callback");
       }
@@ -264,7 +268,7 @@ ValueType Object::getProperty(const std::string& name) const
   using Traits = GValueTraits<ValueType>;
 
   const GParamSpec* propertySpec = findReadableProperty(name);
-  if(! Traits::matchesGet(propertySpec->value_type))
+  if (!Traits::matchesGet(propertySpec->value_type))
   {
     throwPropertyTypeMismatch(propertySpec);
   }
@@ -285,57 +289,60 @@ void Object::setProperty(const std::string& name, const ValueType& value)
   using Traits = GValueTraits<std::decay_t<ValueType>>;
 
   const GParamSpec* propertySpec = findWritableProperty(name);
-  if(! Traits::matchesSet(propertySpec->value_type))
+  if (!Traits::matchesSet(propertySpec->value_type))
   {
     throwPropertyTypeMismatch(propertySpec);
   }
 
   detail::GValueHolder gvalue(propertySpec->value_type);
   Traits::set(gvalue.get(), value);
-  g_object_set_property(
-    G_OBJECT(getRawGstObject()),
-    name.c_str(),
-    gvalue.get()
-  );
+  g_object_set_property(G_OBJECT(getRawGstObject()), name.c_str(), gvalue.get());
 }
 
 template<typename... Args>
 bool Object::signalSignatureMatches(const GSignalQuery& query)
 {
-  if((query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE) != G_TYPE_NONE || query.n_params != sizeof...(Args))
+  if ((query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE) != G_TYPE_NONE
+      || query.n_params != sizeof...(Args))
   {
     return false;
   }
   [[maybe_unused]] guint index = 0;
-  return (true && ... && GValueTraits<std::decay_t<Args>>::matchesGet(query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE));
+  return (
+    true && ...
+    && GValueTraits<std::decay_t<Args>>::matchesGet(
+      query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE
+    )
+  );
 }
 
 /** Connect a callback to a GObject signal.
-  * @tparam Args types you want to use. GstObject* types are not allowed, use shared_ptr instead.
-  * @param signalName the name of the signal
-  * @param callback the callback invoked when the signal is emitted
-  * @throws std::invalid_argument if signal name invalid or signal with the name not found.
-  * @see Object::signalExists
-  */
-template<typename ... Args>
+ * @tparam Args types you want to use. GstObject* types are not allowed, use shared_ptr instead.
+ * @param signalName the name of the signal
+ * @param callback the callback invoked when the signal is emitted
+ * @throws std::invalid_argument if signal name invalid or signal with the name not found.
+ * @see Object::signalExists
+ */
+template<typename... Args>
 SignalConnection Object::connectGobjectSignal(
   const std::string& signalName,
   std::function<void(Args...)> callback
 ) const
 {
   static_assert(
-    (... && (! (std::is_pointer<Args>::value && IsGstObject<std::remove_pointer_t<Args>>::value))),
-    "Error: Template arguments cannot be of type GstObject*. Use shared_ptr instead, see sharedptrs.hpp"
+    (... && (!(std::is_pointer<Args>::value && IsGstObject<std::remove_pointer_t<Args>>::value))),
+    "Error: Template arguments cannot be of type GstObject*. Use shared_ptr instead, see "
+    "sharedptrs.hpp"
   );
-  if(signalName.empty())
+  if (signalName.empty())
   {
     throw std::invalid_argument("empty signal name");
   }
-  if(! signalExists(signalName))
+  if (!signalExists(signalName))
   {
     throw std::invalid_argument("No signal with name " + signalName);
   }
-  if(! callback)
+  if (!callback)
   {
     throw std::invalid_argument("empty signal callback");
   }
@@ -344,7 +351,7 @@ SignalConnection Object::connectGobjectSignal(
   // or return an undefined value to GLib. Check it against the signal before connecting.
   GSignalQuery query;
   g_signal_query(g_signal_lookup(signalName.c_str(), G_OBJECT_TYPE(getRawGstObject())), &query);
-  if(! signalSignatureMatches<Args...>(query))
+  if (!signalSignatureMatches<Args...>(query))
   {
     throwSignalSignatureMismatch(query);
   }
@@ -365,17 +372,14 @@ SignalConnection Object::connectGobjectSignal(
     G_CONNECT_AFTER
   );
 
-  if(! connectionId)
+  if (!connectionId)
   {
     throw std::runtime_error("failed to connect signal " + signalName);
   }
   callbackData.release();
-  return SignalConnection(
-    G_OBJECT(const_cast<GstObject*>(getRawGstObject())),
-    connectionId
-  );
+  return SignalConnection(G_OBJECT(const_cast<GstObject*>(getRawGstObject())), connectionId);
 }
 
-} // dh::gst
+} // namespace dh::gst
 
-#endif //OBJECT_HPP
+#endif // OBJECT_HPP

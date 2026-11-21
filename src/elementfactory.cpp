@@ -28,18 +28,24 @@ namespace dh::gst
 {
 
 ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferType transferType)
-: PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory), transferType)
+  : PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory), transferType)
 {
 }
 
 ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
-: PluginFeature(GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()), TransferType::None) // No pointer_cast due to C inheritance
+  : PluginFeature(
+      GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()),
+      TransferType::None
+    ) // No pointer_cast due to C inheritance
 {
 }
 
-std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transferType)
+std::shared_ptr<ElementFactory>
+ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transferType)
 {
-  std::shared_ptr<ElementFactory> elementFactory(new ElementFactory(gstElementFactory, transferType));
+  std::shared_ptr<ElementFactory> elementFactory(
+    new ElementFactory(gstElementFactory, transferType)
+  );
   elementFactory->requireType<GstElementFactory>();
   return elementFactory;
 }
@@ -70,17 +76,18 @@ std::shared_ptr<Element> ElementFactory::createElement(const std::string& elemen
     elementName.empty() ? nullptr : elementName.c_str()
   );
 
-  if(!gstElementRaw)
+  if (!gstElementRaw)
   {
     throw std::runtime_error("Failed to create element: " + elementName);
   }
   return Element::create(gstElementRaw, TransferType::Floating);
 }
 
-std::shared_ptr<Element> ElementFactory::makeElement(const std::string& factoryName, const std::string& elementName)
+std::shared_ptr<Element>
+ElementFactory::makeElement(const std::string& factoryName, const std::string& elementName)
 {
   // static version
-  if(factoryName.empty())
+  if (factoryName.empty())
   {
     throw std::invalid_argument("makeElement: empty factory name");
   }
@@ -90,9 +97,11 @@ std::shared_ptr<Element> ElementFactory::makeElement(const std::string& factoryN
     elementName.empty() ? nullptr : elementName.c_str()
   );
 
-  if(! gstElement)
+  if (!gstElement)
   {
-    throw std::runtime_error("Failed to create element '" + elementName + "' from factory '" + factoryName + "'");
+    throw std::runtime_error(
+      "Failed to create element '" + elementName + "' from factory '" + factoryName + "'"
+    );
   }
 
   return Element::create(gstElement, TransferType::Floating);
@@ -129,23 +138,19 @@ std::vector<std::string> ElementFactory::getMetadataKeys() const
 
 GType ElementFactory::getElementType() const
 {
-  return gst_element_factory_get_element_type(const_cast<GstElementFactory*>(getRawGstElementFactory()));
+  return gst_element_factory_get_element_type(
+    const_cast<GstElementFactory*>(getRawGstElementFactory())
+  );
 }
 
 GstElementFactorySPtr ElementFactory::getGstElementFactory()
 {
-  return makeGstSharedPtr(
-    GST_ELEMENT_FACTORY_CAST(getGstObject().get()),
-    TransferType::None
-  );
+  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::None);
 }
 
 const GstElementFactorySPtr ElementFactory::getGstElementFactory() const
 {
-  return makeGstSharedPtr(
-    GST_ELEMENT_FACTORY_CAST(getGstObject().get()),
-    TransferType::None
-  );
+  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::None);
 }
 
 GstElementFactory* ElementFactory::getRawGstElementFactory()

@@ -56,8 +56,10 @@ protected:
    */
   explicit PluginFeature(GstPluginFeatureSPtr gstPluginFeature);
 
- public:
-  [[nodiscard]] static std::shared_ptr<PluginFeature> create(GstPluginFeature* gstPluginFeature, TransferType transferType);
+public:
+  [[nodiscard]] static std::shared_ptr<PluginFeature>
+  create(GstPluginFeature* gstPluginFeature, TransferType transferType);
+
   [[nodiscard]] static std::shared_ptr<PluginFeature> create(GstPluginFeatureSPtr gstPluginFeature);
 
   /**

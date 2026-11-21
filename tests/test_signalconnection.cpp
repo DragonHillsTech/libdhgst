@@ -18,14 +18,14 @@
  * along with Libdhgst. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "signalconnection.hpp"
 #include "bin.hpp"
 #include "elementfactory.hpp"
 #include "sharedptrs.hpp"
+#include "signalconnection.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 #include <glib-object.h>
@@ -61,7 +61,9 @@ BOOST_FIXTURE_TEST_CASE(ConnectAndDisconnectManual, SignalConnectionTest)
   gulong handlerId = g_signal_connect(
     element,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
   BOOST_REQUIRE_GT(handlerId, 0UL);
@@ -90,7 +92,9 @@ BOOST_FIXTURE_TEST_CASE(DestructionDisconnectsSignal, SignalConnectionTest)
   gulong handlerId = g_signal_connect(
     element,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
   BOOST_REQUIRE_GT(handlerId, 0UL);
@@ -115,7 +119,9 @@ BOOST_FIXTURE_TEST_CASE(MoveConstructorTransfersOwnership, SignalConnectionTest)
   gulong handlerId = g_signal_connect(
     element,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
   BOOST_REQUIRE_GT(handlerId, 0UL);
@@ -145,13 +151,17 @@ BOOST_FIXTURE_TEST_CASE(MoveAssignmentTransfersAndDisconnectsOld, SignalConnecti
   gulong handlerId1 = g_signal_connect(
     element1,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
   gulong handlerId2 = g_signal_connect(
     element2,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
 
@@ -185,7 +195,9 @@ BOOST_FIXTURE_TEST_CASE(SelfMoveAssignmentIsSafe, SignalConnectionTest)
   gulong handlerId = g_signal_connect(
     element,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
 
@@ -220,7 +232,9 @@ BOOST_FIXTURE_TEST_CASE(TargetObjectDestroyedFirst, SignalConnectionTest)
   gulong handlerId = g_signal_connect(
     element,
     "notify::name",
-    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer) {}),
+    G_CALLBACK(+[](GObject*, GParamSpec*, gpointer)
+               {
+               }),
     nullptr
   );
 
@@ -281,14 +295,24 @@ BOOST_FIXTURE_TEST_CASE(CustomDisconnectHandler, SignalConnectionTest)
 {
   bool disconnected = false;
   {
-    SignalConnection conn([&]() { disconnected = true; });
+    SignalConnection conn(
+      [&]()
+      {
+        disconnected = true;
+      }
+    );
     BOOST_CHECK(conn.connected());
     BOOST_CHECK(static_cast<bool>(conn));
   }
   BOOST_CHECK(disconnected);
 
   bool manualDisconnected = false;
-  SignalConnection conn2([&]() { manualDisconnected = true; });
+  SignalConnection conn2(
+    [&]()
+    {
+      manualDisconnected = true;
+    }
+  );
   BOOST_CHECK(conn2.connected());
   conn2.disconnect();
   BOOST_CHECK(manualDisconnected);
@@ -303,7 +327,12 @@ BOOST_FIXTURE_TEST_CASE(CustomDisconnectHandler, SignalConnectionTest)
 BOOST_FIXTURE_TEST_CASE(CustomDisconnectHandlerMove, SignalConnectionTest)
 {
   int disconnectCount = 0;
-  SignalConnection conn1([&]() { ++disconnectCount; });
+  SignalConnection conn1(
+    [&]()
+    {
+      ++disconnectCount;
+    }
+  );
   BOOST_CHECK(conn1.connected());
 
   SignalConnection conn2(std::move(conn1));
@@ -321,8 +350,14 @@ BOOST_FIXTURE_TEST_CASE(CustomIsConnectedHandler, SignalConnectionTest)
   bool sourceAlive = true;
   int isConnectedCalls = 0;
   SignalConnection conn(
-    []() {},
-    [&]() { ++isConnectedCalls; return sourceAlive; }
+    []()
+    {
+    },
+    [&]()
+    {
+      ++isConnectedCalls;
+      return sourceAlive;
+    }
   );
   BOOST_CHECK(conn.connected());
 

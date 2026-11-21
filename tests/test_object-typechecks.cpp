@@ -7,8 +7,8 @@
 #include "pluginfeature.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 #include <gst/gst.h>
 
@@ -33,7 +33,9 @@ public:
   /// a new element with a regular (non-floating) reference owned by the caller
   static GstElement* makeSunkElement(const char* factoryName)
   {
-    return static_cast<GstElement*>(gst_object_ref_sink(gst_element_factory_make(factoryName, nullptr)));
+    return static_cast<GstElement*>(
+      gst_object_ref_sink(gst_element_factory_make(factoryName, nullptr))
+    );
   }
 
   static int refCount(gpointer object)
@@ -47,12 +49,18 @@ BOOST_FIXTURE_TEST_CASE(ElementRejectsNonElement, ObjectTypeChecksTest)
   GstBus* bus = gst_bus_new();
   const int baseline = refCount(bus);
 
-  BOOST_CHECK_THROW((void)Element::create(reinterpret_cast<GstElement*>(bus), TransferType::None), std::invalid_argument);
+  BOOST_CHECK_THROW(
+    (void)Element::create(reinterpret_cast<GstElement*>(bus), TransferType::None),
+    std::invalid_argument
+  );
   BOOST_CHECK_THROW(
     (void)Element::create(makeGstSharedPtr(reinterpret_cast<GstElement*>(bus), TransferType::None)),
     std::invalid_argument
   );
-  BOOST_CHECK_EQUAL(refCount(bus), baseline); // the reference taken by the wrapper is released again
+  BOOST_CHECK_EQUAL(
+    refCount(bus),
+    baseline
+  ); // the reference taken by the wrapper is released again
 
   gst_object_unref(bus);
 }
@@ -63,7 +71,10 @@ BOOST_FIXTURE_TEST_CASE(BinRejectsNonBin, ObjectTypeChecksTest)
   BOOST_REQUIRE(fakesrc);
   const int baseline = refCount(fakesrc);
 
-  BOOST_CHECK_THROW((void)Bin::create(reinterpret_cast<GstBin*>(fakesrc), TransferType::None), std::invalid_argument);
+  BOOST_CHECK_THROW(
+    (void)Bin::create(reinterpret_cast<GstBin*>(fakesrc), TransferType::None),
+    std::invalid_argument
+  );
   BOOST_CHECK_THROW(
     (void)Bin::create(makeGstSharedPtr(reinterpret_cast<GstBin*>(fakesrc), TransferType::None)),
     std::invalid_argument
@@ -84,7 +95,8 @@ BOOST_FIXTURE_TEST_CASE(PipelineRejectsNonPipeline, ObjectTypeChecksTest)
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)Pipeline::create(makeGstSharedPtr(reinterpret_cast<GstPipeline*>(bin), TransferType::None)),
+    (void)
+      Pipeline::create(makeGstSharedPtr(reinterpret_cast<GstPipeline*>(bin), TransferType::None)),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(refCount(bin), baseline);
@@ -98,7 +110,10 @@ BOOST_FIXTURE_TEST_CASE(BusRejectsNonBus, ObjectTypeChecksTest)
   BOOST_REQUIRE(fakesrc);
   const int baseline = refCount(fakesrc);
 
-  BOOST_CHECK_THROW((void)Bus::create(reinterpret_cast<GstBus*>(fakesrc), TransferType::None), std::invalid_argument);
+  BOOST_CHECK_THROW(
+    (void)Bus::create(reinterpret_cast<GstBus*>(fakesrc), TransferType::None),
+    std::invalid_argument
+  );
   BOOST_CHECK_THROW(
     (void)Bus::create(makeGstSharedPtr(reinterpret_cast<GstBus*>(fakesrc), TransferType::None)),
     std::invalid_argument
@@ -119,7 +134,9 @@ BOOST_FIXTURE_TEST_CASE(ElementFactoryRejectsNonElementFactory, ObjectTypeChecks
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)ElementFactory::create(makeGstSharedPtr(reinterpret_cast<GstElementFactory*>(fakesrc), TransferType::None)),
+    (void)ElementFactory::create(
+      makeGstSharedPtr(reinterpret_cast<GstElementFactory*>(fakesrc), TransferType::None)
+    ),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(refCount(fakesrc), baseline);
@@ -138,7 +155,9 @@ BOOST_FIXTURE_TEST_CASE(PluginFeatureRejectsNonPluginFeature, ObjectTypeChecksTe
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)PluginFeature::create(makeGstSharedPtr(reinterpret_cast<GstPluginFeature*>(fakesrc), TransferType::None)),
+    (void)PluginFeature::create(
+      makeGstSharedPtr(reinterpret_cast<GstPluginFeature*>(fakesrc), TransferType::None)
+    ),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(refCount(fakesrc), baseline);
@@ -159,6 +178,8 @@ BOOST_FIXTURE_TEST_CASE(MatchingTypesAreAccepted, ObjectTypeChecksTest)
   GstElementFactory* factory = gst_element_factory_find("fakesrc");
   BOOST_REQUIRE(factory);
   BOOST_CHECK_NO_THROW((void)ElementFactory::create(factory, TransferType::None));
-  BOOST_CHECK_NO_THROW((void)PluginFeature::create(GST_PLUGIN_FEATURE_CAST(factory), TransferType::None));
+  BOOST_CHECK_NO_THROW(
+    (void)PluginFeature::create(GST_PLUGIN_FEATURE_CAST(factory), TransferType::None)
+  );
   gst_object_unref(factory);
 }

@@ -1,0 +1,41 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+ColumnLimit: 100
+ContinuationIndentWidth: 2
+IndentCaseLabels: true
+LineEnding: LF
+InsertNewlineAtEOF: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+BreakBeforeBraces: Allman
+InsertBraces: true
+ShortNamespaceLines: 0
+
+AllowShortFunctionsOnASingleLine: None
+AllowShortLambdasOnASingleLine: None
+AllowShortEnumsOnASingleLine: false
+
+AlignAfterOpenBracket: BlockIndent
+BreakBeforeTemplateCloser: true
+BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBinaryOperators: NonAssignment
+
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+ConstructorInitializerIndentWidth: 2
+
+AlignOperands: DontAlign
+AlignTrailingComments:
+  Kind: Never
+AlignEscapedNewlines: DontAlign
+
+SpaceAfterTemplateKeyword: false
+
+PointerAlignment: Left
+QualifierAlignment: Left
+

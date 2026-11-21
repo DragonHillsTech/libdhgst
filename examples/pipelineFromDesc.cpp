@@ -1,7 +1,8 @@
 /* -*- mode: c++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
  * @file pipelineFromDesc.cpp
- * @brief This program works similar to gst-launch-1.0. (less features) You can run a pipeline like this:
+ * @brief This program works similar to gst-launch-1.0. (less features) You can run a pipeline
+ * like this:
  * ./pipelineFromDesc videotestsrc ! videoconvert ! queue ! autovideosink
  * quit with [ctl]+[C]
  * @author Sandro Stiller
@@ -9,21 +10,20 @@
  */
 
 #include "helpers.hpp"
-#include "pipeline.hpp"
 #include "messageparser.hpp"
-
+#include "pipeline.hpp"
 
 // std
 #include <iostream>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 void printHelp(const std::string& appName);
 std::string concatArgs(int argc, const char* argv[]);
 
-int main(const int argc, const char **argv)
+int main(const int argc, const char** argv)
 {
-  if(argc < 2)
+  if (argc < 2)
   {
     printHelp(argv[0]);
     return 1;
@@ -42,22 +42,30 @@ int main(const int argc, const char **argv)
     [](auto task)
     {
       // Use g_main_context_invoke to post the task to the default main context.
-      g_main_context_invoke(nullptr, [](gpointer userData) -> gboolean
-      {
-        auto* taskPtr = static_cast<std::function<void()>*>(userData);
-        (*taskPtr)(); // Call the task
-        delete taskPtr; // Clean up
-        return G_SOURCE_REMOVE; // Remove the source after it's executed
-      },
-      new std::function<void()>(std::move(task)));
+      g_main_context_invoke(
+        nullptr,
+        [](gpointer userData) -> gboolean
+        {
+          auto* taskPtr = static_cast<std::function<void()>*>(userData);
+          (*taskPtr)(); // Call the task
+          delete taskPtr; // Clean up
+          return G_SOURCE_REMOVE; // Remove the source after it's executed
+        },
+        new std::function<void()>(std::move(task))
+      );
     }
   );
 
   std::vector<dh::gst::SignalConnection> parserConnections;
   parserConnections.push_back(messageParser->connectSignalError(
-    [mainLoop](const std::string& source, const std::string& errorMessage, const std::string& debugMessage)
+    [mainLoop](
+      const std::string& source,
+      const std::string& errorMessage,
+      const std::string& debugMessage
+    )
     {
-      std::cerr << "Error from '" << source << "' | Message: " << errorMessage << " | Debug info: " << debugMessage << std::endl;
+      std::cerr << "Error from '" << source << "' | Message: " << errorMessage
+                << " | Debug info: " << debugMessage << std::endl;
       std::cerr << "Quitting" << std::endl;
       g_main_loop_quit(mainLoop);
     }
@@ -65,37 +73,42 @@ int main(const int argc, const char **argv)
   parserConnections.push_back(messageParser->connectSignalInfo(
     [](const std::string& source, const std::string& infoMessage, const std::string& debugMessage)
     {
-      std::cout << "Info from '" << source << "' | Message: " << infoMessage << " | Debug info: " << debugMessage << std::endl;
+      std::cout << "Info from '" << source << "' | Message: " << infoMessage
+                << " | Debug info: " << debugMessage << std::endl;
     }
   ));
 
   parserConnections.push_back(messageParser->connectSignalWarning(
-    [](const std::string& source, const std::string& warningMessage, const std::string& debugMessage)
+    [](
+      const std::string& source,
+      const std::string& warningMessage,
+      const std::string& debugMessage
+    )
     {
-      std::cout << "Warning from '" << source << "' | Message: " << warningMessage << " | Debug info: " << debugMessage << std::endl;
+      std::cout << "Warning from '" << source << "' | Message: " << warningMessage
+                << " | Debug info: " << debugMessage << std::endl;
     }
   ));
   parserConnections.push_back(messageParser->connectSignalStateChanged(
     [](const std::string& source, GstState oldState, GstState newState, GstState pendingState)
     {
-      std::cout << "State change '" << source << "': "
-                << gst_element_state_get_name(oldState) << " -> "
-                << gst_element_state_get_name(newState) << " ("
+      std::cout << "State change '" << source << "': " << gst_element_state_get_name(oldState)
+                << " -> " << gst_element_state_get_name(newState) << " ("
                 << gst_element_state_get_name(pendingState) << ")" << std::endl;
     }
   ));
   parserConnections.push_back(messageParser->connectSignalEndOfStream(
     [](const std::string& sourceName)
     {
-       std::cout << "EOS from '" << sourceName << "'" << std::endl;
+      std::cout << "EOS from '" << sourceName << "'" << std::endl;
     }
   ));
   parserConnections.push_back(messageParser->connectSignalStreamStatus(
     [](const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)
     {
-      std::cout << "Stream status from '" << sourceName << "' | Status Type: "
-                << dh::gst::helpers::gstStreamStatusTypeToString(statusType) << " | Owner: "
-                << ownerName << std::endl;
+      std::cout << "Stream status from '" << sourceName
+                << "' | Status Type: " << dh::gst::helpers::gstStreamStatusTypeToString(statusType)
+                << " | Owner: " << ownerName << std::endl;
     }
   ));
   parserConnections.push_back(messageParser->connectSignalStreamStart(
@@ -107,8 +120,8 @@ int main(const int argc, const char **argv)
   parserConnections.push_back(messageParser->connectSignalAsyncDone(
     [](const std::string& sourceName, GstClockTime runningTime)
     {
-      std::cout << "Stream status from '" << sourceName << "' | Running time: "
-                << runningTime << "ns" << std::endl;
+      std::cout << "Stream status from '" << sourceName << "' | Running time: " << runningTime
+                << "ns" << std::endl;
     }
   ));
 
@@ -126,7 +139,7 @@ int main(const int argc, const char **argv)
       messageParser->parse(*message);
     }
   );
-  if(!syncMessageConnection)
+  if (!syncMessageConnection)
   {
     throw std::runtime_error("Failed to connect sync message signal");
   }
@@ -146,12 +159,15 @@ void printHelp(const std::string& appName)
   std::cout << "Usage: " << appName << " <pipelineDesc>\n";
 }
 
-std::string concatArgs(int argc, const char* argv[]) {
+std::string concatArgs(int argc, const char* argv[])
+{
   std::ostringstream oss;
 
-  for (int i = 1; i < argc; ++i) {
-    if (i > 1) {
-      oss << ' ';  // Add a space before every argument except the first
+  for (int i = 1; i < argc; ++i)
+  {
+    if (i > 1)
+    {
+      oss << ' '; // Add a space before every argument except the first
     }
     oss << argv[i];
   }

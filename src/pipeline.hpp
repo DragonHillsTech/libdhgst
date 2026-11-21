@@ -52,28 +52,31 @@ protected:
   Pipeline(GstPipeline* gstPipeline, TransferType transferType);
 
   /**
-  * @brief create an empty Pipeline with the given name
-  * @param name the name of the Pipeline
-  */
+   * @brief create an empty Pipeline with the given name
+   * @param name the name of the Pipeline
+   */
   explicit Pipeline(const std::string& name);
+
 public:
   [[nodiscard]] static std::shared_ptr<Pipeline> create(GstPipelineSPtr gstPipeline);
   [[nodiscard]] static std::shared_ptr<Pipeline> create(const std::string& name);
-  [[nodiscard]] static std::shared_ptr<Pipeline> create(GstPipeline* gstPipeline, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<Pipeline>
+  create(GstPipeline* gstPipeline, TransferType transferType);
 
   /**
    * @brief Create a new Pipeline object from a pipeline description string.
    * @param description The GStreamer pipeline description.
    * @return A Pipeline created from the description.
    * @throws std::runtime_error if the description is invalid or only partly parsed (e.g. an element
-   *         doesn't exist or a link failed), or if it does not create a GstPipeline (a single element
-   *         without links is returned by GStreamer as that element).
+   *         doesn't exist or a link failed), or if it does not create a GstPipeline (a single
+   *         element without links is returned by GStreamer as that element).
    */
   [[nodiscard]] static std::shared_ptr<Pipeline> fromDescription(const std::string& description);
 
- /**
+  /**
    * @brief Gets the current clock used by the pipeline.
-   * Unlike @ref getClock, this function will always return a clock, even if the pipeline is not in the PLAYING state.
+   * Unlike @ref getClock, this function will always return a clock, even if the pipeline is not in
+   * the PLAYING state.
    * @return The current clock.
    */
   [[nodiscard]] GstClockSPtr getPipelineClock() const;

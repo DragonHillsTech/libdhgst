@@ -6,11 +6,10 @@
  * @date 2024-09-15
  */
 
-#include "pipeline.hpp"
 #include "elementfactory.hpp"
+#include "pipeline.hpp"
 
-
-int main(const int argc, const char **argv)
+int main(const int argc, const char** argv)
 {
   gst_init(const_cast<int*>(&argc), const_cast<char***>(&argv));
 
@@ -42,4 +41,3 @@ int main(const int argc, const char **argv)
   gst_deinit(); // hangs :-) That's good because we currently have no main loop
   return 0;
 }
-

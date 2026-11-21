@@ -87,3 +87,24 @@ jobs:
 
       - name: Run tests
         run: ctest --test-dir build --output-on-failure
+
+  # Pull requests to master: check that all C++ files are formatted according to .clang-format.
+  # Runs after the sanitized build, so a pull request gets the build and test results first.
+  check-formatting:
+    if: github.event_name == 'pull_request'
+    needs: build-and-test-sanitized
+    runs-on: ubuntu-latest
+
+    env:
+      # .clang-format needs 21+; the same version as locally, because versions format differently
+      CLANG_FORMAT_VERSION: 21.1.8
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install clang-format
+        run: pipx install "clang-format==${{ env.CLANG_FORMAT_VERSION }}"
+
+      - name: Check formatting
+        run: git ls-files -z '*.cpp' '*.hpp' | xargs -0 -r clang-format --dry-run --Werror

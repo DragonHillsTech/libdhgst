@@ -43,13 +43,13 @@ class TimedThread
 public:
   template<typename Function>
   explicit TimedThread(Function function)
-  : thread(
-      [this, function = std::move(function)]() mutable
-      {
-        function();
-        finished.set_value();
-      }
-    )
+    : thread(
+        [this, function = std::move(function)]() mutable
+        {
+          function();
+          finished.set_value();
+        }
+      )
   {
   }
 
@@ -58,7 +58,7 @@ public:
 
   ~TimedThread()
   {
-    if(thread.joinable())
+    if (thread.joinable())
     {
       join();
     }
@@ -67,10 +67,11 @@ public:
   /// wait for the thread; terminates the test binary if it does not finish within the timeout
   void join(std::chrono::seconds timeout = std::chrono::seconds(10))
   {
-    if(finishedFuture.wait_for(timeout) != std::future_status::ready)
+    if (finishedFuture.wait_for(timeout) != std::future_status::ready)
     {
       std::cerr << "FATAL in \"" << boost::unit_test::framework::current_test_case().p_name.get()
-                << "\": thread did not finish within " << timeout.count() << " s, deadlock" << std::endl;
+                << "\": thread did not finish within " << timeout.count() << " s, deadlock"
+                << std::endl;
       std::_Exit(EXIT_FAILURE);
     }
     thread.join();

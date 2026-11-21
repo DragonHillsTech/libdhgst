@@ -27,36 +27,44 @@ namespace dh::gst::helpers
 
 std::string gstStreamStatusTypeToString(GstStreamStatusType type)
 {
- switch (type)
- {
-  case GST_STREAM_STATUS_TYPE_CREATE: return "CREATE";
-  case GST_STREAM_STATUS_TYPE_ENTER: return "ENTER";
-  case GST_STREAM_STATUS_TYPE_LEAVE: return "LEAVE";
-  case GST_STREAM_STATUS_TYPE_DESTROY: return "DESTROY";
-  case GST_STREAM_STATUS_TYPE_START: return "START";
-  case GST_STREAM_STATUS_TYPE_PAUSE: return "PAUSE";
-  case GST_STREAM_STATUS_TYPE_STOP: return "STOP";
-  default: return "UNKNOWN";
- }
+  switch (type)
+  {
+    case GST_STREAM_STATUS_TYPE_CREATE:
+      return "CREATE";
+    case GST_STREAM_STATUS_TYPE_ENTER:
+      return "ENTER";
+    case GST_STREAM_STATUS_TYPE_LEAVE:
+      return "LEAVE";
+    case GST_STREAM_STATUS_TYPE_DESTROY:
+      return "DESTROY";
+    case GST_STREAM_STATUS_TYPE_START:
+      return "START";
+    case GST_STREAM_STATUS_TYPE_PAUSE:
+      return "PAUSE";
+    case GST_STREAM_STATUS_TYPE_STOP:
+      return "STOP";
+    default:
+      return "UNKNOWN";
+  }
 }
 
 GstVideoInfo createVideoInfo(const GstCaps& caps)
 {
- GstVideoInfo vinfo;
- gst_video_info_init(&vinfo);
+  GstVideoInfo vinfo;
+  gst_video_info_init(&vinfo);
 
- if (!gst_video_info_from_caps(&vinfo, &caps))
- {
-  throw std::runtime_error("Failed to initialize video info from caps");
- }
+  if (!gst_video_info_from_caps(&vinfo, &caps))
+  {
+    throw std::runtime_error("Failed to initialize video info from caps");
+  }
 
- return vinfo;
+  return vinfo;
 }
 
 GstVideoInfo createVideoInfo(const GstBuffer& buffer)
 {
   const GstVideoMeta* videoMeta = gst_buffer_get_video_meta(const_cast<GstBuffer*>(&buffer));
-  if(!videoMeta)
+  if (!videoMeta)
   {
     throw std::runtime_error("Buffer does not contain video metadata");
   }
@@ -64,35 +72,36 @@ GstVideoInfo createVideoInfo(const GstBuffer& buffer)
   // format, size and the default layout of the format
   GstVideoInfo vinfo;
   gst_video_info_init(&vinfo);
-  if(!gst_video_info_set_format(&vinfo, videoMeta->format, videoMeta->width, videoMeta->height))
+  if (!gst_video_info_set_format(&vinfo, videoMeta->format, videoMeta->width, videoMeta->height))
   {
     throw std::runtime_error("Invalid video format or size in buffer metadata");
   }
-  if(videoMeta->n_planes != GST_VIDEO_INFO_N_PLANES(&vinfo))
+  if (videoMeta->n_planes != GST_VIDEO_INFO_N_PLANES(&vinfo))
   {
     throw std::runtime_error("Number of planes in buffer metadata does not match the video format");
   }
 
   const guint nPlanes = videoMeta->n_planes;
   gsize frameSize = 0;
-  if(GST_VIDEO_FORMAT_INFO_IS_TILED(vinfo.finfo))
+  if (GST_VIDEO_FORMAT_INFO_IS_TILED(vinfo.finfo))
   {
     // the strides of tiled formats describe tiles, not rows: assume the frame fills the buffer
     frameSize = gst_buffer_get_size(const_cast<GstBuffer*>(&buffer));
   }
   else
   {
-    // The default layout packs the planes without gaps, so the number of rows of a plane is the distance
-    // to the next plane (in memory, not by index: e.g. YV12 stores V before U) divided by its stride.
-    // With the strides and offsets of the meta, the frame ends where the last plane ends.
-    for(guint plane = 0; plane < nPlanes; ++plane)
+    // The default layout packs the planes without gaps, so the number of rows of a plane is the
+    // distance to the next plane (in memory, not by index: e.g. YV12 stores V before U) divided by
+    // its stride. With the strides and offsets of the meta, the frame ends where the last plane
+    // ends.
+    for (guint plane = 0; plane < nPlanes; ++plane)
     {
       const gsize defaultOffset = GST_VIDEO_INFO_PLANE_OFFSET(&vinfo, plane);
       gsize defaultEnd = GST_VIDEO_INFO_SIZE(&vinfo);
-      for(guint other = 0; other < nPlanes; ++other)
+      for (guint other = 0; other < nPlanes; ++other)
       {
         const gsize otherOffset = GST_VIDEO_INFO_PLANE_OFFSET(&vinfo, other);
-        if(otherOffset > defaultOffset && otherOffset < defaultEnd)
+        if (otherOffset > defaultOffset && otherOffset < defaultEnd)
         {
           defaultEnd = otherOffset;
         }
@@ -103,7 +112,7 @@ GstVideoInfo createVideoInfo(const GstBuffer& buffer)
   }
 
   // the actual layout of the buffer, which may differ from the default one (e.g. padded rows)
-  for(guint plane = 0; plane < nPlanes; ++plane)
+  for (guint plane = 0; plane < nPlanes; ++plane)
   {
     GST_VIDEO_INFO_PLANE_STRIDE(&vinfo, plane) = videoMeta->stride[plane];
     GST_VIDEO_INFO_PLANE_OFFSET(&vinfo, plane) = videoMeta->offset[plane];
@@ -113,5 +122,4 @@ GstVideoInfo createVideoInfo(const GstBuffer& buffer)
   return vinfo;
 }
 
-
-} // dh::gst::helpers
+} // namespace dh::gst::helpers

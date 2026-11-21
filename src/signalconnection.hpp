@@ -21,8 +21,8 @@
 #ifndef DH_GST_SIGNALCONNECTION_HPP
 #define DH_GST_SIGNALCONNECTION_HPP
 
-#include <glib-object.h>
 #include <functional>
+#include <glib-object.h>
 
 namespace dh::gst
 {

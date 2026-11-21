@@ -29,17 +29,23 @@ namespace dh::gst
 {
 
 Pipeline::Pipeline(GstPipelineSPtr gstPipeline)
-: Bin(GST_BIN_CAST(gstPipeline.get()), TransferType::None) // no pointer_cast because C inheritance
+  : Bin(
+      GST_BIN_CAST(gstPipeline.get()),
+      TransferType::None
+    ) // no pointer_cast because C inheritance
 {
 }
 
 Pipeline::Pipeline(GstPipeline* gstPipeline, TransferType transferType)
-: Bin(GST_BIN_CAST(gstPipeline), transferType)
+  : Bin(GST_BIN_CAST(gstPipeline), transferType)
 {
 }
 
 Pipeline::Pipeline(const std::string& name)
-: Bin(GST_BIN_CAST(gst_pipeline_new(name.empty() ? nullptr : name.c_str())), TransferType::Floating)
+  : Bin(
+      GST_BIN_CAST(gst_pipeline_new(name.empty() ? nullptr : name.c_str())),
+      TransferType::Floating
+    )
 {
 }
 
@@ -67,12 +73,13 @@ std::shared_ptr<Pipeline> Pipeline::fromDescription(const std::string& descripti
   // gst_parse_launch: transfer:floating
   // Owned (and sunk) right away, so every error path below releases it.
   GError* error = nullptr;
-  const GstElementSPtr element = makeGstSharedPtr(gst_parse_launch(description.c_str(), &error), TransferType::Floating);
+  const GstElementSPtr element =
+    makeGstSharedPtr(gst_parse_launch(description.c_str(), &error), TransferType::Floating);
   const GErrorSPtr errorSPtr = makeGlibSharedPtr(error, TransferType::Full);
 
   // gst_parse_launch can return a partly built pipeline and still report an error
   // (e.g. an element that doesn't exist or a link that failed): don't hand out a broken pipeline
-  if(errorSPtr || !element)
+  if (errorSPtr || !element)
   {
     throw std::runtime_error(
       "Failed to create pipeline from description: "
@@ -80,7 +87,7 @@ std::shared_ptr<Pipeline> Pipeline::fromDescription(const std::string& descripti
     );
   }
 
-  if(!GST_IS_PIPELINE(element.get()))
+  if (!GST_IS_PIPELINE(element.get()))
   {
     throw std::runtime_error("Pipeline description does not create a GstPipeline");
   }
@@ -122,7 +129,10 @@ const GstPipelineSPtr Pipeline::getGstPipeline() const
 std::shared_ptr<Bus> Pipeline::getBus() const
 {
   // gst_pipeline_get_bus returns  transfer::full
-  return Bus::create(gst_pipeline_get_bus(const_cast<GstPipeline*>(getRawGstPipeline())), TransferType::Full);
+  return Bus::create(
+    gst_pipeline_get_bus(const_cast<GstPipeline*>(getRawGstPipeline())),
+    TransferType::Full
+  );
 }
 
 GstPipeline* Pipeline::getRawGstPipeline()

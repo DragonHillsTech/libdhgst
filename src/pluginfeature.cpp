@@ -25,16 +25,20 @@ namespace dh::gst
 {
 
 PluginFeature::PluginFeature(GstPluginFeature* gstPluginFeature, TransferType transferType)
-: Object(GST_OBJECT_CAST(gstPluginFeature), transferType)
+  : Object(GST_OBJECT_CAST(gstPluginFeature), transferType)
 {
 }
 
 PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
-: Object(GST_OBJECT_CAST(gstPluginFeature.get()), TransferType::None) // No pointer_cast due to C inheritance
+  : Object(
+      GST_OBJECT_CAST(gstPluginFeature.get()),
+      TransferType::None
+    ) // No pointer_cast due to C inheritance
 {
 }
 
-std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferType)
+std::shared_ptr<PluginFeature>
+PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferType)
 {
   std::shared_ptr<PluginFeature> pluginFeature(new PluginFeature(gstPluginFeature, transferType));
   pluginFeature->requireType<GstPluginFeature>();
@@ -77,6 +81,5 @@ GstPluginFeature* PluginFeature::getRawGstPluginFeature()
 {
   return GST_PLUGIN_FEATURE_CAST(getRawGstObject());
 }
-
 
 } // namespace dh::gst

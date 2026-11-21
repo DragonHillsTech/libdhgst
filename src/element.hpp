@@ -60,20 +60,22 @@ protected:
    */
   Element(GstElement* gstElement, TransferType transferType);
 
- public:
+public:
   /**
    * @brief Result of queryState().
    */
   struct StateQuery
   {
-    /// SUCCESS, ASYNC (a state change is still pending), NO_PREROLL (live element) or FAILURE (last change failed)
+    /// SUCCESS, ASYNC (a state change is still pending), NO_PREROLL (live element) or FAILURE (last
+    /// change failed)
     GstStateChangeReturn result;
     GstState current; ///< the current state
     GstState pending; ///< the pending state, GST_STATE_VOID_PENDING if no state change is pending
   };
 
- [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
- [[nodiscard]] static std::shared_ptr<Element> create(GstElement* gstElement, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
+  [[nodiscard]] static std::shared_ptr<Element>
+  create(GstElement* gstElement, TransferType transferType);
 
   /**
    * @brief get the GstElementSPtr of the Element
@@ -85,39 +87,43 @@ protected:
 
   GstStateChangeReturn setState(GstState newState);
 
- /**
-  * @brief Gets all pads of the GStreamer element.
-  * @return A vector of all pads. Each pad is referenced, so it stays valid even if it is removed from the element.
-  */
+  /**
+   * @brief Gets all pads of the GStreamer element.
+   * @return A vector of all pads. Each pad is referenced, so it stays valid even if it is removed
+   * from the element.
+   */
   [[nodiscard]] std::vector<GstPadSPtr> getPads();
 
- /**
-  * @brief Gets all sink pads of the GStreamer element.
-  * @return A vector of the sink pads. Each pad is referenced, so it stays valid even if it is removed from the element.
-  */
+  /**
+   * @brief Gets all sink pads of the GStreamer element.
+   * @return A vector of the sink pads. Each pad is referenced, so it stays valid even if it is
+   * removed from the element.
+   */
   [[nodiscard]] std::vector<GstPadSPtr> getSinkPads();
 
- /**
-  * @brief Gets all source pads of the GStreamer element.
-  * @return A vector of the source pads. Each pad is referenced, so it stays valid even if it is removed from the element.
-  */
+  /**
+   * @brief Gets all source pads of the GStreamer element.
+   * @return A vector of the source pads. Each pad is referenced, so it stays valid even if it is
+   * removed from the element.
+   */
   [[nodiscard]] std::vector<GstPadSPtr> getSrcPads();
 
- /**
-  * @brief Finds a pad of this element that is compatible with the given pad and caps.
-  * May request a new pad from a request pad template.
-  * @param pad The pad to find a compatible pad for.
-  * @param caps The caps the compatible pad must match. nullptr (default) means any caps.
-  * @return The compatible pad, or nullptr if none was found.
-  * @throws std::invalid_argument if pad is nullptr.
-  */
-  [[nodiscard]] GstPadSPtr getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps = nullptr);
+  /**
+   * @brief Finds a pad of this element that is compatible with the given pad and caps.
+   * May request a new pad from a request pad template.
+   * @param pad The pad to find a compatible pad for.
+   * @param caps The caps the compatible pad must match. nullptr (default) means any caps.
+   * @return The compatible pad, or nullptr if none was found.
+   * @throws std::invalid_argument if pad is nullptr.
+   */
+  [[nodiscard]] GstPadSPtr
+  getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps = nullptr);
 
- /**
-  * @brief Gets a static (always or sometimes) pad by name.
-  * @param name The name of the pad to retrieve.
-  * @return The pad, or nullptr if the element has no static pad with that name.
-  */
+  /**
+   * @brief Gets a static (always or sometimes) pad by name.
+   * @param name The name of the pad to retrieve.
+   * @return The pad, or nullptr if the element has no static pad with that name.
+   */
   [[nodiscard]] GstPadSPtr getStaticPad(const std::string& name);
 
   /**
@@ -128,7 +134,6 @@ protected:
    */
   Element& link(Element& other);
 
-
   /**
    * @brief Retrieves the factory that was used to create this element.
    * @return the factory name or empty string if element has not been registered (static element).
@@ -138,12 +143,13 @@ protected:
   /**
    * @brief Gets the currently configured clock of the element.
    * This is the clock as was last set.
-   * Elements in a pipeline will only have their clock set when the pipeline is in the PLAYING state.
+   * Elements in a pipeline will only have their clock set when the pipeline is in the PLAYING
+   * state.
    * @return the clock of the Element or empty ptr
    */
   GstClockSPtr getElementClock() const;
 
-   /**
+  /**
    * @brief Gets the start time of the element.
    * @return The start time in nanoseconds.
    */
@@ -152,9 +158,11 @@ protected:
   /**
    * @brief Gets the current state of the element.
    * By default this does not wait for a pending asynchronous state change.
-   * @param timeout How long to wait for a pending state change to complete. 0 (default) returns immediately.
-   *        GST_CLOCK_TIME_NONE waits forever: never do that on a streaming thread, it deadlocks.
-   * @return The current state. While an asynchronous state change is pending, this is the state before the change.
+   * @param timeout How long to wait for a pending state change to complete. 0 (default) returns
+   *        immediately. GST_CLOCK_TIME_NONE waits forever: never do that on a streaming thread,
+   *        it deadlocks.
+   * @return The current state. While an asynchronous state change is pending, this is the state
+   *         before the change.
    * @throws std::runtime_error if the last state change failed.
    */
   [[nodiscard]] GstState getState(GstClockTime timeout = 0) const;
@@ -195,19 +203,20 @@ protected:
    * you will need to set them to the desired target state with gst_element_set_state or
    * gst_element_sync_state_with_parent.
    */
-  [[nodiscard]] SignalConnection connectSignalPadAdded(std::function<void(GstPadSPtr)> callback) const;
+  [[nodiscard]] SignalConnection
+  connectSignalPadAdded(std::function<void(GstPadSPtr)> callback) const;
 
   /**
    * @brief a GstPad has been removed from the element
    */
-  [[nodiscard]] SignalConnection connectSignalPadRemoved(std::function<void(GstPadSPtr)> callback) const;
+  [[nodiscard]] SignalConnection
+  connectSignalPadRemoved(std::function<void(GstPadSPtr)> callback) const;
 
 private:
   [[nodiscard]] const GstElement* getRawGstElement() const;
   [[nodiscard]] GstElement* getRawGstElement();
 };
 
+} // namespace dh::gst
 
-} // dh::gst
-
-#endif //DH_GST_ELEMENT_H
+#endif // DH_GST_ELEMENT_H

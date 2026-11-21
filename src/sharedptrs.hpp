@@ -21,15 +21,14 @@
 #ifndef DH_GST_SHAREDPTRS_HPP
 #define DH_GST_SHAREDPTRS_HPP
 
-#include "transfertype.hpp"       // Include the external header for TransferType
+#include "transfertype.hpp" // Include the external header for TransferType
 #include "typetraits.hpp"
 
-#include <glib.h>                 // For GError, GList, GHashTable, etc.
-#include <gst/gst.h>              // General GStreamer types and functions
+#include <glib.h> // For GError, GList, GHashTable, etc.
+#include <gst/gst.h> // General GStreamer types and functions
 
-#include <memory>                 // For std::shared_ptr
+#include <memory> // For std::shared_ptr
 #include <stdexcept>
-
 
 /* TODO: use gst_mini_object_ref (GST_MINI_OBJECT_CAST (msg)) for GstMiniObjects
  * TODO: also add unref in deleter
@@ -50,7 +49,7 @@ struct GstObjectDeleter
    * @tparam T Type of GStreamer object.
    * @param obj Pointer to the GStreamer object.
    */
-  template <typename T>
+  template<typename T>
   void operator()(T* obj) const
   {
     if (!obj)
@@ -70,11 +69,12 @@ struct GstObjectDeleter
       if constexpr (std::is_same_v<T, GstCaps>)
       {
         gst_caps_unref(obj);
-      } else if constexpr (std::is_same_v<T, GstStructure>)
+      }
+      else if constexpr (std::is_same_v<T, GstStructure>)
       {
         gst_structure_free(obj);
       }
-      else if constexpr(std::is_same_v<T, GstBuffer>)
+      else if constexpr (std::is_same_v<T, GstBuffer>)
       {
         gst_buffer_unref(obj);
       }
@@ -82,11 +82,11 @@ struct GstObjectDeleter
       {
         gst_event_unref(obj);
       }
-      else if constexpr(std::is_same_v<T, GstMessage>)
+      else if constexpr (std::is_same_v<T, GstMessage>)
       {
         gst_message_unref(obj);
       }
-      else if constexpr(std::is_same_v<T, GstSample>)
+      else if constexpr (std::is_same_v<T, GstSample>)
       {
         gst_sample_unref(obj);
       }
@@ -131,16 +131,16 @@ using GstPluginFeatureSPtr = std::shared_ptr<GstPluginFeature>;
  * @param transferType Enum value indicating the ownership transfer type.
  * @return std::shared_ptr<T> A shared pointer to the GStreamer object with a custom deleter.
  */
-template <typename T>
+template<typename T>
 std::enable_if_t<IsGstObject<T>::value, std::shared_ptr<T>>
 makeGstSharedPtr(T* obj, TransferType transferType)
 {
-  if(!obj)
+  if (!obj)
   {
     return nullptr; // Handle null objects safely
   }
 
-  switch(transferType)
+  switch (transferType)
   {
     case TransferType::Full:
       // Full ownership is transferred; nothing extra to do
@@ -157,7 +157,7 @@ makeGstSharedPtr(T* obj, TransferType transferType)
       }
       else
       {
-        gst_object_ref(GST_OBJECT(obj));  // Increase ref count if not floating
+        gst_object_ref(GST_OBJECT(obj)); // Increase ref count if not floating
       }
       break;
   }
@@ -168,27 +168,27 @@ makeGstSharedPtr(T* obj, TransferType transferType)
 /**
  * @brief Specialization of makeGstSharedPtr for non-GObject types like GstCaps.
  */
-template <typename T>
+template<typename T>
 std::enable_if_t<!IsGstObject<T>::value, std::shared_ptr<T>>
 makeGstSharedPtr(T* obj, TransferType transferType)
 {
-  if(!obj)
+  if (!obj)
   {
     return nullptr; // Handle null objects safely
   }
 
-  if(transferType == TransferType::None)
+  if (transferType == TransferType::None)
   {
     // Increment reference manually for non-GObject types
-    if constexpr(std::is_same_v<T, GstCaps>)
+    if constexpr (std::is_same_v<T, GstCaps>)
     {
       gst_caps_ref(obj);
     }
-    else if constexpr(std::is_same_v<T, GstMessage>)
+    else if constexpr (std::is_same_v<T, GstMessage>)
     {
       gst_message_ref(obj);
     }
-    else if constexpr(std::is_same_v<T, GstBuffer>)
+    else if constexpr (std::is_same_v<T, GstBuffer>)
     {
       gst_buffer_ref(obj);
     }
@@ -217,7 +217,7 @@ struct GlibDeleter
    * @tparam T Type of the GLib object.
    * @param obj Pointer to the GLib object.
    */
-  template <typename T>
+  template<typename T>
   void operator()(T* obj) const
   {
     if (!obj)
@@ -227,11 +227,11 @@ struct GlibDeleter
 
     if constexpr (std::is_same_v<T, GError>)
     {
-      g_error_free(obj);  // Free GError
+      g_error_free(obj); // Free GError
     }
     else if constexpr (std::is_same_v<T, GList>)
     {
-      g_list_free(obj);  // Free GList cells only, the elements stay untouched
+      g_list_free(obj); // Free GList cells only, the elements stay untouched
     }
     else if constexpr (std::is_same_v<T, GHashTable>)
     {
@@ -250,9 +250,10 @@ struct GlibDeleter
 using GErrorSPtr = std::shared_ptr<GError>;
 /**
  * @brief Owns the cells of a GList, but not its elements: they are not freed with the list.
- * For a list that owns its elements (e.g. strings or object references, "transfer full" in the GStreamer
- * documentation), free the elements yourself before the last GListSPtr is released, e.g. with
- * g_list_foreach(list, (GFunc)g_free, nullptr), or use g_list_free_full instead of a GListSPtr.
+ * For a list that owns its elements (e.g. strings or object references, "transfer full" in the
+ * GStreamer documentation), free the elements yourself before the last GListSPtr is released, e.g.
+ * with g_list_foreach(list, (GFunc)g_free, nullptr), or use g_list_free_full instead of a
+ * GListSPtr.
  */
 using GListSPtr = std::shared_ptr<GList>;
 using GHashTableSPtr = std::shared_ptr<GHashTable>;
@@ -262,21 +263,23 @@ using GHashTableSPtr = std::shared_ptr<GHashTable>;
  * This function only participates in overload resolution if T is a known GLib type.
  * @tparam T Type of GLib object.
  * @param obj Raw pointer to the GLib object.
- * @param transferType Full takes over the caller's ownership. None takes an own reference, which is only
- *        possible for GHashTable: GError and GList are not reference counted. GLib types have no floating references.
+ * @param transferType Full takes over the caller's ownership. None takes an own reference, which is
+ * only possible for GHashTable: GError and GList are not reference counted. GLib types have no
+ * floating references.
  * @return std::shared_ptr<T> A shared pointer to the GLib object with a custom deleter.
  * @throws std::invalid_argument if transferType is not supported for T. obj is not taken over then.
  */
-template <typename T>
-std::enable_if_t<std::is_same_v<T, GError> || std::is_same_v<T, GList> || std::is_same_v<T, GHashTable>, std::shared_ptr<T>>
-makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+template<typename T>
+std::
+  enable_if_t<std::is_same_v<T, GError> || std::is_same_v<T, GList> || std::is_same_v<T, GHashTable>, std::shared_ptr<T>>
+  makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::Full)
 {
   if (!obj)
   {
-    return nullptr;  // Handle null objects safely
+    return nullptr; // Handle null objects safely
   }
 
-  switch(transferType)
+  switch (transferType)
   {
     case TransferType::Full:
       // Full ownership is transferred; nothing extra to do
@@ -290,7 +293,8 @@ makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::Full)
       else
       {
         throw std::invalid_argument(
-          "makeGlibSharedPtr: TransferType::None is only supported for GHashTable, GError and GList are not reference counted"
+          "makeGlibSharedPtr: TransferType::None is only supported for GHashTable, GError and "
+          "GList are not reference counted"
         );
       }
       break;

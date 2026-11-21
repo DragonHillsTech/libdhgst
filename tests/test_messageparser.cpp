@@ -8,8 +8,8 @@
 #include "messageparser.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 #include "timedthread.hpp"
 
@@ -25,16 +25,14 @@ BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 using namespace dh::gst;
 
-
 class MessageParserTest
 {
 public:
   // Setup before first test case
   MessageParserTest()
   {
-    gst_init(nullptr, nullptr);  // Initialize GStreamer
+    gst_init(nullptr, nullptr); // Initialize GStreamer
   }
-
 };
 
 BOOST_FIXTURE_TEST_CASE(EndOfStreamSignalEmitted, MessageParserTest)
@@ -43,11 +41,13 @@ BOOST_FIXTURE_TEST_CASE(EndOfStreamSignalEmitted, MessageParserTest)
   bool signalCalled = false;
   std::string sourceName;
 
-  auto conn = parser->connectSignalEndOfStream([&](const std::string& src)
-  {
-    signalCalled = true;
-    sourceName = src;
-  });
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string& src)
+    {
+      signalCalled = true;
+      sourceName = src;
+    }
+  );
   BOOST_REQUIRE(conn.connected());
 
   GstMessage* message = gst_message_new_eos(nullptr);
@@ -78,7 +78,8 @@ BOOST_FIXTURE_TEST_CASE(ErrorSignalEmitted, MessageParserTest)
   );
   BOOST_REQUIRE(conn.connected());
 
-  GError* error = g_error_new_literal(g_quark_from_static_string("test_error"), 1, "Test error message");
+  GError* error =
+    g_error_new_literal(g_quark_from_static_string("test_error"), 1, "Test error message");
   GstMessage* message = gst_message_new_error(nullptr, error, "Test debug info");
   parser->parse(*message);
 
@@ -110,7 +111,8 @@ BOOST_FIXTURE_TEST_CASE(WarningSignalEmitted, MessageParserTest)
   );
   BOOST_REQUIRE(conn.connected());
 
-  GError* warning = g_error_new_literal(g_quark_from_static_string("test_warning"), 1, "Test warning message");
+  GError* warning =
+    g_error_new_literal(g_quark_from_static_string("test_warning"), 1, "Test warning message");
   GstMessage* message = gst_message_new_warning(nullptr, warning, "Test warning debug info");
   parser->parse(*message);
 
@@ -142,7 +144,8 @@ BOOST_FIXTURE_TEST_CASE(InfoSignalEmitted, MessageParserTest)
   );
   BOOST_REQUIRE(conn.connected());
 
-  GError* info = g_error_new_literal(g_quark_from_static_string("test_info"), 1, "Test info message");
+  GError* info =
+    g_error_new_literal(g_quark_from_static_string("test_info"), 1, "Test info message");
   GstMessage* message = gst_message_new_info(nullptr, info, "Test info debug");
   parser->parse(*message);
 
@@ -161,7 +164,8 @@ BOOST_FIXTURE_TEST_CASE(MessagesWithoutGErrorEmitEmptyMessage, MessageParserTest
   auto parser = MessageParser::create();
   std::vector<std::string> receivedMessages;
   std::vector<std::string> receivedDebugInfos;
-  const auto store = [&](const std::string& /*src*/, const std::string& text, const std::string& debug)
+  const auto store =
+    [&](const std::string& /*src*/, const std::string& text, const std::string& debug)
   {
     receivedMessages.push_back(text);
     receivedDebugInfos.push_back(debug);
@@ -170,11 +174,10 @@ BOOST_FIXTURE_TEST_CASE(MessagesWithoutGErrorEmitEmptyMessage, MessageParserTest
   auto warningConn = parser->connectSignalWarning(store);
   auto infoConn = parser->connectSignalInfo(store);
 
-  for(GstMessage* message : {
-        gst_message_new_error(nullptr, nullptr, "error debug"),
+  for (GstMessage* message :
+       {gst_message_new_error(nullptr, nullptr, "error debug"),
         gst_message_new_warning(nullptr, nullptr, "warning debug"),
-        gst_message_new_info(nullptr, nullptr, "info debug")
-      })
+        gst_message_new_info(nullptr, nullptr, "info debug")})
   {
     BOOST_REQUIRE(message);
     parser->parse(*message);
@@ -182,7 +185,7 @@ BOOST_FIXTURE_TEST_CASE(MessagesWithoutGErrorEmitEmptyMessage, MessageParserTest
   }
 
   BOOST_REQUIRE_EQUAL(receivedMessages.size(), 3U);
-  for(const auto& text : receivedMessages)
+  for (const auto& text : receivedMessages)
   {
     BOOST_CHECK_EQUAL(text, "");
   }
@@ -237,7 +240,12 @@ BOOST_FIXTURE_TEST_CASE(StateChangedSignalEmitted, MessageParserTest)
   BOOST_REQUIRE(conn.connected());
 
   GstElement* element = gst_element_factory_make("fakesrc", "test_source");
-  GstMessage* message = gst_message_new_state_changed(GST_OBJECT(element), GST_STATE_NULL, GST_STATE_READY, GST_STATE_VOID_PENDING);
+  GstMessage* message = gst_message_new_state_changed(
+    GST_OBJECT(element),
+    GST_STATE_NULL,
+    GST_STATE_READY,
+    GST_STATE_VOID_PENDING
+  );
   parser->parse(*message);
 
   BOOST_CHECK(signalCalled);
@@ -270,7 +278,8 @@ BOOST_FIXTURE_TEST_CASE(StreamStatusSignalEmitted, MessageParserTest)
   BOOST_REQUIRE(conn.connected());
 
   GstElement* element = gst_element_factory_make("fakesrc", "test_element");
-  GstMessage* message = gst_message_new_stream_status(GST_OBJECT(element), GST_STREAM_STATUS_TYPE_ENTER, element);
+  GstMessage* message =
+    gst_message_new_stream_status(GST_OBJECT(element), GST_STREAM_STATUS_TYPE_ENTER, element);
   parser->parse(*message);
 
   BOOST_CHECK(signalCalled);
@@ -287,7 +296,12 @@ BOOST_FIXTURE_TEST_CASE(SourceNameOfNonElementSource, MessageParserTest)
   // message sources are GstObjects, not necessarily elements
   auto parser = MessageParser::create();
   std::string sourceName;
-  auto conn = parser->connectSignalEndOfStream([&](const std::string& src) { sourceName = src; });
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string& src)
+    {
+      sourceName = src;
+    }
+  );
 
   GstBus* bus = gst_bus_new();
   gst_object_set_name(GST_OBJECT(bus), "test_bus");
@@ -348,7 +362,8 @@ BOOST_FIXTURE_TEST_CASE(ElementMessageSignalEmitted, MessageParserTest)
   BOOST_REQUIRE(conn.connected());
 
   GstElement* element = gst_element_factory_make("fakesrc", "test_element");
-  GstStructure* structure = gst_structure_new("test_structure", "field", G_TYPE_STRING, "value", nullptr);
+  GstStructure* structure =
+    gst_structure_new("test_structure", "field", G_TYPE_STRING, "value", nullptr);
   GstMessage* message = gst_message_new_element(GST_OBJECT(element), structure);
   parser->parse(*message);
 
@@ -400,10 +415,12 @@ BOOST_FIXTURE_TEST_CASE(SignalDisconnectionPreventsEmission, MessageParserTest)
   auto parser = MessageParser::create();
   int callCount = 0;
 
-  auto conn = parser->connectSignalEndOfStream([&](const std::string&)
-  {
-    ++callCount;
-  });
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      ++callCount;
+    }
+  );
   BOOST_REQUIRE(conn.connected());
 
   GstMessage* message1 = gst_message_new_eos(nullptr);
@@ -426,10 +443,12 @@ BOOST_FIXTURE_TEST_CASE(SignalScopeDisconnection, MessageParserTest)
   int callCount = 0;
 
   {
-    auto conn = parser->connectSignalEndOfStream([&](const std::string&)
-    {
-      ++callCount;
-    });
+    auto conn = parser->connectSignalEndOfStream(
+      [&](const std::string&)
+      {
+        ++callCount;
+      }
+    );
     BOOST_REQUIRE(conn.connected());
 
     GstMessage* message1 = gst_message_new_eos(nullptr);
@@ -449,7 +468,11 @@ BOOST_FIXTURE_TEST_CASE(ParserDestroyedFirstSafety, MessageParserTest)
   SignalConnection conn;
   {
     auto parser = MessageParser::create();
-    conn = parser->connectSignalEndOfStream([](const std::string&) {});
+    conn = parser->connectSignalEndOfStream(
+      [](const std::string&)
+      {
+      }
+    );
     BOOST_CHECK(conn.connected());
   }
 
@@ -463,7 +486,11 @@ BOOST_FIXTURE_TEST_CASE(ConnectionReportsDisconnectedAfterParserDestroyed, Messa
   SignalConnection conn;
   {
     auto parser = MessageParser::create();
-    conn = parser->connectSignalEndOfStream([](const std::string&) {});
+    conn = parser->connectSignalEndOfStream(
+      [](const std::string&)
+      {
+      }
+    );
     BOOST_CHECK(conn.connected());
   }
 
@@ -483,16 +510,30 @@ BOOST_FIXTURE_TEST_CASE(OnlyOneCallbackPerMessageType, MessageParserTest)
   int firstCalls = 0;
   int secondCalls = 0;
 
-  auto conn = parser->connectSignalEndOfStream([&](const std::string&) { ++firstCalls; });
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      ++firstCalls;
+    }
+  );
   BOOST_CHECK_THROW(
-    (void)parser->connectSignalEndOfStream([&](const std::string&) { ++secondCalls; }),
+    (void)parser->connectSignalEndOfStream(
+      [&](const std::string&)
+      {
+        ++secondCalls;
+      }
+    ),
     std::logic_error
   );
   // the failed attempt does not affect the connected callback
   BOOST_CHECK(conn.connected());
 
   // other message types are independent
-  auto errorConn = parser->connectSignalError([](const std::string&, const std::string&, const std::string&) {});
+  auto errorConn = parser->connectSignalError(
+    [](const std::string&, const std::string&, const std::string&)
+    {
+    }
+  );
   BOOST_CHECK(errorConn.connected());
 
   GstMessage* message = gst_message_new_eos(nullptr);
@@ -502,7 +543,12 @@ BOOST_FIXTURE_TEST_CASE(OnlyOneCallbackPerMessageType, MessageParserTest)
 
   // after disconnecting, a new callback can be connected
   conn.disconnect();
-  auto newConn = parser->connectSignalEndOfStream([&](const std::string&) { ++secondCalls; });
+  auto newConn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      ++secondCalls;
+    }
+  );
   parser->parse(*message);
   BOOST_CHECK_EQUAL(firstCalls, 1);
   BOOST_CHECK_EQUAL(secondCalls, 1);
@@ -516,10 +562,20 @@ BOOST_FIXTURE_TEST_CASE(ReplaceCallbackByDisconnectingFirst, MessageParserTest)
   auto parser = MessageParser::create();
   int firstCalls = 0;
   int secondCalls = 0;
-  auto conn = parser->connectSignalEndOfStream([&](const std::string&) { ++firstCalls; });
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      ++firstCalls;
+    }
+  );
 
   conn.disconnect();
-  conn = parser->connectSignalEndOfStream([&](const std::string&) { ++secondCalls; });
+  conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      ++secondCalls;
+    }
+  );
   BOOST_CHECK(conn.connected());
 
   GstMessage* message = gst_message_new_eos(nullptr);
@@ -534,9 +590,21 @@ BOOST_FIXTURE_TEST_CASE(ReplaceCallbackByAssignmentThrows, MessageParserTest)
   // documented: the new callback is connected before the assignment releases the old connection
   auto parser = MessageParser::create();
   int firstCalls = 0;
-  auto conn = parser->connectSignalEndOfStream([&](const std::string&) { ++firstCalls; });
+  auto conn = parser->connectSignalEndOfStream(
+    [&](const std::string&)
+    {
+      ++firstCalls;
+    }
+  );
 
-  BOOST_CHECK_THROW(conn = parser->connectSignalEndOfStream([](const std::string&) {}), std::logic_error);
+  BOOST_CHECK_THROW(
+    conn = parser->connectSignalEndOfStream(
+      [](const std::string&)
+      {
+      }
+    ),
+    std::logic_error
+  );
 
   // the old callback stays connected
   BOOST_CHECK(conn.connected());
@@ -568,11 +636,13 @@ BOOST_FIXTURE_TEST_CASE(CallbackMayDestroyTheParser, MessageParserTest)
   gst_message_unref(message);
 }
 
-// --- thread safety: the locking itself is tested in test_callbackslot.cpp, these tests check how MessageParser uses it ---
+// --- thread safety: the locking itself is tested in test_callbackslot.cpp, these tests check how
+// MessageParser uses it ---
 
 BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)
 {
-  // an object that disconnects in its destructor must not be used by its callback after disconnect() returned
+  // an object that disconnects in its destructor must not be used by its callback after
+  // disconnect() returned
   auto parser = MessageParser::create();
   std::atomic<bool> entered{false};
   std::atomic<bool> finished{false};
@@ -587,8 +657,13 @@ BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)
   );
 
   GstMessage* message = gst_message_new_eos(nullptr);
-  std::thread parserThread([&]() { parser->parse(*message); });
-  while(!entered)
+  std::thread parserThread(
+    [&]()
+    {
+      parser->parse(*message);
+    }
+  );
+  while (!entered)
   {
     std::this_thread::yield();
   }
@@ -602,21 +677,33 @@ BOOST_FIXTURE_TEST_CASE(DisconnectWaitsForRunningCallback, MessageParserTest)
 
 BOOST_FIXTURE_TEST_CASE(CallbacksOfDifferentTypesDoNotBlockEachOther, MessageParserTest)
 {
-  // a callback that waits for another thread that also parses (e.g. a streaming thread) must not deadlock
+  // a callback that waits for another thread that also parses (e.g. a streaming thread) must not
+  // deadlock
   auto parser = MessageParser::create();
   GstMessage* durationChanged = gst_message_new_duration_changed(nullptr);
   GstMessage* eos = gst_message_new_eos(nullptr);
 
   std::promise<void> durationHandled;
-  auto durationConn = parser->connectSignalDurationChanged([&](const std::string&) { durationHandled.set_value(); });
+  auto durationConn = parser->connectSignalDurationChanged(
+    [&](const std::string&)
+    {
+      durationHandled.set_value();
+    }
+  );
 
   bool otherTypeRan = false;
   std::optional<TimedThread> otherThread;
   auto eosConn = parser->connectSignalEndOfStream(
     [&](const std::string&)
     {
-      otherThread.emplace([&]() { parser->parse(*durationChanged); });
-      otherTypeRan = durationHandled.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
+      otherThread.emplace(
+        [&]()
+        {
+          parser->parse(*durationChanged);
+        }
+      );
+      otherTypeRan =
+        durationHandled.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
@@ -632,7 +719,11 @@ BOOST_FIXTURE_TEST_CASE(DisconnectOfOtherTypeDoesNotWaitForRunningCallback, Mess
 {
   auto parser = MessageParser::create();
   GstMessage* eos = gst_message_new_eos(nullptr);
-  auto errorConn = parser->connectSignalError([](const std::string&, const std::string&, const std::string&) {});
+  auto errorConn = parser->connectSignalError(
+    [](const std::string&, const std::string&, const std::string&)
+    {
+    }
+  );
 
   std::promise<void> disconnected;
   bool disconnectReturned = false;
@@ -641,8 +732,15 @@ BOOST_FIXTURE_TEST_CASE(DisconnectOfOtherTypeDoesNotWaitForRunningCallback, Mess
     [&](const std::string&)
     {
       // while this callback runs, another thread disconnects a callback of a different type
-      otherThread.emplace([&]() { errorConn.disconnect(); disconnected.set_value(); });
-      disconnectReturned = disconnected.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
+      otherThread.emplace(
+        [&]()
+        {
+          errorConn.disconnect();
+          disconnected.set_value();
+        }
+      );
+      disconnectReturned =
+        disconnected.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
@@ -680,7 +778,7 @@ BOOST_FIXTURE_TEST_CASE(AsyncTaskRunAfterParserDestroyedIsSafe, MessageParserTes
   parser.reset();
 
   // running the queued task must neither touch the destroyed parser nor emit signals
-  for(auto& task : queuedTasks)
+  for (auto& task : queuedTasks)
   {
     task();
   }

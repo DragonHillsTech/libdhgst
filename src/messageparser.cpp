@@ -37,7 +37,7 @@ namespace
  */
 std::string getObjectNameOrUnknown(GstObject* object)
 {
-  if(! object)
+  if (!object)
   {
     return "unknown";
   }
@@ -47,7 +47,8 @@ std::string getObjectNameOrUnknown(GstObject* object)
 
 /**
  * @brief Message of a GError, or "" if there is none.
- * Error, warning and info messages may be posted without a GError, so the parsed GError can be null.
+ * Error, warning and info messages may be posted without a GError, so the parsed GError
+ * can be null.
  */
 std::string getErrorMessageOrEmpty(const GError* error)
 {
@@ -65,83 +66,123 @@ public:
   using SourceSlot = CallbackSlot<const std::string&>;
   using TextMessageSlot = CallbackSlot<const std::string&, const std::string&, const std::string&>;
   using StateChangedSlot = CallbackSlot<const std::string&, GstState, GstState, GstState>;
-  using StreamStatusSlot = CallbackSlot<const std::string&, GstStreamStatusType, const std::string&>;
+  using StreamStatusSlot =
+    CallbackSlot<const std::string&, GstStreamStatusType, const std::string&>;
   using ElementMessageSlot = CallbackSlot<const std::string&, const GstStructure*>;
   using AsyncDoneSlot = CallbackSlot<const std::string&, GstClockTime>;
 
   // one callback slot per message type
   const std::shared_ptr<SourceSlot> endOfStreamSlot = SourceSlot::create("EOS");
   const std::shared_ptr<TextMessageSlot> errorSlot = TextMessageSlot::create("ERROR");
-  const std::shared_ptr<StateChangedSlot> stateChangedSlot = StateChangedSlot::create("STATE_CHANGED");
+  const std::shared_ptr<StateChangedSlot> stateChangedSlot =
+    StateChangedSlot::create("STATE_CHANGED");
   const std::shared_ptr<TextMessageSlot> warningSlot = TextMessageSlot::create("WARNING");
   const std::shared_ptr<SourceSlot> durationChangedSlot = SourceSlot::create("DURATION_CHANGED");
   const std::shared_ptr<TextMessageSlot> infoSlot = TextMessageSlot::create("INFO");
-  const std::shared_ptr<StreamStatusSlot> streamStatusSlot = StreamStatusSlot::create("STREAM_STATUS");
+  const std::shared_ptr<StreamStatusSlot> streamStatusSlot =
+    StreamStatusSlot::create("STREAM_STATUS");
   const std::shared_ptr<SourceSlot> streamStartSlot = SourceSlot::create("STREAM_START");
-  const std::shared_ptr<ElementMessageSlot> elementMessageSlot = ElementMessageSlot::create("ELEMENT");
+  const std::shared_ptr<ElementMessageSlot> elementMessageSlot =
+    ElementMessageSlot::create("ELEMENT");
   const std::shared_ptr<AsyncDoneSlot> asyncDoneSlot = AsyncDoneSlot::create("ASYNC_DONE");
 };
 
 MessageParser::MessageParser()
-: prv{std::make_shared<Private>()}
+  : prv{std::make_shared<Private>()}
 {
 }
 
 MessageParser::~MessageParser() = default;
 
-SignalConnection MessageParser::connectSignalEndOfStream(std::function<void(const std::string& sourceName)> callback)
+SignalConnection
+MessageParser::connectSignalEndOfStream(std::function<void(const std::string& sourceName)> callback)
 {
   return prv->endOfStreamSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalError(std::function<void(const std::string& sourceName, const std::string& errorMessage, const std::string& debugInfo)> callback)
+SignalConnection MessageParser::connectSignalError(
+  std::function<void(
+    const std::string& sourceName,
+    const std::string& errorMessage,
+    const std::string& debugInfo
+  )> callback
+)
 {
   return prv->errorSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalStateChanged(std::function<void(const std::string& sourceName, GstState oldState, GstState newState, GstState pendingState)> callback)
+SignalConnection MessageParser::connectSignalStateChanged(
+  std::function<
+    void(const std::string& sourceName, GstState oldState, GstState newState, GstState pendingState)
+  > callback
+)
 {
   return prv->stateChangedSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalWarning(std::function<void(const std::string& sourceName, const std::string& warningMessage, const std::string& debugInfo)> callback)
+SignalConnection MessageParser::connectSignalWarning(
+  std::function<void(
+    const std::string& sourceName,
+    const std::string& warningMessage,
+    const std::string& debugInfo
+  )> callback
+)
 {
   return prv->warningSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalDurationChanged(std::function<void(const std::string& sourceName)> callback)
+SignalConnection MessageParser::connectSignalDurationChanged(
+  std::function<void(const std::string& sourceName)> callback
+)
 {
   return prv->durationChangedSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalInfo(std::function<void(const std::string& sourceName, const std::string& infoMessage, const std::string& debugInfo)> callback)
+SignalConnection MessageParser::connectSignalInfo(
+  std::function<void(
+    const std::string& sourceName,
+    const std::string& infoMessage,
+    const std::string& debugInfo
+  )> callback
+)
 {
   return prv->infoSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalStreamStatus(std::function<void(const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)> callback)
+SignalConnection MessageParser::connectSignalStreamStatus(
+  std::function<void(
+    const std::string& sourceName,
+    GstStreamStatusType statusType,
+    const std::string& ownerName
+  )> callback
+)
 {
   return prv->streamStatusSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalStreamStart(std::function<void(const std::string& sourceName)> callback)
+SignalConnection
+MessageParser::connectSignalStreamStart(std::function<void(const std::string& sourceName)> callback)
 {
   return prv->streamStartSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalElementMessage(std::function<void(const std::string& sourceName, const GstStructure* structure)> callback)
+SignalConnection MessageParser::connectSignalElementMessage(
+  std::function<void(const std::string& sourceName, const GstStructure* structure)> callback
+)
 {
   return prv->elementMessageSlot->connect(std::move(callback));
 }
 
-SignalConnection MessageParser::connectSignalAsyncDone(std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback)
+SignalConnection MessageParser::connectSignalAsyncDone(
+  std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback
+)
 {
   return prv->asyncDoneSlot->connect(std::move(callback));
 }
 
 void MessageParser::parse(const GstMessage& message)
 {
-  if(prv->asyncHandler)
+  if (prv->asyncHandler)
   {
     // The task may run after this parser is destroyed, or never: keep the message alive
     // only as long as the task exists and do not touch the parser if it is already gone.
@@ -150,7 +191,7 @@ void MessageParser::parse(const GstMessage& message)
     prv->asyncHandler(
       [weakPrv, messageSPtr = std::move(messageSPtr)]()
       {
-        if(auto lockedPrv = weakPrv.lock())
+        if (auto lockedPrv = weakPrv.lock())
         {
           parseSync(*lockedPrv, *messageSPtr);
         }
@@ -181,7 +222,8 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GError* error = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_error(messagePtr, &error, &debugInfo);
-      prv.errorSlot->call(sourceName, getErrorMessageOrEmpty(error), std::string(debugInfo ? debugInfo : ""));
+      prv.errorSlot
+        ->call(sourceName, getErrorMessageOrEmpty(error), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&error);
       g_free(debugInfo);
       break;
@@ -192,7 +234,11 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GError* warning = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_warning(messagePtr, &warning, &debugInfo);
-      prv.warningSlot->call(sourceName, getErrorMessageOrEmpty(warning), std::string(debugInfo ? debugInfo : ""));
+      prv.warningSlot->call(
+        sourceName,
+        getErrorMessageOrEmpty(warning),
+        std::string(debugInfo ? debugInfo : "")
+      );
       g_clear_error(&warning);
       g_free(debugInfo);
       break;
@@ -203,7 +249,8 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GError* info = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_info(messagePtr, &info, &debugInfo);
-      prv.infoSlot->call(sourceName, getErrorMessageOrEmpty(info), std::string(debugInfo ? debugInfo : ""));
+      prv.infoSlot
+        ->call(sourceName, getErrorMessageOrEmpty(info), std::string(debugInfo ? debugInfo : ""));
       g_clear_error(&info);
       g_free(debugInfo);
       break;
@@ -254,11 +301,12 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       break;
     }
 
-    // Add more message types as needed...
+      // Add more message types as needed...
 
     default:
       GST_WARNING("MessageParser: Unhandled message type '%s'", GST_MESSAGE_TYPE_NAME(messagePtr));
-      //throw std::runtime_error("Unsupported message type: " + std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
+      // throw std::runtime_error("Unsupported message type: " +
+      // std::string(GST_MESSAGE_TYPE_NAME(messagePtr)));
   }
 }
 
@@ -279,5 +327,4 @@ std::string MessageParser::getSourceName(const GstMessage& message)
   return getObjectNameOrUnknown(GST_MESSAGE_SRC(&message));
 }
 
-
-} // dh::gst
+} // namespace dh::gst
