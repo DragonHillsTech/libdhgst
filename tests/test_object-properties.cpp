@@ -3,8 +3,8 @@
 #include "elementfactory.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 #include <gst/gst.h>
 
@@ -26,7 +26,8 @@ public:
 
 BOOST_FIXTURE_TEST_CASE(GetStringProperty, ObjectPropertiesTest)
 {
-  auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+  auto element =
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   // "name" is a gchar* property of every GstObject
   const auto name = element->getProperty<std::string>("name");
@@ -35,7 +36,8 @@ BOOST_FIXTURE_TEST_CASE(GetStringProperty, ObjectPropertiesTest)
 
 BOOST_FIXTURE_TEST_CASE(SetStringProperty, ObjectPropertiesTest)
 {
-  auto element = Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+  auto element =
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
 
   element->setProperty<std::string>("name", "renamed_source");
   BOOST_CHECK_EQUAL(element->getProperty<std::string>("name"), "renamed_source");
@@ -43,8 +45,9 @@ BOOST_FIXTURE_TEST_CASE(SetStringProperty, ObjectPropertiesTest)
 
 /*
  * Strict type checking for getProperty / setProperty.
- * ValueType must match the GType of the property exactly, otherwise std::invalid_argument is thrown.
- * GstObject types may also be a subtype in the safe direction, see the "object subtypes" tests.
+ * ValueType must match the GType of the property exactly, otherwise std::invalid_argument is
+ * thrown. GstObject types may also be a subtype in the safe direction, see the "object subtypes"
+ * tests.
  *
  * Properties used (all from GStreamer core elements):
  *   queue      max-size-time         guint64, read/write, default 1000000000
@@ -96,7 +99,8 @@ BOOST_FIXTURE_TEST_CASE(GetCapsPropertyReturnsOwningSharedPtr, ObjectPropertiesT
   const auto result = capsfilter->getProperty<GstCapsSPtr>("caps");
   BOOST_REQUIRE(result);
   BOOST_CHECK(gst_caps_is_equal(result.get(), caps));
-  // must own its reference (released by the deleter), not be a raw pointer stuffed into a shared_ptr
+  // must own its reference (released by the deleter), not be a raw pointer stuffed into a
+  // shared_ptr
   BOOST_CHECK_EQUAL(result.use_count(), 1);
 
   gst_caps_unref(caps);
@@ -194,7 +198,10 @@ BOOST_FIXTURE_TEST_CASE(GetObjectPropertyAsSubtypeThrows, ObjectPropertiesTest)
 {
   // the property may hold any GstElement, not necessarily a GstAppSink
   auto playbin = ElementFactory::makeElement("playbin", "test_playbin");
-  BOOST_CHECK_THROW((void)playbin->getProperty<GstAppSinkSPtr>("video-sink"), std::invalid_argument);
+  BOOST_CHECK_THROW(
+    (void)playbin->getProperty<GstAppSinkSPtr>("video-sink"),
+    std::invalid_argument
+  );
 }
 
 BOOST_FIXTURE_TEST_CASE(SetObjectPropertyWithBaseOrUnrelatedTypeThrows, ObjectPropertiesTest)
@@ -207,7 +214,8 @@ BOOST_FIXTURE_TEST_CASE(SetObjectPropertyWithBaseOrUnrelatedTypeThrows, ObjectPr
   );
   BOOST_CHECK_THROW(playbin->setProperty("video-sink", object), std::invalid_argument);
   // a GstPad is no GstElement
-  const GstPadSPtr pad = makeGstSharedPtr(gst_pad_new("test_pad", GST_PAD_SRC), TransferType::Floating);
+  const GstPadSPtr pad =
+    makeGstSharedPtr(gst_pad_new("test_pad", GST_PAD_SRC), TransferType::Floating);
   BOOST_CHECK_THROW(playbin->setProperty("video-sink", pad), std::invalid_argument);
 }
 
@@ -226,6 +234,12 @@ BOOST_FIXTURE_TEST_CASE(UnknownPropertyThrows, ObjectPropertiesTest)
   auto fakesrc = ElementFactory::makeElement("fakesrc", "test_source");
   BOOST_CHECK_THROW((void)fakesrc->getProperty<gint>("does-not-exist"), std::invalid_argument);
   BOOST_CHECK_THROW(fakesrc->setProperty<gint>("does-not-exist", 1), std::invalid_argument);
-  BOOST_CHECK_THROW((void)fakesrc->getProperty<std::string>("does-not-exist"), std::invalid_argument);
-  BOOST_CHECK_THROW(fakesrc->setProperty<std::string>("does-not-exist", "x"), std::invalid_argument);
+  BOOST_CHECK_THROW(
+    (void)fakesrc->getProperty<std::string>("does-not-exist"),
+    std::invalid_argument
+  );
+  BOOST_CHECK_THROW(
+    fakesrc->setProperty<std::string>("does-not-exist", "x"),
+    std::invalid_argument
+  );
 }

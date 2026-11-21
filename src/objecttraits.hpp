@@ -25,8 +25,8 @@
 #include "sharedptrs.hpp"
 
 // std
-#include <string>
 #include <memory>
+#include <string>
 
 // C libs
 #include <gst/gst.h>
@@ -42,23 +42,23 @@ struct ConvertToGlibType
 {
   using type = GlibType; // Default: no conversion
 };
-template<> struct ConvertToGlibType<std::string>
+template<>
+struct ConvertToGlibType<std::string>
 {
   using type = const gchar*;
 };
 // GLib passes a G_TYPE_BOOLEAN as gboolean (an int), not as a 1-byte bool
-template<> struct ConvertToGlibType<bool>
+template<>
+struct ConvertToGlibType<bool>
 {
   using type = gboolean;
 };
 
 template<typename GlibType>
-struct ConvertToGlibType<std::shared_ptr<GlibType>,
-                          std::enable_if_t<
-                            IsGstObject<GlibType>::value
-                            || IsGstMiniObject<GlibType>::value
-                          >
-                        >
+struct ConvertToGlibType<
+  std::shared_ptr<GlibType>,
+  std::enable_if_t<IsGstObject<GlibType>::value || IsGstMiniObject<GlibType>::value>
+>
 {
   // Static assertion to produce a compilation error if GlibType is a pointer to a GstObject
   static_assert(
@@ -68,14 +68,13 @@ struct ConvertToGlibType<std::shared_ptr<GlibType>,
   using type = GlibType*;
 };
 
-
-
 // General case: For types not needing special handling
 template<typename T>
 typename std::enable_if<
   !IsGObjectType<typename std::remove_pointer<T>::type>::value
-   && !IsGstMiniObject<typename std::remove_pointer<T>::type>::value
-  ,T>::type
+    && !IsGstMiniObject<typename std::remove_pointer<T>::type>::value,
+  T
+>::type
 convertParamToCppType(T value)
 {
   return value;
@@ -94,13 +93,12 @@ inline std::string convertParamToCppType(const gchar* value)
 }
 
 template<typename GstType>
-inline std::enable_if_t<IsGstObject<GstType>::value || IsGstMiniObject<GstType>::value, std::shared_ptr<GstType>>
-convertParamToCppType(GstType* value)
+inline std::
+  enable_if_t<IsGstObject<GstType>::value || IsGstMiniObject<GstType>::value, std::shared_ptr<GstType>>
+  convertParamToCppType(GstType* value)
 {
   return makeGstSharedPtr(value, TransferType::None);
 }
 
-
-
-} // dh::gst
-#endif //DH_GST_OBJECTTRAITS_HPP
+} // namespace dh::gst
+#endif // DH_GST_OBJECTTRAITS_HPP

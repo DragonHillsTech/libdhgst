@@ -55,16 +55,19 @@ protected:
   ElementFactory(GstElementFactorySPtr gstElementFactory);
 
 public:
-  [[nodiscard]] static std::shared_ptr<ElementFactory> create(GstElementFactory* gstElementFactory, TransferType transferType);
-  [[nodiscard]] static std::shared_ptr<ElementFactory> create(GstElementFactorySPtr gstElementFactory);
+  [[nodiscard]] static std::shared_ptr<ElementFactory>
+  create(GstElementFactory* gstElementFactory, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<ElementFactory>
+  create(GstElementFactorySPtr gstElementFactory);
 
   /**
-  * @brief Creates an ElementFactory from the factory name
-  * @param factoryName The name of the element factory
-  * @return An ElementFactory wrapping the corresponding GstElementFactory
-  * @throws std::runtime_error if there is no factory with that name
-  */
-  [[nodiscard]] static std::shared_ptr<ElementFactory> fromFactoryName(const std::string& factoryName);
+   * @brief Creates an ElementFactory from the factory name
+   * @param factoryName The name of the element factory
+   * @return An ElementFactory wrapping the corresponding GstElementFactory
+   * @throws std::runtime_error if there is no factory with that name
+   */
+  [[nodiscard]] static std::shared_ptr<ElementFactory>
+  fromFactoryName(const std::string& factoryName);
 
   /**
    * @brief Retrieves metadata of the element factory for a given key
@@ -80,10 +83,10 @@ public:
   [[nodiscard]] std::vector<std::string> getMetadataKeys() const;
 
   /**
-  * @brief Creates a new element from the factory
-  * @param name The name to assign to the created element
-  * @return A pointer to the created element
-  */
+   * @brief Creates a new element from the factory
+   * @param name The name to assign to the created element
+   * @return A pointer to the created element
+   */
   [[nodiscard]] std::shared_ptr<Element> createElement(const std::string& elementName) const;
 
   /**
@@ -92,7 +95,8 @@ public:
    * @param elementName The name of the element to create (optional)
    * @return An Element instance wrapping the created GstElement
    */
-  [[nodiscard]] static std::shared_ptr<Element> makeElement(const std::string& factoryName, const std::string& elementName = "");
+  [[nodiscard]] static std::shared_ptr<Element>
+  makeElement(const std::string& factoryName, const std::string& elementName = "");
 
   /**
    * @brief Gets the type of the element factory
@@ -107,7 +111,6 @@ public:
   [[nodiscard]] GstElementFactorySPtr getGstElementFactory();
 
   [[nodiscard]] const GstElementFactorySPtr getGstElementFactory() const;
-
 
 private:
   [[nodiscard]] GstElementFactory* getRawGstElementFactory();

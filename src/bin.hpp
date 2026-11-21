@@ -46,9 +46,9 @@ protected:
   Bin(GstBin* gstBin, TransferType transferType);
 
   /**
-  * @brief create an empty Bin with the given name
-  * @param name the name of the Bin
-  */
+   * @brief create an empty Bin with the given name
+   * @param name the name of the Bin
+   */
   explicit Bin(const std::string& name);
 
 public:
@@ -56,15 +56,17 @@ public:
   [[nodiscard]] static std::shared_ptr<Bin> create(GstBin* gstBin, TransferType transferType);
   [[nodiscard]] static std::shared_ptr<Bin> create(const std::string& name);
   /**
-  * @brief Creates a Bin object from a pipeline description.
-  * @param description The GStreamer pipeline description.
-  * @param ghostUnlinkedPads whether to automatically create ghost pads for unlinked source or sink pads within the bin
-  * @return A Bin object created from the description.
-  * @throws std::runtime_error if the description is invalid or parsing fails.
-  */
-  [[nodiscard]] static std::shared_ptr<Bin> fromDescription(const std::string& description, bool ghostUnlinkedPads = false);
+   * @brief Creates a Bin object from a pipeline description.
+   * @param description The GStreamer pipeline description.
+   * @param ghostUnlinkedPads whether to automatically create ghost pads for unlinked source or sink
+   *        pads within the bin
+   * @return A Bin object created from the description.
+   * @throws std::runtime_error if the description is invalid or parsing fails.
+   */
+  [[nodiscard]] static std::shared_ptr<Bin>
+  fromDescription(const std::string& description, bool ghostUnlinkedPads = false);
 
- /**
+  /**
    * @brief get the GstBinSPtr of the Bin
    * @return the GstBin.
    */
@@ -85,16 +87,17 @@ public:
    */
   void addElement(Element& element);
 
- /**
-  * @brief Retrieves an element by its name. This function recurses into child bins.
-  * @param name The name of the element.
-  * @return The element if found
-  * @throws std::runtime_error if the element cannot be found.
-  */
+  /**
+   * @brief Retrieves an element by its name. This function recurses into child bins.
+   * @param name The name of the element.
+   * @return The element if found
+   * @throws std::runtime_error if the element cannot be found.
+   */
   [[nodiscard]] std::shared_ptr<Element> getElementByName(const std::string& name);
 
   /**
-   * @brief Retrieves an element by its name. If the element is not found, a recursion is performed on the parent bin.
+   * @brief Retrieves an element by its name. If the element is not found, a recursion is performed
+   *        on the parent bin.
    * @param name
    * @param name The name of the element.
    * @return The element if found
@@ -116,20 +119,21 @@ public:
    */
   void removeElement(Element& element);
 
-  [[nodiscard]] SignalConnection connectSignalElementAdded(std::function<void(GstElementSPtr)> callback) const;
- /* TODO: add signals
-  * element-removed
-  * deep-element-added
-  * deep-element-removed
-  * do-latency
-  */
+  [[nodiscard]] SignalConnection
+  connectSignalElementAdded(std::function<void(GstElementSPtr)> callback) const;
+
+  /* TODO: add signals
+   * element-removed
+   * deep-element-added
+   * deep-element-removed
+   * do-latency
+   */
 
 private:
   [[nodiscard]] const GstBin* getRawGstBin() const;
   [[nodiscard]] GstBin* getRawGstBin();
 };
 
-} // dh::gst
+} // namespace dh::gst
 
-
-#endif //DH_GST_BIN_HPP
+#endif // DH_GST_BIN_HPP

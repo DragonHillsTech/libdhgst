@@ -45,7 +45,8 @@ namespace dh::gst
  * Thread safety: call(), connect() and disconnecting may be called from different threads.
  * - When SignalConnection::disconnect() returns, the callback is not running and will not be
  *   called again; if it runs in another thread, disconnect() waits for it.
- * - The callback is never called concurrently with itself: concurrent call()s run it one after the other.
+ * - The callback is never called concurrently with itself: concurrent call()s run it one after
+ *   the other.
  * - connect() and SignalConnection::connected() never wait for a running callback.
  * - The callback may disconnect itself while it runs. Its captures are destroyed after all
  *   locks are released, so their destructors may use this slot again.
@@ -83,7 +84,7 @@ public:
    */
   [[nodiscard]] SignalConnection connect(Function function)
   {
-    if(!function)
+    if (!function)
     {
       throw std::invalid_argument("empty signal callback");
     }
@@ -97,7 +98,7 @@ public:
 
     auto disconnectHandler = [weakSelf, weakCallback]()
     {
-      if(const auto self = weakSelf.lock())
+      if (const auto self = weakSelf.lock())
       {
         self->disconnect(weakCallback);
       }
@@ -116,8 +117,8 @@ public:
   template<typename... CallArgs>
   void call(CallArgs&&... args)
   {
-    // keeps the slot alive if the callback releases its last owner (e.g. destroys the MessageParser);
-    // declared first, so the slot is destroyed only after the locks are released
+    // keeps the slot alive if the callback releases its last owner (e.g. destroys the
+    // MessageParser); declared first, so the slot is destroyed only after the locks are released
     const auto self = this->shared_from_this();
     // a copy keeps the callback alive if it disconnects itself. Declared before the locks,
     // so it is destroyed after unlocking: its captures may run arbitrary code
@@ -127,7 +128,7 @@ public:
       std::lock_guard<std::mutex> lock(callbackMutex);
       callback = connectedCallback;
     }
-    if(callback)
+    if (callback)
     {
       (*callback)(std::forward<CallArgs>(args)...);
     }
@@ -138,7 +139,7 @@ private:
   using WeakCallback = std::weak_ptr<const Function>;
 
   explicit CallbackSlot(std::string name)
-  : name(std::move(name))
+    : name(std::move(name))
   {
   }
 
@@ -146,7 +147,7 @@ private:
   void store(const Callback& callback)
   {
     std::lock_guard<std::mutex> lock(callbackMutex);
-    if(connectedCallback)
+    if (connectedCallback)
     {
       throw std::logic_error("a callback for " + name + " is already connected");
     }
@@ -156,11 +157,12 @@ private:
   /// disconnect the callback, if it is still the connected one
   void disconnect(const WeakCallback& callback)
   {
-    // declared before the locks, so it is destroyed after unlocking: its captures may run arbitrary code
+    // declared before the locks, so it is destroyed after unlocking: its captures may run arbitrary
+    // code
     Callback removed;
     std::lock_guard<std::recursive_mutex> callLock(callMutex); // waits for a running call
     std::lock_guard<std::mutex> lock(callbackMutex);
-    if(isConnectedCallback(callback))
+    if (isConnectedCallback(callback))
     {
       removed = std::exchange(connectedCallback, nullptr);
     }
@@ -173,7 +175,8 @@ private:
     return isConnectedCallback(callback);
   }
 
-  /// true if exactly this callback is connected (an empty slot never matches); callbackMutex must be held
+  /// true if exactly this callback is connected (an empty slot never matches); callbackMutex must
+  /// be held
   [[nodiscard]] bool isConnectedCallback(const WeakCallback& callback) const
   {
     return connectedCallback && connectedCallback == callback.lock();

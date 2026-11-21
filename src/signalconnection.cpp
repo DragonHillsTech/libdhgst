@@ -33,7 +33,7 @@ struct GObjectDeleter
 {
   void operator()(GObject* obj) const noexcept
   {
-    if(obj)
+    if (obj)
     {
       g_object_unref(obj);
     }
@@ -45,9 +45,9 @@ using GObjectUniquePtr = std::unique_ptr<GObject, GObjectDeleter>;
 } // namespace
 
 SignalConnection::SignalConnection(GObject* object, gulong handlerId)
-: handlerId(handlerId)
+  : handlerId(handlerId)
 {
-  if(object)
+  if (object)
   {
     g_weak_ref_init(&weakObject, object);
     weakRefInitialized = true;
@@ -58,8 +58,8 @@ SignalConnection::SignalConnection(
   std::function<void()> disconnectHandler,
   std::function<bool()> isConnectedHandler
 )
-: customDisconnectHandler(std::move(disconnectHandler))
-, customIsConnectedHandler(std::move(isConnectedHandler))
+  : customDisconnectHandler(std::move(disconnectHandler))
+  , customIsConnectedHandler(std::move(isConnectedHandler))
 {
 }
 
@@ -70,7 +70,7 @@ SignalConnection::SignalConnection(SignalConnection&& other) noexcept
 
 SignalConnection& SignalConnection::operator=(SignalConnection&& other) noexcept
 {
-  if(this != &other)
+  if (this != &other)
   {
     disconnect();
     clearWeakRef();
@@ -87,7 +87,7 @@ SignalConnection::~SignalConnection()
 
 void SignalConnection::disconnect()
 {
-  if(customDisconnectHandler)
+  if (customDisconnectHandler)
   {
     auto handler = std::move(customDisconnectHandler);
     customDisconnectHandler = nullptr;
@@ -96,16 +96,16 @@ void SignalConnection::disconnect()
     return;
   }
 
-  if(handlerId == 0 || !weakRefInitialized)
+  if (handlerId == 0 || !weakRefInitialized)
   {
     handlerId = 0;
     return;
   }
 
   GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&weakObject)));
-  if(object)
+  if (object)
   {
-    if(g_signal_handler_is_connected(object.get(), handlerId))
+    if (g_signal_handler_is_connected(object.get(), handlerId))
     {
       g_signal_handler_disconnect(object.get(), handlerId);
     }
@@ -115,18 +115,20 @@ void SignalConnection::disconnect()
 
 bool SignalConnection::connected() const
 {
-  if(customDisconnectHandler)
+  if (customDisconnectHandler)
   {
     return customIsConnectedHandler ? customIsConnectedHandler() : true;
   }
 
-  if(handlerId == 0 || !weakRefInitialized)
+  if (handlerId == 0 || !weakRefInitialized)
   {
     return false;
   }
 
-  GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(const_cast<GWeakRef*>(&weakObject))));
-  if(!object)
+  GObjectUniquePtr object(
+    static_cast<GObject*>(g_weak_ref_get(const_cast<GWeakRef*>(&weakObject)))
+  );
+  if (!object)
   {
     return false;
   }
@@ -141,7 +143,7 @@ SignalConnection::operator bool() const
 
 void SignalConnection::clearWeakRef()
 {
-  if(weakRefInitialized)
+  if (weakRefInitialized)
   {
     g_weak_ref_clear(&weakObject);
     weakRefInitialized = false;
@@ -156,10 +158,10 @@ void SignalConnection::moveFrom(SignalConnection&& other) noexcept
   customIsConnectedHandler = std::move(other.customIsConnectedHandler);
   other.customIsConnectedHandler = nullptr;
 
-  if(other.weakRefInitialized)
+  if (other.weakRefInitialized)
   {
     GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&other.weakObject)));
-    if(object)
+    if (object)
     {
       g_weak_ref_init(&weakObject, object.get());
       weakRefInitialized = true;

@@ -1,12 +1,12 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -'- */
 
+#include "element.hpp"
 #include "elementfactory.hpp"
 #include "pipeline.hpp"
-#include "element.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
@@ -25,7 +25,7 @@ public:
   // Setup before first test case
   ObjectTest()
   {
-    gst_init(nullptr, nullptr);  // Initialize GStreamer
+    gst_init(nullptr, nullptr); // Initialize GStreamer
   }
 };
 
@@ -36,12 +36,12 @@ class SignalTestElement : public Element
 {
 public:
   explicit SignalTestElement(const char* factoryName)
-  : Element(gst_element_factory_make(factoryName, nullptr), TransferType::Floating)
+    : Element(gst_element_factory_make(factoryName, nullptr), TransferType::Floating)
   {
   }
 
   explicit SignalTestElement(GstElement* element)
-  : Element(element, TransferType::Floating)
+    : Element(element, TransferType::Floating)
   {
   }
 
@@ -64,8 +64,16 @@ G_DEFINE_TYPE(BoolSignalElement, bool_signal_element, GST_TYPE_ELEMENT)
 static void bool_signal_element_class_init(BoolSignalElementClass* klass)
 {
   g_signal_new(
-    "bool-signal", G_TYPE_FROM_CLASS(klass), G_SIGNAL_RUN_LAST, 0, nullptr, nullptr, nullptr,
-    G_TYPE_NONE, 1, G_TYPE_BOOLEAN
+    "bool-signal",
+    G_TYPE_FROM_CLASS(klass),
+    G_SIGNAL_RUN_LAST,
+    0,
+    nullptr,
+    nullptr,
+    nullptr,
+    G_TYPE_NONE,
+    1,
+    G_TYPE_BOOLEAN
   );
 }
 
@@ -97,7 +105,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_PadAdded, ObjectTest)
 
   // Wait for the main loop to process events
   GMainContext* context = g_main_context_default();
-  for(int i = 0; i < 10 && !signalEmitted; ++i)
+  for (int i = 0; i < 10 && !signalEmitted; ++i)
   {
     g_main_context_iteration(context, FALSE);
     g_usleep(100000); // Sleep for 100ms
@@ -139,7 +147,7 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ElementAdded, ObjectTest)
   BOOST_CHECK_EQUAL(capturedElement, element->getGstElement());
 }
 
-//TODO:
+// TODO:
 
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, ObjectTest)
 {
@@ -214,7 +222,6 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_deleteWhileCallbackActive, Obje
   BOOST_REQUIRE_EQUAL(weakBin.lock(), nullptr);
 }
 
-
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ThrowingCallbackDoesNotPropagate, ObjectTest)
 {
   auto bin = Bin::create("test-bin");
@@ -240,22 +247,36 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_ThrowingCallbackDoesNotPropagat
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_MatchingSignature, ObjectTest)
 {
   auto element = std::make_shared<SignalTestElement>("identity");
-  BOOST_CHECK_NO_THROW((void)element->connectGobjectSignal<>("no-more-pads", std::function<void()>([]() {})));
-  BOOST_CHECK_NO_THROW(
-    (void)element->connectGobjectSignal<GstPadSPtr>("pad-added", std::function<void(GstPadSPtr)>([](GstPadSPtr) {}))
-  );
+  BOOST_CHECK_NO_THROW((void)element->connectGobjectSignal<>(
+    "no-more-pads",
+    std::function<void()>(
+      []()
+      {
+      }
+    )
+  ));
+  BOOST_CHECK_NO_THROW((void)element->connectGobjectSignal<GstPadSPtr>(
+    "pad-added",
+    std::function<void(GstPadSPtr)>(
+      [](GstPadSPtr)
+      {
+      }
+    )
+  ));
 }
 
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_BaseTypeParameter, ObjectTest)
 {
   // pad-added passes a GstPad, which is a GstObject
   auto element = std::make_shared<SignalTestElement>("identity");
-  BOOST_CHECK_NO_THROW(
-    (void)element->connectGobjectSignal<GstObjectSPtr>(
-      "pad-added",
-      std::function<void(GstObjectSPtr)>([](GstObjectSPtr) {})
+  BOOST_CHECK_NO_THROW((void)element->connectGobjectSignal<GstObjectSPtr>(
+    "pad-added",
+    std::function<void(GstObjectSPtr)>(
+      [](GstObjectSPtr)
+      {
+      }
     )
-  );
+  ));
 }
 
 BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_WrongNumberOfParametersThrows, ObjectTest)
@@ -263,12 +284,26 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_WrongNumberOfParametersThrows, 
   auto element = std::make_shared<SignalTestElement>("identity");
   // pad-added has one parameter
   BOOST_CHECK_THROW(
-    (void)element->connectGobjectSignal<>("pad-added", std::function<void()>([]() {})),
+    (void)element->connectGobjectSignal<>(
+      "pad-added",
+      std::function<void()>(
+        []()
+        {
+        }
+      )
+    ),
     std::invalid_argument
   );
   // no-more-pads has none
   BOOST_CHECK_THROW(
-    (void)element->connectGobjectSignal<GstPadSPtr>("no-more-pads", std::function<void(GstPadSPtr)>([](GstPadSPtr) {})),
+    (void)element->connectGobjectSignal<GstPadSPtr>(
+      "no-more-pads",
+      std::function<void(GstPadSPtr)>(
+        [](GstPadSPtr)
+        {
+        }
+      )
+    ),
     std::invalid_argument
   );
 }
@@ -280,12 +315,23 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_WrongParameterTypeThrows, Objec
   BOOST_CHECK_THROW(
     (void)element->connectGobjectSignal<GstElementSPtr>(
       "pad-added",
-      std::function<void(GstElementSPtr)>([](GstElementSPtr) {})
+      std::function<void(GstElementSPtr)>(
+        [](GstElementSPtr)
+        {
+        }
+      )
     ),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)element->connectGobjectSignal<int>("pad-added", std::function<void(int)>([](int) {})),
+    (void)element->connectGobjectSignal<int>(
+      "pad-added",
+      std::function<void(int)>(
+        [](int)
+        {
+        }
+      )
+    ),
     std::invalid_argument
   );
 }
@@ -299,7 +345,12 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_BoolParameter, ObjectTest)
   std::vector<bool> received;
   auto connection = element->connectGobjectSignal<bool>(
     "bool-signal",
-    std::function<void(bool)>([&](bool value) { received.push_back(value); })
+    std::function<void(bool)>(
+      [&](bool value)
+      {
+        received.push_back(value);
+      }
+    )
   );
   BOOST_REQUIRE(connection.connected());
 
@@ -316,7 +367,14 @@ BOOST_FIXTURE_TEST_CASE(TestConnectGobjectSignal_SignalWithReturnValueThrows, Ob
   // appsink "new-sample" returns a GstFlowReturn, but the callbacks return void
   auto appsink = std::make_shared<SignalTestElement>("appsink");
   BOOST_CHECK_THROW(
-    (void)appsink->connectGobjectSignal<>("new-sample", std::function<void()>([]() {})),
+    (void)appsink->connectGobjectSignal<>(
+      "new-sample",
+      std::function<void()>(
+        []()
+        {
+        }
+      )
+    ),
     std::invalid_argument
   );
 }

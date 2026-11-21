@@ -50,7 +50,7 @@ gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
 } // namespace
 
 Element::Element(GstElement* gstElement, TransferType transferType)
-: Object(GST_OBJECT_CAST(gstElement), transferType)
+  : Object(GST_OBJECT_CAST(gstElement), transferType)
 {
 }
 
@@ -69,7 +69,10 @@ std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType tr
 }
 
 Element::Element(GstElementSPtr gstElement)
-: Object(GST_OBJECT_CAST(gstElement.get()), TransferType::None) // no pointer_cast because C inheritance
+  : Object(
+      GST_OBJECT_CAST(gstElement.get()),
+      TransferType::None
+    ) // no pointer_cast because C inheritance
 {
 }
 
@@ -113,7 +116,7 @@ std::vector<GstPadSPtr> Element::getSrcPads()
 
 GstPadSPtr Element::getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& caps)
 {
-  if(! pad)
+  if (!pad)
   {
     throw std::invalid_argument("getCompatiblePad: pad must not be nullptr");
   }
@@ -149,10 +152,9 @@ Element& Element::link(Element& other)
 
 std::string Element::getFactoryName() const
 {
-  auto* gstElementFactoryRawPtr = gst_element_get_factory(
-    const_cast<GstElement*>(getRawGstElement())
-  );
-  if(! gstElementFactoryRawPtr)
+  auto* gstElementFactoryRawPtr =
+    gst_element_get_factory(const_cast<GstElement*>(getRawGstElement()));
+  if (!gstElementFactoryRawPtr)
   {
     return {};
   }
@@ -164,8 +166,8 @@ GstClockSPtr Element::getElementClock() const
 {
   return makeGstSharedPtr(
     gst_element_get_clock(const_cast<GstElement*>(getRawGstElement())),
-      TransferType::Full
-    );
+    TransferType::Full
+  );
 }
 
 GstClockTime Element::getStartTime() const
@@ -176,7 +178,7 @@ GstClockTime Element::getStartTime() const
 GstState Element::getState(GstClockTime timeout) const
 {
   const StateQuery query = queryState(timeout);
-  if(query.result == GST_STATE_CHANGE_FAILURE)
+  if (query.result == GST_STATE_CHANGE_FAILURE)
   {
     throw std::runtime_error("Last state change of element " + getName() + " failed");
   }
@@ -203,7 +205,7 @@ void Element::unlink(Element& other)
 void Element::syncStateWithParent()
 {
   const auto success = gst_element_sync_state_with_parent(getRawGstElement());
-  if(! success)
+  if (!success)
   {
     throw std::runtime_error("Failed to sync Element " + getName() + " with parent");
   }
@@ -234,5 +236,4 @@ GstElement* Element::getRawGstElement()
   return GST_ELEMENT_CAST(getRawGstObject());
 }
 
-
-} // dh::gst
+} // namespace dh::gst

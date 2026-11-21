@@ -64,18 +64,18 @@ public:
 
   /**
    * @brief  A message has been posted on the bus.
-   * This signal is emitted from the thread that posted the message so one has to be careful with locking.
+   * This signal is emitted from the thread that posted the message so one has to be careful
+   * with locking.
    */
-  [[nodiscard]] SignalConnection connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const;
+  [[nodiscard]] SignalConnection
+  connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const;
 
   // TODO: Enable "message" also? (only valid with existing glib main loop)
 private:
   [[nodiscard]] GstBus* getRawGstBus();
   [[nodiscard]] const GstBus* getRawGstBus() const;
-
 };
 
+} // namespace dh::gst
 
-} // dh::gst
-
-#endif //DH_GST_BUS_HPP
+#endif // DH_GST_BUS_HPP

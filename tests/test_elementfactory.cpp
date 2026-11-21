@@ -2,13 +2,12 @@
 #include "elementfactory.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 #include <gst/gst.h>
 
 #include <stdexcept>
-
 
 using namespace dh::gst;
 
@@ -21,13 +20,13 @@ public:
   // Setup before first test case
   ElementFactoryTest()
   {
-    gst_init(nullptr, nullptr);  // Initialize GStreamer
+    gst_init(nullptr, nullptr); // Initialize GStreamer
   }
 };
 
 BOOST_FIXTURE_TEST_CASE(FromFactoryNameTest, ElementFactoryTest)
 {
-  const std::string factoryName="fakesrc";
+  const std::string factoryName = "fakesrc";
   auto factory = ElementFactory::fromFactoryName(factoryName);
   BOOST_REQUIRE_NE(factory->getGstElementFactory(), nullptr);
 }
@@ -35,9 +34,7 @@ BOOST_FIXTURE_TEST_CASE(FromFactoryNameTest, ElementFactoryTest)
 BOOST_FIXTURE_TEST_CASE(FromFactoryNameNotFoundTest, ElementFactoryTest)
 {
   BOOST_CHECK_THROW(
-    {
-      auto factory = ElementFactory::fromFactoryName("doesNotExist");
-    },
+    { auto factory = ElementFactory::fromFactoryName("doesNotExist"); },
     std::runtime_error
   );
 }
@@ -96,4 +93,3 @@ BOOST_FIXTURE_TEST_CASE(GetElementTypeTest, ElementFactoryTest)
   const GType elementType = factory->getElementType();
   BOOST_REQUIRE_NE(elementType, 0);
 }
-

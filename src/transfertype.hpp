@@ -31,6 +31,6 @@ enum class TransferType
   Floating
 };
 
-} // dh::gst
+} // namespace dh::gst
 
-#endif //DH_GST_TRANSFERTYPE_HPP
+#endif // DH_GST_TRANSFERTYPE_HPP

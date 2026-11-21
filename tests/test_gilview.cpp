@@ -8,8 +8,8 @@
 #include "gilview.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
@@ -22,7 +22,8 @@ protected:
   {
     gst_init(nullptr, nullptr);
   }
-  static GstBuffer* createTestBuffer(GstVideoInfo& info, GstVideoFormat format, int width, int height)
+  static GstBuffer*
+  createTestBuffer(GstVideoInfo& info, GstVideoFormat format, int width, int height)
   {
     gst_video_info_set_format(&info, format, width, height);
     return gst_buffer_new_allocate(nullptr, info.size, nullptr);
@@ -35,7 +36,8 @@ protected:
   }
 };
 
-BOOST_FIXTURE_TEST_CASE(CreateRgb8View, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(CreateRgb8View, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 4, 2);
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -58,7 +60,8 @@ BOOST_FIXTURE_TEST_CASE(CreateRgb8View, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(CreateGray8View, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(CreateGray8View, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_GRAY8, 2, 3);
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -78,7 +81,8 @@ BOOST_FIXTURE_TEST_CASE(CreateGray8View, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatRgb8, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatRgb8, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_GRAY8, 1, 1); // Not RGB
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -93,7 +97,8 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatRgb8, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatGray8, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatGray8, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 1, 1); // Not GRAY
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -108,7 +113,8 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnWrongFormatGray8, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableRgb8ViewOfReadOnlyFrame, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableRgb8ViewOfReadOnlyFrame, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 4, 2);
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -124,7 +130,8 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableRgb8ViewOfReadOnlyFrame, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableGray8ViewOfReadOnlyFrame, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableGray8ViewOfReadOnlyFrame, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_GRAY8, 4, 2);
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -139,7 +146,8 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnMutableGray8ViewOfReadOnlyFrame, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(CreateConstViewOfReadOnlyFrame, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(CreateConstViewOfReadOnlyFrame, GilViewTest)
+{
   GstVideoInfo info;
   GstBuffer* buffer = createTestBuffer(info, GST_VIDEO_FORMAT_RGB, 4, 2);
   BOOST_REQUIRE_NE(buffer, nullptr);
@@ -162,7 +170,8 @@ BOOST_FIXTURE_TEST_CASE(CreateConstViewOfReadOnlyFrame, GilViewTest) {
   gst_buffer_unref(buffer);
 }
 
-BOOST_FIXTURE_TEST_CASE(ThrowsOnUnmappedFrame, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnUnmappedFrame, GilViewTest)
+{
   GstVideoInfo info;
   gst_video_info_set_format(&info, GST_VIDEO_FORMAT_RGB, 4, 2);
 
@@ -173,7 +182,8 @@ BOOST_FIXTURE_TEST_CASE(ThrowsOnUnmappedFrame, GilViewTest) {
   BOOST_CHECK_THROW(dh::gst::createGilView<boost::gil::rgb8c_view_t>(frame), std::runtime_error);
 }
 
-BOOST_FIXTURE_TEST_CASE(ThrowsOnZeroedFrame, GilViewTest) {
+BOOST_FIXTURE_TEST_CASE(ThrowsOnZeroedFrame, GilViewTest)
+{
   // a frame that was never mapped and has no video info (frame.info.finfo is null)
   GstVideoFrame frame{};
 

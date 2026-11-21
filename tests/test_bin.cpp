@@ -2,14 +2,13 @@
 #include "bin.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
 
 #include <stdexcept>
-
 
 using namespace dh::gst;
 
@@ -22,7 +21,7 @@ public:
   // Setup before first test case
   BinTest()
   {
-    gst_init(nullptr, nullptr);  // Initialize GStreamer
+    gst_init(nullptr, nullptr); // Initialize GStreamer
   }
 };
 
@@ -33,7 +32,7 @@ public:
 bool binContains(Bin& bin, const std::string& name)
 {
   GstElement* element = gst_bin_get_by_name(bin.getGstBin().get(), name.c_str());
-  if(! element)
+  if (!element)
   {
     return false;
   }
@@ -44,16 +43,30 @@ bool binContains(Bin& bin, const std::string& name)
 BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, BinTest)
 {
   // ctor GstBinSPtr
-  auto bin1 = Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
-  BOOST_REQUIRE_EQUAL(bin1->getGstBin().use_count(), 1); // getGstBin creates a new shared_ptr, so the count must be 1
-  BOOST_REQUIRE_EQUAL(GST_OBJECT_REFCOUNT(bin1->getGstBin().get()), 2); // getGstBin creates a new shared_ptr, so the GstObject must have increased
+  auto bin1 =
+    Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+  BOOST_REQUIRE_EQUAL(
+    bin1->getGstBin().use_count(),
+    1
+  ); // getGstBin creates a new shared_ptr, so the count must be 1
+  BOOST_REQUIRE_EQUAL(
+    GST_OBJECT_REFCOUNT(bin1->getGstBin().get()),
+    2
+  ); // getGstBin creates a new shared_ptr, so the GstObject must have increased
 
-  //ctor GstBin*
-  auto bin2 = Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin2")), TransferType::Floating));
-  BOOST_REQUIRE_EQUAL(bin2->getGstBin().use_count(), 1); // getGstBin creates a new shared_ptr, so the count must be 1
-  BOOST_REQUIRE_EQUAL(GST_OBJECT_REFCOUNT(bin2->getGstBin().get()), 2); // getGstBin creates a new shared_ptr, so the GstObject must have increased
+  // ctor GstBin*
+  auto bin2 =
+    Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin2")), TransferType::Floating));
+  BOOST_REQUIRE_EQUAL(
+    bin2->getGstBin().use_count(),
+    1
+  ); // getGstBin creates a new shared_ptr, so the count must be 1
+  BOOST_REQUIRE_EQUAL(
+    GST_OBJECT_REFCOUNT(bin2->getGstBin().get()),
+    2
+  ); // getGstBin creates a new shared_ptr, so the GstObject must have increased
 
-  //ctor name
+  // ctor name
   const std::string bin3Name("bin3");
   auto bin3 = Bin::create(bin3Name);
   BOOST_REQUIRE_EQUAL(bin3->getName(), bin3Name);
@@ -81,7 +94,8 @@ BOOST_FIXTURE_TEST_CASE(SetState, BinTest)
 BOOST_FIXTURE_TEST_CASE(AddAndRemoveGstElement, BinTest)
 {
   auto bin1 = Bin::create("bin1");
-  auto element1SPtr = makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+  auto element1SPtr =
+    makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // add
   BOOST_CHECK_NO_THROW(bin1->addElement(*element1SPtr));
@@ -89,16 +103,14 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveGstElement, BinTest)
 
   // remove
   BOOST_CHECK_NO_THROW(bin1->removeElement(*element1SPtr));
-  BOOST_CHECK(! binContains(*bin1, GST_ELEMENT_NAME(element1SPtr.get())));
+  BOOST_CHECK(!binContains(*bin1, GST_ELEMENT_NAME(element1SPtr.get())));
 }
 
 BOOST_FIXTURE_TEST_CASE(AddAndRemoveElement, BinTest)
 {
   auto bin1 = Bin::create("bin1");
-  auto element1 = Element::create(
-    gst_element_factory_make("fakesrc", "element1"),
-    TransferType::Floating
-  );
+  auto element1 =
+    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // add
   BOOST_CHECK_NO_THROW(bin1->addElement(*element1));
@@ -106,13 +118,14 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveElement, BinTest)
 
   // remove
   BOOST_CHECK_NO_THROW(bin1->removeElement(*element1));
-  BOOST_CHECK(! binContains(*bin1, element1->getName()));
+  BOOST_CHECK(!binContains(*bin1, element1->getName()));
 }
 
 BOOST_FIXTURE_TEST_CASE(GetElementByName, BinTest)
 {
   auto bin1 = Bin::create("bin1");
-  auto element1 = Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+  auto element1 =
+    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // find existing
   bin1->addElement(*element1);
@@ -127,7 +140,8 @@ BOOST_FIXTURE_TEST_CASE(GetElementByName, BinTest)
 BOOST_FIXTURE_TEST_CASE(GetElementByNameRecurseUp, BinTest)
 {
   auto bin1 = Bin::create("bin1");
-  auto element1 = Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+  auto element1 =
+    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
 
   // find existing
   bin1->addElement(*element1);
@@ -142,21 +156,17 @@ BOOST_FIXTURE_TEST_CASE(GetElementByNameRecurseUp, BinTest)
 BOOST_FIXTURE_TEST_CASE(FromDescriptionValidPipeline, BinTest)
 {
   const std::string description("fakesrc ! fakesink");
-  BOOST_CHECK_NO_THROW(
-    {
-      std::shared_ptr<dh::gst::Bin> bin = dh::gst::Bin::fromDescription(description, false);
-    }
-  );
+  BOOST_CHECK_NO_THROW({
+    std::shared_ptr<dh::gst::Bin> bin = dh::gst::Bin::fromDescription(description, false);
+  });
 }
 
 BOOST_FIXTURE_TEST_CASE(FromDescriptionGhostUnlinkedPads, BinTest)
 {
   const std::string description("fakesrc name=src ! fakesink");
-  BOOST_CHECK_NO_THROW(
-    {
-      std::shared_ptr<dh::gst::Bin> bin = dh::gst::Bin::fromDescription(description, true);
-    }
-  );
+  BOOST_CHECK_NO_THROW({
+    std::shared_ptr<dh::gst::Bin> bin = dh::gst::Bin::fromDescription(description, true);
+  });
 }
 
 BOOST_FIXTURE_TEST_CASE(FromDescriptionInvalidPipelineThrows, BinTest)
@@ -164,8 +174,8 @@ BOOST_FIXTURE_TEST_CASE(FromDescriptionInvalidPipelineThrows, BinTest)
   const std::string invalidDescription("invalidelement ! fakesink");
   BOOST_CHECK_THROW(
     {
-     std::shared_ptr<dh::gst::Bin> bin = dh::gst::Bin::fromDescription(invalidDescription, false);
-    }
-    , std::runtime_error);
+      std::shared_ptr<dh::gst::Bin> bin = dh::gst::Bin::fromDescription(invalidDescription, false);
+    },
+    std::runtime_error
+  );
 }
-

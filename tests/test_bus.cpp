@@ -7,8 +7,8 @@
 
 #include "bus.hpp"
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 using namespace dh::gst;
@@ -19,11 +19,11 @@ using namespace dh::gst;
 class BusTest
 {
 public:
- // Setup before first test case
- BusTest()
- {
-  gst_init(nullptr, nullptr);  // Initialize GStreamer
- }
+  // Setup before first test case
+  BusTest()
+  {
+    gst_init(nullptr, nullptr); // Initialize GStreamer
+  }
 };
 
 BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
@@ -36,7 +36,10 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
     {
       signalReceived = true;
       // Check message type and content
-      BOOST_REQUIRE_EQUAL(std::string(gst_structure_get_name(gst_message_get_structure(message.get()))), "TestMessage");
+      BOOST_REQUIRE_EQUAL(
+        std::string(gst_structure_get_name(gst_message_get_structure(message.get()))),
+        "TestMessage"
+      );
     }
   );
   BOOST_REQUIRE(syncMessageConnection.connected());
@@ -59,7 +62,11 @@ BOOST_FIXTURE_TEST_CASE(SyncMessageConnectionDoesNotKeepBusAlive, BusTest)
   g_object_add_weak_pointer(G_OBJECT(rawBus), &weakBus);
 
   auto bus = Bus::create(rawBus, TransferType::Full);
-  auto connection = bus->connectSignalNewSyncMessage([](GstMessageSPtr) {});
+  auto connection = bus->connectSignalNewSyncMessage(
+    [](GstMessageSPtr)
+    {
+    }
+  );
   BOOST_REQUIRE(connection.connected());
 
   // drop the last reference held by the application: only the connection is left
@@ -67,7 +74,7 @@ BOOST_FIXTURE_TEST_CASE(SyncMessageConnectionDoesNotKeepBusAlive, BusTest)
   BOOST_CHECK(weakBus == nullptr);
   BOOST_CHECK(!connection.connected());
 
-  if(weakBus)
+  if (weakBus)
   {
     g_object_remove_weak_pointer(G_OBJECT(weakBus), &weakBus);
   }
@@ -82,7 +89,10 @@ BOOST_FIXTURE_TEST_CASE(DisconnectDisablesSyncMessageEmission, BusTest)
   const gulong rawHandler = g_signal_connect(
     bus->getGstBus().get(),
     "sync-message",
-    G_CALLBACK(+[](GstBus*, GstMessage*, gpointer userData) { ++*static_cast<int*>(userData); }),
+    G_CALLBACK(+[](GstBus*, GstMessage*, gpointer userData)
+               {
+                 ++*static_cast<int*>(userData);
+               }),
     &rawEmissions
   );
 
@@ -96,7 +106,11 @@ BOOST_FIXTURE_TEST_CASE(DisconnectDisablesSyncMessageEmission, BusTest)
   };
 
   {
-    auto connection = bus->connectSignalNewSyncMessage([](GstMessageSPtr) {});
+    auto connection = bus->connectSignalNewSyncMessage(
+      [](GstMessageSPtr)
+      {
+      }
+    );
     postMessage();
     BOOST_CHECK_EQUAL(rawEmissions, 1);
   }

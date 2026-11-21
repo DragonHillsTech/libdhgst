@@ -21,8 +21,8 @@
 #include "internal/callbackslot.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "timedthread.hpp"
+#include <boost/test/included/unit_test.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -74,9 +74,22 @@ BOOST_AUTO_TEST_CASE(OnlyOneCallbackAtOnce)
   auto slot = IntSlot::create("test");
   int firstCalls = 0;
   int secondCalls = 0;
-  auto conn = slot->connect([&](int) { ++firstCalls; });
+  auto conn = slot->connect(
+    [&](int)
+    {
+      ++firstCalls;
+    }
+  );
 
-  BOOST_CHECK_THROW((void)slot->connect([&](int) { ++secondCalls; }), std::logic_error);
+  BOOST_CHECK_THROW(
+    (void)slot->connect(
+      [&](int)
+      {
+        ++secondCalls;
+      }
+    ),
+    std::logic_error
+  );
   BOOST_CHECK(conn.connected());
   slot->call(1);
   BOOST_CHECK_EQUAL(firstCalls, 1);
@@ -84,7 +97,12 @@ BOOST_AUTO_TEST_CASE(OnlyOneCallbackAtOnce)
 
   // after disconnecting, a new callback can be connected; the old connection stays disconnected
   conn.disconnect();
-  auto newConn = slot->connect([&](int) { ++secondCalls; });
+  auto newConn = slot->connect(
+    [&](int)
+    {
+      ++secondCalls;
+    }
+  );
   slot->call(1);
   BOOST_CHECK_EQUAL(firstCalls, 1);
   BOOST_CHECK_EQUAL(secondCalls, 1);
@@ -97,7 +115,12 @@ BOOST_AUTO_TEST_CASE(ConnectionDisconnectsOnDestruction)
   auto slot = IntSlot::create("test");
   int calls = 0;
   {
-    auto conn = slot->connect([&](int) { ++calls; });
+    auto conn = slot->connect(
+      [&](int)
+      {
+        ++calls;
+      }
+    );
     slot->call(1);
   }
   slot->call(1);
@@ -109,7 +132,11 @@ BOOST_AUTO_TEST_CASE(ConnectionReportsDisconnectedAfterSlotDestroyed)
   SignalConnection conn;
   {
     auto slot = IntSlot::create("test");
-    conn = slot->connect([](int) {});
+    conn = slot->connect(
+      [](int)
+      {
+      }
+    );
     BOOST_CHECK(conn.connected());
   }
   BOOST_CHECK(!conn.connected());
@@ -119,7 +146,12 @@ BOOST_AUTO_TEST_CASE(ConnectionReportsDisconnectedAfterSlotDestroyed)
 BOOST_AUTO_TEST_CASE(ExceptionPropagatesOutOfCall)
 {
   auto slot = IntSlot::create("test");
-  auto conn = slot->connect([](int) { throw std::runtime_error("from callback"); });
+  auto conn = slot->connect(
+    [](int)
+    {
+      throw std::runtime_error("from callback");
+    }
+  );
   BOOST_CHECK_THROW(slot->call(1), std::runtime_error);
 
   // the slot is still usable: the locks were released
@@ -136,7 +168,7 @@ BOOST_AUTO_TEST_CASE(ConcurrentConnectDisconnectAndCall)
 
   auto callLoop = [&]()
   {
-    while(!stop)
+    while (!stop)
     {
       slot->call(1);
     }
@@ -144,9 +176,13 @@ BOOST_AUTO_TEST_CASE(ConcurrentConnectDisconnectAndCall)
   std::thread caller1(callLoop);
   std::thread caller2(callLoop);
 
-  for(int i = 0; i < 20000; ++i)
+  for (int i = 0; i < 20000; ++i)
   {
-    auto conn = slot->connect([](int) {});
+    auto conn = slot->connect(
+      [](int)
+      {
+      }
+    );
     BOOST_REQUIRE(conn.connected());
     conn.disconnect();
   }
@@ -158,7 +194,8 @@ BOOST_AUTO_TEST_CASE(ConcurrentConnectDisconnectAndCall)
 
 BOOST_AUTO_TEST_CASE(DisconnectWaitsForRunningCallback)
 {
-  // an object that disconnects in its destructor must not be used by its callback after disconnect() returned
+  // an object that disconnects in its destructor must not be used by its callback after
+  // disconnect() returned
   auto slot = IntSlot::create("test");
   std::atomic<bool> entered{false};
   std::atomic<bool> finished{false};
@@ -171,8 +208,13 @@ BOOST_AUTO_TEST_CASE(DisconnectWaitsForRunningCallback)
     }
   );
 
-  std::thread caller([&]() { slot->call(1); });
-  while(!entered)
+  std::thread caller(
+    [&]()
+    {
+      slot->call(1);
+    }
+  );
+  while (!entered)
   {
     std::this_thread::yield();
   }
@@ -191,7 +233,7 @@ BOOST_AUTO_TEST_CASE(NoCallAfterDisconnectReturned)
 
   auto callLoop = [&]()
   {
-    while(!stop)
+    while (!stop)
     {
       slot->call(1);
     }
@@ -199,14 +241,14 @@ BOOST_AUTO_TEST_CASE(NoCallAfterDisconnectReturned)
   std::thread caller1(callLoop);
   std::thread caller2(callLoop);
 
-  for(int i = 0; i < 2000; ++i)
+  for (int i = 0; i < 2000; ++i)
   {
     // stands for the state of an object that is destroyed after disconnecting
     auto alive = std::make_shared<std::atomic<bool>>(true);
     auto conn = slot->connect(
       [alive, &callsAfterDisconnect](int)
       {
-        if(!*alive)
+        if (!*alive)
         {
           ++callsAfterDisconnect;
         }
@@ -235,8 +277,15 @@ BOOST_AUTO_TEST_CASE(ConnectedDoesNotWaitForRunningCallback)
     [&](int)
     {
       // while this callback runs, another thread asks whether it is connected
-      queryThread.emplace([&]() { (void)conn.connected(); queried.set_value(); });
-      connectedReturned = queried.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
+      queryThread.emplace(
+        [&]()
+        {
+          (void)conn.connected();
+          queried.set_value();
+        }
+      );
+      connectedReturned =
+        queried.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
     }
   );
 
@@ -260,7 +309,12 @@ BOOST_AUTO_TEST_CASE(CallbackMayDisconnectItself)
     }
   );
 
-  std::thread caller([&]() { slot->call(1); });
+  std::thread caller(
+    [&]()
+    {
+      slot->call(1);
+    }
+  );
   caller.join();
   BOOST_CHECK_EQUAL(seen, 42);
   BOOST_CHECK(!conn.connected());
@@ -278,7 +332,10 @@ BOOST_AUTO_TEST_CASE(SelfDisconnectedCallbackIsDestroyedAfterUnlocking)
   struct DestructorProbe
   {
     std::function<void()> onDestroy;
-    ~DestructorProbe() { onDestroy(); }
+    ~DestructorProbe()
+    {
+      onDestroy();
+    }
   };
 
   auto slot = IntSlot::create("test");
@@ -289,8 +346,15 @@ BOOST_AUTO_TEST_CASE(SelfDisconnectedCallbackIsDestroyedAfterUnlocking)
   auto probe = std::make_shared<DestructorProbe>();
   probe->onDestroy = [&]()
   {
-    otherThread.emplace([&]() { slot->call(2); called.set_value(); });
-    slotUsableWhileDestroyed = called.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
+    otherThread.emplace(
+      [&]()
+      {
+        slot->call(2);
+        called.set_value();
+      }
+    );
+    slotUsableWhileDestroyed =
+      called.get_future().wait_for(std::chrono::seconds(2)) == std::future_status::ready;
   };
 
   SignalConnection conn;

@@ -27,16 +27,16 @@ namespace dh::gst
 {
 
 Object::Object(GstObjectSPtr gstObject)
-: gstObject{std::move(gstObject)}
+  : gstObject{std::move(gstObject)}
 {
-  if(! this->gstObject)
+  if (!this->gstObject)
   {
     throw std::runtime_error("No GstObject");
   }
 }
 
 Object::Object(GstObject* gstObject, TransferType transferType)
-: Object{makeGstSharedPtr(gstObject, transferType)}
+  : Object{makeGstSharedPtr(gstObject, transferType)}
 {
 }
 
@@ -66,11 +66,9 @@ std::string Object::getName() const
 
 void Object::setName(const std::string& name)
 {
-  const bool success = gst_object_set_name(
-    getRawGstObject(),
-    name.empty() ? nullptr : name.c_str()
-  );
-  if(! success)
+  const bool success =
+    gst_object_set_name(getRawGstObject(), name.empty() ? nullptr : name.c_str());
+  if (!success)
   {
     throw std::logic_error("Failed to set name (Object may have parent)");
   }
@@ -92,23 +90,22 @@ bool Object::propertyExists(const std::string& name) const
     throw std::invalid_argument("empty property name");
   }
 
-  const auto* propertySpec = g_object_class_find_property(G_OBJECT_GET_CLASS(getRawGstObject()), name.c_str());
+  const auto* propertySpec =
+    g_object_class_find_property(G_OBJECT_GET_CLASS(getRawGstObject()), name.c_str());
 
   return propertySpec != nullptr;
 }
 
 const GParamSpec* Object::findProperty(const std::string& name) const
 {
-  if(name.empty())
+  if (name.empty())
   {
     throw std::invalid_argument("empty property name");
   }
 
-  const GParamSpec* propertySpec = g_object_class_find_property(
-    G_OBJECT_GET_CLASS(getRawGstObject()),
-    name.c_str()
-  );
-  if(! propertySpec)
+  const GParamSpec* propertySpec =
+    g_object_class_find_property(G_OBJECT_GET_CLASS(getRawGstObject()), name.c_str());
+  if (!propertySpec)
   {
     throw std::invalid_argument("No property with name " + name);
   }
@@ -118,7 +115,7 @@ const GParamSpec* Object::findProperty(const std::string& name) const
 const GParamSpec* Object::findReadableProperty(const std::string& name) const
 {
   const GParamSpec* propertySpec = findProperty(name);
-  if(! (propertySpec->flags & G_PARAM_READABLE))
+  if (!(propertySpec->flags & G_PARAM_READABLE))
   {
     throw std::invalid_argument("Property " + name + " is not readable");
   }
@@ -128,11 +125,11 @@ const GParamSpec* Object::findReadableProperty(const std::string& name) const
 const GParamSpec* Object::findWritableProperty(const std::string& name) const
 {
   const GParamSpec* propertySpec = findProperty(name);
-  if(! (propertySpec->flags & G_PARAM_WRITABLE))
+  if (!(propertySpec->flags & G_PARAM_WRITABLE))
   {
     throw std::invalid_argument("Property " + name + " is not writable");
   }
-  if(propertySpec->flags & G_PARAM_CONSTRUCT_ONLY)
+  if (propertySpec->flags & G_PARAM_CONSTRUCT_ONLY)
   {
     throw std::invalid_argument("Property " + name + " can only be set at construction");
   }
@@ -151,9 +148,9 @@ void Object::throwSignalSignatureMismatch(const GSignalQuery& query)
 {
   std::string signature = g_type_name(query.return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE);
   signature += std::string(" ") + query.signal_name + "(";
-  for(guint i = 0; i < query.n_params; ++i)
+  for (guint i = 0; i < query.n_params; ++i)
   {
-    if(i > 0)
+    if (i > 0)
     {
       signature += ", ";
     }
@@ -174,11 +171,11 @@ void Object::disconnectSignal(SignalConnection& connection) const
 
 void Object::requireType(GType expectedType) const
 {
-  if(! G_TYPE_CHECK_INSTANCE_TYPE(getRawGstObject(), expectedType))
+  if (!G_TYPE_CHECK_INSTANCE_TYPE(getRawGstObject(), expectedType))
   {
     throw std::invalid_argument(
-      std::string("Expected a ") + g_type_name(expectedType)
-      + ", got a " + G_OBJECT_TYPE_NAME(getRawGstObject())
+      std::string("Expected a ") + g_type_name(expectedType) + ", got a "
+      + G_OBJECT_TYPE_NAME(getRawGstObject())
     );
   }
 }
@@ -193,4 +190,4 @@ GstObject* Object::getRawGstObject()
   return gstObject.get();
 }
 
-} // dh::gst
+} // namespace dh::gst

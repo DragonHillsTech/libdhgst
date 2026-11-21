@@ -36,7 +36,8 @@ namespace dh::gst
  * @brief parser for GstMessages. After parsing, the callback for the message type is called.
  *
  * One callback per message type: connecting a second callback for the same type throws
- * std::logic_error until the first one is disconnected. Callbacks for different types are independent.
+ * std::logic_error until the first one is disconnected. Callbacks for different types are
+ * independent.
  *
  * To replace a callback, disconnect the old connection first:
  * @code
@@ -51,11 +52,11 @@ namespace dh::gst
  * and will not be called again; if it runs in another thread, disconnect() waits for it.
  * Message types are independent: a running callback never blocks callbacks, connections or
  * disconnections of other message types. A callback is never called concurrently with itself:
- * if parse() is called from several threads, the callbacks of one message type run one after the other.
- * A callback may disconnect itself or connect and disconnect other callbacks.
- * A callback may also destroy the parser (e.g. tear down when the stream ends).
- * Because disconnecting waits for a running callback of its own type, do not disconnect while holding
- * a lock that this callback needs, and do not let two concurrently running callbacks disconnect each other.
+ * if parse() is called from several threads, the callbacks of one message type run one after the
+ * other. A callback may disconnect itself or connect and disconnect other callbacks. A callback may
+ * also destroy the parser (e.g. tear down when the stream ends). Because disconnecting waits for a
+ * running callback of its own type, do not disconnect while holding a lock that this callback
+ * needs, and do not let two concurrently running callbacks disconnect each other.
  *
  * Callbacks must not throw. parse() is typically called from C code: a bus sync handler,
  * a bus watch, or a main loop source that runs the task of the async handler.
@@ -66,38 +67,39 @@ namespace dh::gst
 class MessageParser
 {
 private:
- MessageParser();
+  MessageParser();
+
 public:
   [[nodiscard]] static std::shared_ptr<MessageParser> create();
 
   using AsyncHandler = std::function<void(std::function<void()>)>;
- /**
-  * @brief Sets a custom asynchronous handler for parse().
-  * @param handler A function that takes a callable and posts it to the desired main loop.
-  *
-  * Example boost.asio:
-  * @code
-  * create[&ioContext](auto task){boost::asio::post(ioContext, std::move(task));});
-  * @endcode
-  *
-  * Example glib:
-  * @code
-  * create(
-  *   [](auto task)
-  *   {
-  *     // Use g_main_context_invoke to post the task to the default main context.
-  *     g_main_context_invoke(nullptr, [](gpointer userData) -> gboolean
-  *     {
-  *       auto taskPtr = static_cast<std::function<void()>*>(userData);
-  *       (*taskPtr)(); // Call the task
-  *       delete taskPtr; // Clean up
-  *       return G_SOURCE_REMOVE; // Remove the source after it's executed
-  *     },
-  *     new std::function<void()>(std::move(task)));
-  *   }
-  * );
-  * @endcode
-  */
+  /**
+   * @brief Sets a custom asynchronous handler for parse().
+   * @param handler A function that takes a callable and posts it to the desired main loop.
+   *
+   * Example boost.asio:
+   * @code
+   * create[&ioContext](auto task){boost::asio::post(ioContext, std::move(task));});
+   * @endcode
+   *
+   * Example glib:
+   * @code
+   * create(
+   *   [](auto task)
+   *   {
+   *     // Use g_main_context_invoke to post the task to the default main context.
+   *     g_main_context_invoke(nullptr, [](gpointer userData) -> gboolean
+   *     {
+   *       auto taskPtr = static_cast<std::function<void()>*>(userData);
+   *       (*taskPtr)(); // Call the task
+   *       delete taskPtr; // Clean up
+   *       return G_SOURCE_REMOVE; // Remove the source after it's executed
+   *     },
+   *     new std::function<void()>(std::move(task)));
+   *   }
+   * );
+   * @endcode
+   */
   [[nodiscard]] static std::shared_ptr<MessageParser> create(AsyncHandler handler);
 
   ~MessageParser();
@@ -116,7 +118,8 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalEndOfStream(std::function<void(const std::string& sourceName)> callback);
+  [[nodiscard]] SignalConnection
+  connectSignalEndOfStream(std::function<void(const std::string& sourceName)> callback);
 
   /**
    * @brief Connect a callback to the error signal.
@@ -124,7 +127,13 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalError(std::function<void(const std::string& sourceName, const std::string& errorMessage, const std::string& debugInfo)> callback);
+  [[nodiscard]] SignalConnection connectSignalError(
+    std::function<void(
+      const std::string& sourceName,
+      const std::string& errorMessage,
+      const std::string& debugInfo
+    )> callback
+  );
 
   /**
    * @brief Connect a callback to the state change signal.
@@ -132,7 +141,14 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalStateChanged(std::function<void(const std::string& sourceName, GstState oldState, GstState newState, GstState pendingState)> callback);
+  [[nodiscard]] SignalConnection connectSignalStateChanged(
+    std::function<void(
+      const std::string& sourceName,
+      GstState oldState,
+      GstState newState,
+      GstState pendingState
+    )> callback
+  );
 
   /**
    * @brief Connect a callback to the warning signal.
@@ -140,7 +156,13 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalWarning(std::function<void(const std::string& sourceName, const std::string& warningMessage, const std::string& debugInfo)> callback);
+  [[nodiscard]] SignalConnection connectSignalWarning(
+    std::function<void(
+      const std::string& sourceName,
+      const std::string& warningMessage,
+      const std::string& debugInfo
+    )> callback
+  );
 
   /**
    * @brief Connect a callback to the duration change signal.
@@ -148,7 +170,8 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalDurationChanged(std::function<void(const std::string& sourceName)> callback);
+  [[nodiscard]] SignalConnection
+  connectSignalDurationChanged(std::function<void(const std::string& sourceName)> callback);
 
   /**
    * @brief Connect a callback to the info signal.
@@ -156,7 +179,13 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalInfo(std::function<void(const std::string& sourceName, const std::string& infoMessage, const std::string& debugInfo)> callback);
+  [[nodiscard]] SignalConnection connectSignalInfo(
+    std::function<void(
+      const std::string& sourceName,
+      const std::string& infoMessage,
+      const std::string& debugInfo
+    )> callback
+  );
 
   /**
    * @brief Connect a callback to the stream status signal.
@@ -164,7 +193,13 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalStreamStatus(std::function<void(const std::string& sourceName, GstStreamStatusType statusType, const std::string& ownerName)> callback);
+  [[nodiscard]] SignalConnection connectSignalStreamStatus(
+    std::function<void(
+      const std::string& sourceName,
+      GstStreamStatusType statusType,
+      const std::string& ownerName
+    )> callback
+  );
 
   /**
    * @brief Connect a callback to the stream start signal.
@@ -172,7 +207,8 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalStreamStart(std::function<void(const std::string& sourceName)> callback);
+  [[nodiscard]] SignalConnection
+  connectSignalStreamStart(std::function<void(const std::string& sourceName)> callback);
 
   /**
    * @brief Connect a callback to the element message signal.
@@ -180,7 +216,9 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalElementMessage(std::function<void(const std::string& sourceName, const GstStructure* structure)> callback);
+  [[nodiscard]] SignalConnection connectSignalElementMessage(
+    std::function<void(const std::string& sourceName, const GstStructure* structure)> callback
+  );
 
   /**
    * @brief Connect a callback to the ASYNC_DONE signal.
@@ -188,7 +226,9 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a callback for this message type is already connected
    */
-  [[nodiscard]] SignalConnection connectSignalAsyncDone(std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback);
+  [[nodiscard]] SignalConnection connectSignalAsyncDone(
+    std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback
+  );
 
 private:
   class Private;
@@ -197,7 +237,6 @@ private:
   std::shared_ptr<Private> prv;
 };
 
-} // dh::gst
+} // namespace dh::gst
 
-#endif //DH_GST_MESSAGEPARSER_HPP
-
+#endif // DH_GST_MESSAGEPARSER_HPP

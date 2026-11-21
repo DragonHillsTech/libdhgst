@@ -2,8 +2,8 @@
 
 #include "sharedptrs.hpp"
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <stdexcept>
@@ -11,22 +11,25 @@ BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 using namespace dh::gst;
 // Test fixture for GStreamer tests
-class GStreamerSharedPtrTest {
+class GStreamerSharedPtrTest
+{
 protected:
   // Setup before first test case
   GStreamerSharedPtrTest()
   {
-    gst_init(nullptr, nullptr);  // Initialize GStreamer
+    gst_init(nullptr, nullptr); // Initialize GStreamer
   }
 };
 
 // Helper function to check reference count
-int getRefCount(GstObject* obj) {
+int getRefCount(GstObject* obj)
+{
   return GST_OBJECT_REFCOUNT_VALUE(obj);
 }
 
 // Test makeGstSharedPtr with GstElement and TransferType::Full
-BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest)
+{
   GstElement* rawSource = gst_element_factory_make("fakesrc", "source");
   BOOST_REQUIRE_NE(rawSource, nullptr);
 
@@ -49,7 +52,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest
 }
 
 // Test makeGstSharedPtr with GstPad and TransferType::None
-BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest)
+{
   GstPad* rawPad = gst_pad_new("sink", GST_PAD_SINK);
   BOOST_REQUIRE_NE(rawPad, nullptr);
 
@@ -66,11 +70,12 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest) {
   // Shared pointer goes out of scope and unrefs the object
   padSPtr.reset();
   BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(rawPad)), initialRefCount);
-  gst_object_unref(rawPad);  // Clean up the initial ref
+  gst_object_unref(rawPad); // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstCaps and TransferType::None
-BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest)
+{
   GstCaps* rawCaps = gst_caps_new_empty_simple("video/x-raw");
   BOOST_REQUIRE_NE(rawCaps, nullptr);
 
@@ -87,11 +92,12 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest) {
   // Shared pointer goes out of scope and unrefs the object
   capsSPtr.reset();
   BOOST_CHECK_EQUAL(GST_CAPS_REFCOUNT_VALUE(rawCaps), initialRefCount);
-  gst_caps_unref(rawCaps);  // Clean up the initial ref
+  gst_caps_unref(rawCaps); // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstAppSink and TransferType::None
-BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest)
+{
   GstElement* rawSink = gst_element_factory_make("appsink", "sink");
   BOOST_REQUIRE_NE(rawSink, nullptr);
 
@@ -109,11 +115,12 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest
   // Shared pointer goes out of scope and unrefs the object
   sinkSPtr.reset();
   BOOST_CHECK_EQUAL(getRefCount(GST_OBJECT(appSink)), initialRefCount);
-  gst_object_unref(rawSink);  // Clean up the initial ref
+  gst_object_unref(rawSink); // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstBus and TransferType::Full
-BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest) {
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest)
+{
   GstElement* rawPipeline = gst_element_factory_make("pipeline", "pipeline");
   BOOST_REQUIRE_NE(rawPipeline, nullptr);
 
@@ -133,7 +140,7 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest) {
   // Shared pointer goes out of scope and unrefs the object
   busSPtr.reset();
 
-  gst_object_unref(rawPipeline);  // Clean up the initial ref
+  gst_object_unref(rawPipeline); // Clean up the initial ref
 }
 
 // Test makeGstSharedPtr with GstBuffer and TransferType::None
@@ -163,7 +170,10 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_Null)
 {
   BOOST_CHECK_EQUAL(makeGlibSharedPtr(static_cast<GError*>(nullptr), TransferType::Full), nullptr);
-  BOOST_CHECK_EQUAL(makeGlibSharedPtr(static_cast<GHashTable*>(nullptr), TransferType::None), nullptr);
+  BOOST_CHECK_EQUAL(
+    makeGlibSharedPtr(static_cast<GHashTable*>(nullptr), TransferType::None),
+    nullptr
+  );
 }
 
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_None)
@@ -183,7 +193,9 @@ BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_None)
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_Full)
 {
   GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
-  g_hash_table_ref(table); // keep the table alive to check that the shared_ptr releases exactly one reference
+  g_hash_table_ref(
+    table
+  ); // keep the table alive to check that the shared_ptr releases exactly one reference
   g_hash_table_insert(table, const_cast<char*>("key"), const_cast<char*>("value"));
 
   auto tableSPtr = makeGlibSharedPtr(table, TransferType::Full);

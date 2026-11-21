@@ -47,7 +47,7 @@ public:
   ~SyncMessageEmission()
   {
     // the bus is gone if the handler is destroyed while the bus is finalized
-    if(auto* bus = static_cast<GstBus*>(g_weak_ref_get(&weakBus)))
+    if (auto* bus = static_cast<GstBus*>(g_weak_ref_get(&weakBus)))
     {
       gst_bus_disable_sync_message_emission(bus);
       gst_object_unref(bus);
@@ -64,14 +64,16 @@ private:
 
 } // namespace
 
-
 Bus::Bus(GstBusSPtr gstBus)
-: Object(GST_OBJECT_CAST(gstBus.get()), TransferType::None) // no pointer_cast because C inheritance
+  : Object(
+      GST_OBJECT_CAST(gstBus.get()),
+      TransferType::None
+    ) // no pointer_cast because C inheritance
 {
 }
 
 Bus::Bus(GstBus* gstBus, TransferType transferType)
-: Object(GST_OBJECT_CAST(gstBus),  transferType)
+  : Object(GST_OBJECT_CAST(gstBus), transferType)
 {
 }
 
@@ -97,8 +99,8 @@ GstBusSPtr Bus::getGstBus()
 
 const GstBusSPtr Bus::getGstBus() const
 {
- // we can not use *pointer_cast because these are C types
- return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
+  // we can not use *pointer_cast because these are C types
+  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
 }
 
 void Bus::post(GstMessage& message)
@@ -108,7 +110,8 @@ void Bus::post(GstMessage& message)
   gst_bus_post(getRawGstBus(), gst_message_ref(&message));
 }
 
-SignalConnection Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const
+SignalConnection
+Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const
 {
   auto emission = std::make_shared<SyncMessageEmission>(*getGstBus());
   return connectGobjectSignal<GstMessageSPtr>(
@@ -133,5 +136,4 @@ const GstBus* Bus::getRawGstBus() const
   return GST_BUS_CAST(getRawGstObject());
 }
 
-
-} // dh::gst
+} // namespace dh::gst

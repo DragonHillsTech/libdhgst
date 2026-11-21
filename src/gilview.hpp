@@ -23,31 +23,32 @@
 
 #include <boost/gil.hpp>
 #include <gst/gst.h>
-#include <gst/video/video.h>  // for GstVideoFrame, GstVideoInfo
+#include <gst/video/video.h> // for GstVideoFrame, GstVideoInfo
 
 namespace dh::gst
 {
 /**
  * @brief Create a Boost.GIL view directly from a mapped GstVideoFrame.
  *
- * @tparam ViewType   Must be an interleaved view whose pixel_t is boost::gil::rgb8_pixel_t or gray8_pixel_t.
- *                    Use a const view (e.g. boost::gil::rgb8c_view_t) for frames mapped with GST_MAP_READ only;
- *                    a mutable view (e.g. boost::gil::rgb8_view_t) requires a frame mapped with GST_MAP_WRITE.
- * @param  frame      A GstVideoFrame that has already been mapped.
+ * @tparam ViewType   Must be an interleaved view whose pixel_t is boost::gil::rgb8_pixel_t or
+ *                    gray8_pixel_t. Use a const view (e.g. boost::gil::rgb8c_view_t) for
+ *                    frames mapped with GST_MAP_READ only; a mutable view
+ *                    (e.g. boost::gil::rgb8_view_t) requires a frame mapped with GST_MAP_WRITE.
+ * @param  frame A GstVideoFrame that has already been mapped.
  * @return The Boost.GIL view over frame's plane 0. It is only valid until the frame is unmapped.
  * @throws std::runtime_error if the GStreamer format isn't compatible, the frame is not mapped,
  *         or a mutable view is requested for a frame that is not mapped for writing.
  */
-template <typename ViewType>
+template<typename ViewType>
 ViewType createGilView(GstVideoFrame& frame)
 {
-  using pixel_t         = typename ViewType::value_type;
+  using pixel_t = typename ViewType::value_type;
   using non_const_pix_t = std::remove_const_t<pixel_t>;
 
   // 1) The frame must be mapped. Checked first: the format check dereferences frame.info.finfo,
   //    which is null in a frame that was never mapped.
   void* const planeData = GST_VIDEO_FRAME_PLANE_DATA(&frame, 0);
-  if(!frame.info.finfo || !planeData)
+  if (!frame.info.finfo || !planeData)
   {
     throw std::runtime_error("createGilView: frame is not mapped");
   }
@@ -55,7 +56,7 @@ ViewType createGilView(GstVideoFrame& frame)
   // 2) Ensure only RGB8 or GRAY8
   if constexpr (std::is_same_v<non_const_pix_t, boost::gil::rgb8_pixel_t>)
   {
-    if(GST_VIDEO_INFO_FORMAT(&frame.info) != GST_VIDEO_FORMAT_RGB)
+    if (GST_VIDEO_INFO_FORMAT(&frame.info) != GST_VIDEO_FORMAT_RGB)
     {
       throw std::runtime_error("createGilView: frame is not RGB8");
     }
@@ -69,28 +70,32 @@ ViewType createGilView(GstVideoFrame& frame)
   }
   else
   {
-    static_assert(!std::is_same_v<non_const_pix_t, non_const_pix_t>,
-                  "createGilView only supports RGB8 or GRAY8 pixels");
+    static_assert(
+      !std::is_same_v<non_const_pix_t, non_const_pix_t>,
+      "createGilView only supports RGB8 or GRAY8 pixels"
+    );
   }
 
   // 3) A mutable view may only be created for a frame mapped for writing
   if constexpr (boost::gil::view_is_mutable<ViewType>::value)
   {
-    if(!(frame.map[0].flags & GST_MAP_WRITE))
+    if (!(frame.map[0].flags & GST_MAP_WRITE))
     {
-      throw std::runtime_error("createGilView: frame is not mapped for writing, use a const view (e.g. rgb8c_view_t)");
+      throw std::runtime_error(
+        "createGilView: frame is not mapped for writing, use a const view (e.g. rgb8c_view_t)"
+      );
     }
   }
 
   // 4) Dimensions, data pointer, and byte-stride
-  const int            width        = frame.info.width;
-  const int            height       = frame.info.height;
-  auto*                base         = reinterpret_cast<pixel_t*>(planeData);
+  const int width = frame.info.width;
+  const int height = frame.info.height;
+  auto* base = reinterpret_cast<pixel_t*>(planeData);
   const std::ptrdiff_t stride_bytes = GST_VIDEO_FRAME_PLANE_STRIDE(&frame, 0);
 
   // 5) Return interleaved view (rowsize in bytes)
   return boost::gil::interleaved_view(width, height, base, stride_bytes);
 }
-} // dh::gst
+} // namespace dh::gst
 
-#endif //DH_GST_GILVIEW_HPP
+#endif // DH_GST_GILVIEW_HPP

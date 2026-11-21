@@ -27,20 +27,17 @@ namespace dh::gst
 {
 
 Bin::Bin(GstBinSPtr gstBin)
-: Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
+  : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
 {
 }
 
 Bin::Bin(GstBin* gstBin, TransferType transferType)
-: Element(GST_ELEMENT_CAST(gstBin), transferType)
+  : Element(GST_ELEMENT_CAST(gstBin), transferType)
 {
 }
 
 Bin::Bin(const std::string& name)
-: Element(
-    GST_ELEMENT_CAST(gst_bin_new(name.c_str())),
-    TransferType::Floating
-  )
+  : Element(GST_ELEMENT_CAST(gst_bin_new(name.c_str())), TransferType::Floating)
 {
 }
 
@@ -68,17 +65,14 @@ std::shared_ptr<Bin> Bin::fromDescription(const std::string& description, bool g
   GError* error{nullptr};
 
   // Parse the pipeline description and store error if any occurs
-  GstElement* gstElement = gst_parse_bin_from_description(
-    description.c_str(),
-    ghostUnlinkedPads,
-    &error
-  );
+  GstElement* gstElement =
+    gst_parse_bin_from_description(description.c_str(), ghostUnlinkedPads, &error);
 
   // Create a smart pointer for the GError if it exists
   GErrorSPtr errorSPtr(error, GlibDeleter());
 
   // If parsing fails, throw an exception with the error message
-  if(!gstElement)
+  if (!gstElement)
   {
     std::string errMsg = "Failed to create Bin from description: ";
     errMsg += errorSPtr ? errorSPtr->message : "Unknown error.";
@@ -104,7 +98,7 @@ void Bin::addElement(GstElement& element)
 {
   // gst_bin_add: transfer: floating
   // The bin sinks a floating reference, otherwise it takes its own reference.
-  if(gst_bin_add(getRawGstBin(), &element) == FALSE)
+  if (gst_bin_add(getRawGstBin(), &element) == FALSE)
   {
     throw std::runtime_error("Failed to add element to GstBin.");
   }
@@ -119,7 +113,7 @@ std::shared_ptr<Element> Bin::getElementByName(const std::string& name)
 {
   // gst_bin_get_by_name: transfer:full, nullable
   GstElement* gstElement = gst_bin_get_by_name(GST_BIN(getRawGstBin()), name.c_str());
-  if(!gstElement)
+  if (!gstElement)
   {
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
@@ -168,4 +162,4 @@ GstBin* Bin::getRawGstBin()
   return GST_BIN_CAST(getRawGstObject());
 }
 
-} // dh::gst
+} // namespace dh::gst
