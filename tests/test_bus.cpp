@@ -28,7 +28,7 @@ public:
 
 BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
 {
-  auto bus = Bus::create(gst_bus_new(), TransferType::Full);
+  auto bus = Bus::create(gst_bus_new(), TransferType::full);
   bool signalReceived = false;
   // Connect to the sync message signal from the Bus
   auto syncMessageConnection = bus->connectSignalNewSyncMessage(
@@ -48,7 +48,7 @@ BOOST_FIXTURE_TEST_CASE(BusReceivesMessageFromPost, BusTest)
   // gst_message_new_application takes GstMessage transfertype:full and returns full
   GstMessageSPtr mockMessage = makeGstSharedPtr(
     gst_message_new_application(nullptr, gst_structure_new_empty("TestMessage")),
-    TransferType::Full
+    TransferType::full
   );
   // Post the message to the bus using the post function
   bus->post(*mockMessage);
@@ -61,7 +61,7 @@ BOOST_FIXTURE_TEST_CASE(SyncMessageConnectionDoesNotKeepBusAlive, BusTest)
   gpointer weakBus = rawBus;
   g_object_add_weak_pointer(G_OBJECT(rawBus), &weakBus);
 
-  auto bus = Bus::create(rawBus, TransferType::Full);
+  auto bus = Bus::create(rawBus, TransferType::full);
   auto connection = bus->connectSignalNewSyncMessage(
     [](GstMessageSPtr)
     {
@@ -82,7 +82,7 @@ BOOST_FIXTURE_TEST_CASE(SyncMessageConnectionDoesNotKeepBusAlive, BusTest)
 
 BOOST_FIXTURE_TEST_CASE(DisconnectDisablesSyncMessageEmission, BusTest)
 {
-  auto bus = Bus::create(gst_bus_new(), TransferType::Full);
+  auto bus = Bus::create(gst_bus_new(), TransferType::full);
 
   // a plain GLib handler only receives sync-message while sync emission is enabled
   int rawEmissions = 0;
@@ -100,7 +100,7 @@ BOOST_FIXTURE_TEST_CASE(DisconnectDisablesSyncMessageEmission, BusTest)
   {
     const auto message = makeGstSharedPtr(
       gst_message_new_application(nullptr, gst_structure_new_empty("TestMessage")),
-      TransferType::Full
+      TransferType::full
     );
     bus->post(*message);
   };

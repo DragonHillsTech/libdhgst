@@ -482,7 +482,7 @@ struct GValueTraits<std::shared_ptr<T>, std::enable_if_t<IsGstMiniObject<T>::val
   static std::shared_ptr<T> get(const GValue* value)
   {
     // g_value_dup_boxed returns a new reference
-    return makeGstSharedPtr(static_cast<T*>(g_value_dup_boxed(value)), TransferType::Full);
+    return makeGstSharedPtr(static_cast<T*>(g_value_dup_boxed(value)), TransferType::full);
   }
   static void set(GValue* value, const std::shared_ptr<T>& x)
   {
@@ -509,7 +509,7 @@ struct GValueTraits<std::shared_ptr<T>, std::enable_if_t<IsGstObject<T>::value>>
   static std::shared_ptr<T> get(const GValue* value)
   {
     // g_value_dup_object returns a new reference
-    return makeGstSharedPtr(static_cast<T*>(g_value_dup_object(value)), TransferType::Full);
+    return makeGstSharedPtr(static_cast<T*>(g_value_dup_object(value)), TransferType::full);
   }
 
   static void set(GValue* value, const std::shared_ptr<T>& x)

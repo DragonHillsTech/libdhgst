@@ -35,7 +35,7 @@ ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferTyp
 ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
   : PluginFeature(
       GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()),
-      TransferType::None
+      TransferType::none
     ) // No pointer_cast due to C inheritance
 {
 }
@@ -66,7 +66,7 @@ std::shared_ptr<ElementFactory> ElementFactory::fromFactoryName(const std::strin
   }
 
   // gst_element_factory_find: transfer full
-  return create(factory, TransferType::Full);
+  return create(factory, TransferType::full);
 }
 
 std::shared_ptr<Element> ElementFactory::createElement(const std::string& elementName) const
@@ -80,7 +80,7 @@ std::shared_ptr<Element> ElementFactory::createElement(const std::string& elemen
   {
     throw std::runtime_error("Failed to create element: " + elementName);
   }
-  return Element::create(gstElementRaw, TransferType::Floating);
+  return Element::create(gstElementRaw, TransferType::floating);
 }
 
 std::shared_ptr<Element>
@@ -104,7 +104,7 @@ ElementFactory::makeElement(const std::string& factoryName, const std::string& e
     );
   }
 
-  return Element::create(gstElement, TransferType::Floating);
+  return Element::create(gstElement, TransferType::floating);
 }
 
 std::string ElementFactory::getMetaData(const std::string& key) const
@@ -145,12 +145,12 @@ GType ElementFactory::getElementType() const
 
 GstElementFactorySPtr ElementFactory::getGstElementFactory()
 {
-  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::none);
 }
 
 const GstElementFactorySPtr ElementFactory::getGstElementFactory() const
 {
-  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::none);
 }
 
 GstElementFactory* ElementFactory::getRawGstElementFactory()

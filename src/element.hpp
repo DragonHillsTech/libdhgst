@@ -56,7 +56,7 @@ protected:
    * @brief Create a new Element object that wraps a GstElement.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstElement
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Element(GstElement* gstElement, TransferType transferType);
 

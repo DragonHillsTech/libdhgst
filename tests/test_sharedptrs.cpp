@@ -27,7 +27,7 @@ int getRefCount(GstObject* obj)
   return GST_OBJECT_REFCOUNT_VALUE(obj);
 }
 
-// Test makeGstSharedPtr with GstElement and TransferType::Full
+// Test makeGstSharedPtr with GstElement and TransferType::full
 BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest)
 {
   GstElement* rawSource = gst_element_factory_make("fakesrc", "source");
@@ -35,8 +35,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest
 
   int initialRefCount = getRefCount(GST_OBJECT(rawSource));
 
-  // Create shared_ptr with TransferType::Full
-  auto sourceSPtr = dh::gst::makeGstSharedPtr(rawSource, TransferType::Full);
+  // Create shared_ptr with TransferType::full
+  auto sourceSPtr = dh::gst::makeGstSharedPtr(rawSource, TransferType::full);
 
   BOOST_REQUIRE_NE(sourceSPtr, nullptr);
 
@@ -51,7 +51,7 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstElement_Full, GStreamerSharedPtrTest
   BOOST_CHECK(weakSource == nullptr);
 }
 
-// Test makeGstSharedPtr with GstPad and TransferType::None
+// Test makeGstSharedPtr with GstPad and TransferType::none
 BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest)
 {
   GstPad* rawPad = gst_pad_new("sink", GST_PAD_SINK);
@@ -59,8 +59,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest)
 
   int initialRefCount = getRefCount(GST_OBJECT(rawPad));
 
-  // Create shared_ptr with TransferType::None
-  auto padSPtr = dh::gst::makeGstSharedPtr(rawPad, TransferType::None);
+  // Create shared_ptr with TransferType::none
+  auto padSPtr = dh::gst::makeGstSharedPtr(rawPad, TransferType::none);
 
   BOOST_REQUIRE_NE(padSPtr, nullptr);
 
@@ -73,7 +73,7 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstPad_None, GStreamerSharedPtrTest)
   gst_object_unref(rawPad); // Clean up the initial ref
 }
 
-// Test makeGstSharedPtr with GstCaps and TransferType::None
+// Test makeGstSharedPtr with GstCaps and TransferType::none
 BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest)
 {
   GstCaps* rawCaps = gst_caps_new_empty_simple("video/x-raw");
@@ -81,8 +81,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest)
 
   int initialRefCount = GST_CAPS_REFCOUNT_VALUE(rawCaps);
 
-  // Create shared_ptr with TransferType::None
-  auto capsSPtr = dh::gst::makeGstSharedPtr(rawCaps, TransferType::None);
+  // Create shared_ptr with TransferType::none
+  auto capsSPtr = dh::gst::makeGstSharedPtr(rawCaps, TransferType::none);
 
   BOOST_REQUIRE_NE(capsSPtr, nullptr);
 
@@ -95,7 +95,7 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstCaps_None, GStreamerSharedPtrTest)
   gst_caps_unref(rawCaps); // Clean up the initial ref
 }
 
-// Test makeGstSharedPtr with GstAppSink and TransferType::None
+// Test makeGstSharedPtr with GstAppSink and TransferType::none
 BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest)
 {
   GstElement* rawSink = gst_element_factory_make("appsink", "sink");
@@ -104,8 +104,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest
   GstAppSink* appSink = GST_APP_SINK(rawSink);
   int initialRefCount = getRefCount(GST_OBJECT(appSink));
 
-  // Create shared_ptr with TransferType::None
-  auto sinkSPtr = dh::gst::makeGstSharedPtr(appSink, TransferType::None);
+  // Create shared_ptr with TransferType::none
+  auto sinkSPtr = dh::gst::makeGstSharedPtr(appSink, TransferType::none);
 
   BOOST_REQUIRE_NE(sinkSPtr, nullptr);
 
@@ -118,7 +118,7 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstAppSink_None, GStreamerSharedPtrTest
   gst_object_unref(rawSink); // Clean up the initial ref
 }
 
-// Test makeGstSharedPtr with GstBus and TransferType::Full
+// Test makeGstSharedPtr with GstBus and TransferType::full
 BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest)
 {
   GstElement* rawPipeline = gst_element_factory_make("pipeline", "pipeline");
@@ -129,8 +129,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest)
 
   int initialRefCount = getRefCount(GST_OBJECT(rawBus));
 
-  // Create shared_ptr with TransferType::Full
-  auto busSPtr = dh::gst::makeGstSharedPtr(rawBus, TransferType::Full);
+  // Create shared_ptr with TransferType::full
+  auto busSPtr = dh::gst::makeGstSharedPtr(rawBus, TransferType::full);
 
   BOOST_REQUIRE_NE(busSPtr, nullptr);
 
@@ -143,7 +143,7 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBus_Full, GStreamerSharedPtrTest)
   gst_object_unref(rawPipeline); // Clean up the initial ref
 }
 
-// Test makeGstSharedPtr with GstBuffer and TransferType::None
+// Test makeGstSharedPtr with GstBuffer and TransferType::none
 BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
 {
   GstBuffer* rawBuffer = gst_buffer_new();
@@ -151,8 +151,8 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
 
   int initialRefCount = GST_MINI_OBJECT_REFCOUNT_VALUE(rawBuffer);
 
-  // Create shared_ptr with TransferType::None
-  auto bufferSPtr = dh::gst::makeGstSharedPtr(rawBuffer, TransferType::None);
+  // Create shared_ptr with TransferType::none
+  auto bufferSPtr = dh::gst::makeGstSharedPtr(rawBuffer, TransferType::none);
 
   BOOST_REQUIRE_NE(bufferSPtr, nullptr);
 
@@ -169,9 +169,9 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
 
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_Null)
 {
-  BOOST_CHECK_EQUAL(makeGlibSharedPtr(static_cast<GError*>(nullptr), TransferType::Full), nullptr);
+  BOOST_CHECK_EQUAL(makeGlibSharedPtr(static_cast<GError*>(nullptr), TransferType::full), nullptr);
   BOOST_CHECK_EQUAL(
-    makeGlibSharedPtr(static_cast<GHashTable*>(nullptr), TransferType::None),
+    makeGlibSharedPtr(static_cast<GHashTable*>(nullptr), TransferType::none),
     nullptr
   );
 }
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_None)
   GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
   g_hash_table_insert(table, const_cast<char*>("key"), const_cast<char*>("value"));
 
-  auto tableSPtr = makeGlibSharedPtr(table, TransferType::None);
+  auto tableSPtr = makeGlibSharedPtr(table, TransferType::none);
   BOOST_REQUIRE_EQUAL(tableSPtr.get(), table);
   tableSPtr.reset();
 
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_Full)
   ); // keep the table alive to check that the shared_ptr releases exactly one reference
   g_hash_table_insert(table, const_cast<char*>("key"), const_cast<char*>("value"));
 
-  auto tableSPtr = makeGlibSharedPtr(table, TransferType::Full);
+  auto tableSPtr = makeGlibSharedPtr(table, TransferType::full);
   tableSPtr.reset();
 
   BOOST_CHECK_EQUAL(g_hash_table_size(table), 1U);
@@ -208,29 +208,29 @@ BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GHashTable_Full)
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_NotReferenceCountedNoneThrows)
 {
   GError* error = g_error_new_literal(g_quark_from_static_string("test"), 1, "test");
-  BOOST_CHECK_THROW((void)makeGlibSharedPtr(error, TransferType::None), std::invalid_argument);
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(error, TransferType::none), std::invalid_argument);
   g_error_free(error);
 
   GList* list = g_list_append(nullptr, nullptr);
-  BOOST_CHECK_THROW((void)makeGlibSharedPtr(list, TransferType::None), std::invalid_argument);
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(list, TransferType::none), std::invalid_argument);
   g_list_free(list);
 }
 
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_FloatingThrows)
 {
   GHashTable* table = g_hash_table_new(g_str_hash, g_str_equal);
-  BOOST_CHECK_THROW((void)makeGlibSharedPtr(table, TransferType::Floating), std::invalid_argument);
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(table, TransferType::floating), std::invalid_argument);
   g_hash_table_unref(table);
 
   GError* error = g_error_new_literal(g_quark_from_static_string("test"), 1, "test");
-  BOOST_CHECK_THROW((void)makeGlibSharedPtr(error, TransferType::Floating), std::invalid_argument);
+  BOOST_CHECK_THROW((void)makeGlibSharedPtr(error, TransferType::floating), std::invalid_argument);
   g_error_free(error);
 }
 
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_GError_Full)
 {
   GError* error = g_error_new_literal(g_quark_from_static_string("test"), 1, "test message");
-  const auto errorSPtr = makeGlibSharedPtr(error, TransferType::Full);
+  const auto errorSPtr = makeGlibSharedPtr(error, TransferType::full);
   BOOST_REQUIRE_EQUAL(errorSPtr.get(), error);
   BOOST_CHECK_EQUAL(std::string(errorSPtr->message), "test message");
   // freed by the deleter; LeakSanitizer reports it otherwise

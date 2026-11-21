@@ -42,7 +42,7 @@ BOOST_FIXTURE_TEST_CASE(CreateWithWrongTypeThrowsAndReleasesTheObject, PipelineT
     bin
   ); // the reference handed over below; the first one keeps it alive for the check
   BOOST_CHECK_THROW(
-    (void)Pipeline::create(GST_PIPELINE_CAST(bin), TransferType::Full),
+    (void)Pipeline::create(GST_PIPELINE_CAST(bin), TransferType::full),
     std::invalid_argument
   );
   // the handed over reference was released again
@@ -55,7 +55,7 @@ BOOST_FIXTURE_TEST_CASE(CreateBaseClassWithWrongTypeThrows, PipelineTest)
   // a fakesrc is no GstBin
   GstElement* element = gst_element_factory_make("fakesrc", nullptr);
   BOOST_CHECK_THROW(
-    (void)Bin::create(GST_BIN_CAST(element), TransferType::Floating),
+    (void)Bin::create(GST_BIN_CAST(element), TransferType::floating),
     std::invalid_argument
   );
 }
@@ -64,7 +64,7 @@ BOOST_FIXTURE_TEST_CASE(CreateWithSubtypeIsAccepted, PipelineTest)
 {
   // a GstPipeline is a GstBin
   GstElement* pipeline = gst_pipeline_new("test_pipeline");
-  const auto bin = Bin::create(GST_BIN_CAST(pipeline), TransferType::Floating);
+  const auto bin = Bin::create(GST_BIN_CAST(pipeline), TransferType::floating);
   BOOST_CHECK_EQUAL(bin->getName(), "test_pipeline");
 }
 

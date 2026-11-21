@@ -52,7 +52,7 @@ protected:
    * @brief Constructs an ElementFactory from a shared pointer to GstElementFactory
    * @param gstElementFactory The GStreamer element factory shared pointer
    */
-  ElementFactory(GstElementFactorySPtr gstElementFactory);
+  explicit ElementFactory(GstElementFactorySPtr gstElementFactory);
 
 public:
   [[nodiscard]] static std::shared_ptr<ElementFactory>

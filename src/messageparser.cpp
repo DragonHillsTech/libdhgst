@@ -186,7 +186,7 @@ void MessageParser::parse(const GstMessage& message)
   {
     // The task may run after this parser is destroyed, or never: keep the message alive
     // only as long as the task exists and do not touch the parser if it is already gone.
-    auto messageSPtr = makeGstSharedPtr(const_cast<GstMessage*>(&message), TransferType::None);
+    auto messageSPtr = makeGstSharedPtr(const_cast<GstMessage*>(&message), TransferType::none);
     std::weak_ptr<Private> weakPrv = prv;
     prv->asyncHandler(
       [weakPrv, messageSPtr = std::move(messageSPtr)]()

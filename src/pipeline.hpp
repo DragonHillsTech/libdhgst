@@ -47,7 +47,7 @@ protected:
    * @brief Create a new Pipeline object that wraps a GstPipeline*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstPipeline
-   * @param transferType if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Pipeline(GstPipeline* gstPipeline, TransferType transferType);
 

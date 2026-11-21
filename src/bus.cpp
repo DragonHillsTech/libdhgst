@@ -67,7 +67,7 @@ private:
 Bus::Bus(GstBusSPtr gstBus)
   : Object(
       GST_OBJECT_CAST(gstBus.get()),
-      TransferType::None
+      TransferType::none
     ) // no pointer_cast because C inheritance
 {
 }
@@ -94,13 +94,13 @@ std::shared_ptr<Bus> Bus::create(GstBus* gstBus, TransferType transferType)
 GstBusSPtr Bus::getGstBus()
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::none);
 }
 
 const GstBusSPtr Bus::getGstBus() const
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::none);
 }
 
 void Bus::post(GstMessage& message)

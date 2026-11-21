@@ -41,7 +41,7 @@ protected:
    * @brief Create a new Bin object that wraps a GstBin*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstBin
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Bin(GstBin* gstBin, TransferType transferType);
 

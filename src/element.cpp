@@ -43,7 +43,7 @@ namespace
 gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
 {
   auto& pads = *static_cast<std::vector<GstPadSPtr>*>(userData);
-  pads.push_back(makeGstSharedPtr(pad, TransferType::None));
+  pads.push_back(makeGstSharedPtr(pad, TransferType::none));
   return TRUE; // continue iteration
 }
 
@@ -71,7 +71,7 @@ std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType tr
 Element::Element(GstElementSPtr gstElement)
   : Object(
       GST_OBJECT_CAST(gstElement.get()),
-      TransferType::None
+      TransferType::none
     ) // no pointer_cast because C inheritance
 {
 }
@@ -79,13 +79,13 @@ Element::Element(GstElementSPtr gstElement)
 GstElementSPtr Element::getGstElement()
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::none);
 }
 
 const GstElementSPtr Element::getGstElement() const
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::none);
 }
 
 GstStateChangeReturn Element::setState(GstState newState)
@@ -123,7 +123,7 @@ GstPadSPtr Element::getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& c
   // gst_element_get_compatible_pad: transfer full, nullable
   return makeGstSharedPtr(
     gst_element_get_compatible_pad(getRawGstElement(), pad.get(), caps.get()),
-    TransferType::Full
+    TransferType::full
   );
 }
 
@@ -132,7 +132,7 @@ GstPadSPtr Element::getStaticPad(const std::string& name)
   // gst_element_get_static_pad: transfer full, nullable
   return makeGstSharedPtr(
     gst_element_get_static_pad(getRawGstElement(), name.c_str()),
-    TransferType::Full
+    TransferType::full
   );
 }
 
@@ -158,7 +158,7 @@ std::string Element::getFactoryName() const
   {
     return {};
   }
-  const auto factory = ElementFactory::create(gstElementFactoryRawPtr, TransferType::None);
+  const auto factory = ElementFactory::create(gstElementFactoryRawPtr, TransferType::none);
   return factory->getName();
 }
 
@@ -166,7 +166,7 @@ GstClockSPtr Element::getElementClock() const
 {
   return makeGstSharedPtr(
     gst_element_get_clock(const_cast<GstElement*>(getRawGstElement())),
-    TransferType::Full
+    TransferType::full
   );
 }
 

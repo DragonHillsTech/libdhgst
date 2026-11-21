@@ -97,7 +97,7 @@ inline std::
   enable_if_t<IsGstObject<GstType>::value || IsGstMiniObject<GstType>::value, std::shared_ptr<GstType>>
   convertParamToCppType(GstType* value)
 {
-  return makeGstSharedPtr(value, TransferType::None);
+  return makeGstSharedPtr(value, TransferType::none);
 }
 
 } // namespace dh::gst

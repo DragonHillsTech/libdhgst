@@ -36,12 +36,12 @@ class SignalTestElement : public Element
 {
 public:
   explicit SignalTestElement(const char* factoryName)
-    : Element(gst_element_factory_make(factoryName, nullptr), TransferType::Floating)
+    : Element(gst_element_factory_make(factoryName, nullptr), TransferType::floating)
   {
   }
 
   explicit SignalTestElement(GstElement* element)
-    : Element(element, TransferType::Floating)
+    : Element(element, TransferType::floating)
   {
   }
 

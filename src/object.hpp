@@ -60,13 +60,13 @@ protected:
    * @brief Create a new Object that wraps a GstObject
    * @param gstObject
    */
-  Object(GstObjectSPtr gstObject);
+  explicit Object(GstObjectSPtr gstObject);
 
   /**
    * @brief Create a new Object that wraps a GstObject.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstObject
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Object(GstObject* gstObject, TransferType transferType);
 
@@ -74,7 +74,7 @@ public:
   /**
    * @brief Create an Object that wraps any GstObject, e.g. the source of a GstMessage.
    * @param gstObject the GstObject to wrap
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    * @throws std::runtime_error if gstObject is nullptr
    */
   [[nodiscard]] static std::shared_ptr<Object>

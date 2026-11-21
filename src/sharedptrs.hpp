@@ -142,14 +142,14 @@ makeGstSharedPtr(T* obj, TransferType transferType)
 
   switch (transferType)
   {
-    case TransferType::Full:
+    case TransferType::full:
       // Full ownership is transferred; nothing extra to do
       break;
-    case TransferType::None:
+    case TransferType::none:
       // No ownership is transferred; we need to increase the ref count
       gst_object_ref(GST_OBJECT(obj));
       break;
-    case TransferType::Floating:
+    case TransferType::floating:
       // Handle floating references properly
       if (g_object_is_floating(G_OBJECT(obj)))
       {
@@ -177,7 +177,7 @@ makeGstSharedPtr(T* obj, TransferType transferType)
     return nullptr; // Handle null objects safely
   }
 
-  if (transferType == TransferType::None)
+  if (transferType == TransferType::none)
   {
     // Increment reference manually for non-GObject types
     if constexpr (std::is_same_v<T, GstCaps>)
@@ -263,7 +263,7 @@ using GHashTableSPtr = std::shared_ptr<GHashTable>;
  * This function only participates in overload resolution if T is a known GLib type.
  * @tparam T Type of GLib object.
  * @param obj Raw pointer to the GLib object.
- * @param transferType Full takes over the caller's ownership. None takes an own reference, which is
+ * @param transferType full takes over the caller's ownership. none takes an own reference, which is
  * only possible for GHashTable: GError and GList are not reference counted. GLib types have no
  * floating references.
  * @return std::shared_ptr<T> A shared pointer to the GLib object with a custom deleter.
@@ -272,7 +272,7 @@ using GHashTableSPtr = std::shared_ptr<GHashTable>;
 template<typename T>
 std::
   enable_if_t<std::is_same_v<T, GError> || std::is_same_v<T, GList> || std::is_same_v<T, GHashTable>, std::shared_ptr<T>>
-  makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::Full)
+  makeGlibSharedPtr(T* obj, TransferType transferType = TransferType::full)
 {
   if (!obj)
   {
@@ -281,10 +281,10 @@ std::
 
   switch (transferType)
   {
-    case TransferType::Full:
+    case TransferType::full:
       // Full ownership is transferred; nothing extra to do
       break;
-    case TransferType::None:
+    case TransferType::none:
       // No ownership is transferred; we need our own reference
       if constexpr (std::is_same_v<T, GHashTable>)
       {
@@ -293,12 +293,12 @@ std::
       else
       {
         throw std::invalid_argument(
-          "makeGlibSharedPtr: TransferType::None is only supported for GHashTable, GError and "
+          "makeGlibSharedPtr: TransferType::none is only supported for GHashTable, GError and "
           "GList are not reference counted"
         );
       }
       break;
-    case TransferType::Floating:
+    case TransferType::floating:
       throw std::invalid_argument("makeGlibSharedPtr: GLib types have no floating references");
   }
   return std::shared_ptr<T>(obj, GlibDeleter());

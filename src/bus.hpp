@@ -42,7 +42,7 @@ protected:
    * @brief Create a new Bus object that wraps a GstBus.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstBus
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Bus(GstBus* gstBus, TransferType transferType);
 
