@@ -192,6 +192,10 @@ makeGstSharedPtr(T* obj, TransferType transferType)
     {
       gst_buffer_ref(obj);
     }
+    else if constexpr(std::is_same_v<T, GstSample>)
+    {
+      gst_sample_ref(obj);
+    }
     else
     {
       // Static assert for unhandled types to ensure all cases are covered

@@ -115,6 +115,16 @@ public:
   }
 
   /**
+   * @brief Check whether a callback is connected.
+   * It may be disconnected right after this returns, call() handles that.
+   */
+  [[nodiscard]] bool hasCallback() const
+  {
+    std::lock_guard<std::mutex> lock(callbackMutex);
+    return connectedCallback != nullptr;
+  }
+
+  /**
    * @brief Call the callback, if one is connected.
    */
   template<typename... CallArgs>
