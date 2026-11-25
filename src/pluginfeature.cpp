@@ -68,12 +68,12 @@ const std::shared_ptr<GstPluginFeature> PluginFeature::getGstPluginFeature() con
   return makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(getGstObject().get()), TransferType::none);
 }
 
-int PluginFeature::getRank() const
+unsigned int PluginFeature::getRank() const
 {
   return gst_plugin_feature_get_rank(const_cast<GstPluginFeature*>(getRawGstPluginFeature()));
 }
 
-void PluginFeature::setRank(int rank)
+void PluginFeature::setRank(unsigned int rank)
 {
   gst_plugin_feature_set_rank(getRawGstPluginFeature(), rank);
 }

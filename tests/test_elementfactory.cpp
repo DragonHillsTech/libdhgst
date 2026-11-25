@@ -7,7 +7,9 @@
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 #include <gst/gst.h>
 
+#include <limits>
 #include <stdexcept>
+#include <type_traits>
 
 using namespace dh::gst;
 
@@ -92,4 +94,20 @@ BOOST_FIXTURE_TEST_CASE(GetElementTypeTest, ElementFactoryTest)
 
   const GType elementType = factory->getElementType();
   BOOST_REQUIRE_NE(elementType, 0);
+}
+
+// getRank/setRank use GStreamer's unsigned guint range, so UINT_MAX is reported as UINT_MAX, not -1
+BOOST_FIXTURE_TEST_CASE(SetRankReportsLargeRanksUnsigned, ElementFactoryTest)
+{
+  const auto factory = ElementFactory::fromFactoryName("fakesrc");
+  static_assert(std::is_same_v<decltype(factory->getRank()), unsigned int>);
+  const unsigned int originalRank{factory->getRank()};
+  const unsigned int largeRank{std::numeric_limits<unsigned int>::max()};
+
+  factory->setRank(largeRank);
+  const unsigned int readRank{factory->getRank()};
+  // the factory is registered globally, restore it for the other tests
+  factory->setRank(originalRank);
+
+  BOOST_CHECK_EQUAL(readRank, largeRank);
 }

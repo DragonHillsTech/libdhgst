@@ -370,11 +370,14 @@ SignalConnection Object::connectGobjectSignal(
   const auto connectionId = g_signal_connect_data(
     const_cast<GstObject*>(getRawGstObject()),
     signalName.c_str(),
+    // GLib calls the handler with the signal's signature, which was checked above
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): GLib stores it as GCallback
     reinterpret_cast<GCallback>(SignalHandler<Args...>::callback),
     callbackData.get(),
     [](gpointer data, GClosure* /*closure*/)
     {
-      delete static_cast<Callback*>(data);
+      // clang-tidy complains about a simple "delete static_cast<Callback*>(data)"
+      const std::unique_ptr<Callback> owned{static_cast<Callback*>(data)};
     },
     G_CONNECT_AFTER
   );
