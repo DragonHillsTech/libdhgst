@@ -20,8 +20,14 @@
 
 #include "object.hpp"
 #include "internal/objectname.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace dh::gst
 {

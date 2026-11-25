@@ -20,6 +20,7 @@
 
 #include "signalconnection.hpp"
 
+#include <functional>
 #include <memory>
 #include <utility>
 

@@ -19,8 +19,13 @@
  */
 
 #include "bus.hpp"
+#include "object.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
 #include <cassert>
+#include <functional>
 #include <memory>
 #include <utility>
 

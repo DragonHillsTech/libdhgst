@@ -19,8 +19,15 @@
  */
 
 #include "bin.hpp"
+#include "element.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
+#include <functional>
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace dh::gst

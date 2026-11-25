@@ -20,6 +20,12 @@
 
 // local includes
 #include "pluginfeature.hpp"
+#include "object.hpp"
+#include "sharedptrs.hpp"
+#include "transfertype.hpp"
+
+// std
+#include <memory>
 
 namespace dh::gst
 {

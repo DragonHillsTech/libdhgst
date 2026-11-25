@@ -22,9 +22,13 @@
 #include "internal/callbackslot.hpp"
 #include "internal/objectname.hpp"
 #include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
+#include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace dh::gst
 {

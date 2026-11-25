@@ -20,9 +20,16 @@
 
 // local includes
 #include "elementfactory.hpp"
+#include "element.hpp"
+#include "pluginfeature.hpp"
+#include "sharedptrs.hpp"
+#include "transfertype.hpp"
 
 // std
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace dh::gst
 {

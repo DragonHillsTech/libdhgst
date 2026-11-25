@@ -20,8 +20,13 @@
 
 // local includes
 #include "pipeline.hpp"
+#include "bin.hpp"
+#include "bus.hpp"
+#include "sharedptrs.hpp"
+#include "transfertype.hpp"
 
 // std
+#include <memory>
 #include <stdexcept>
 #include <string>
 

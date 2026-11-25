@@ -19,15 +19,15 @@ Checks: >
   cppcoreguidelines-special-member-functions,
   cppcoreguidelines-virtual-class-destructor,
   google-explicit-constructor,
+  misc-*,
   performance-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,
+  -misc-no-recursion,
   -performance-enum-size
 
 # To disable when their groups are enabled:
 #   -cppcoreguidelines-pro-bounds-constant-array-index
-#   -misc-include-cleaner
-#   -misc-no-recursion
 #   -modernize-use-nodiscard
 #   -modernize-use-trailing-return-type
 #   -readability-function-cognitive-complexity
@@ -46,9 +46,9 @@ Checks: >
 #   -cppcoreguidelines-use-default-member-init
 #
 # Reasons for the exclusions above:
-#   Too noisy / disputed: swappable parameters, constant array index, include-cleaner
-#   (needs per-library mapping), recursion ban, [[nodiscard]] everywhere, trailing return
-#   types, enum underlying-type size, complexity limit, short-name ban.
+#   Too noisy / disputed: swappable parameters, constant array index, recursion ban,
+#   [[nodiscard]] everywhere, trailing return types, enum underlying-type size, complexity limit,
+#   short-name ban.
 #   Unavoidable in a wrapper of a C API: const_cast, because the GStreamer functions take
 #   non-const pointers even where they don't modify the object, as in the const member functions;
 #   pointer arithmetic, for the NULL-terminated C arrays that GLib and GStreamer return;
@@ -56,7 +56,7 @@ Checks: >
 #   everywhere, and clang-tidy can't allow only the harmless bool -> gboolean direction.
 #   Intended: const data members, they mark members that are set once (e.g. the callback slots
 #   in the Private classes, which are never copied or assigned).
-#   Narrowing conversions: decided in step 8 of TODO_clang-tidy.md, together with its alias
+#   Narrowing conversions: decided in step 9 of TODO_clang-tidy.md, together with its alias
 #   cppcoreguidelines-narrowing-conversions, which disabling this check doesn't disable.
 #   Duplicates (aliases of checks enabled elsewhere): the rest.
 
@@ -98,3 +98,9 @@ CheckOptions:
   modernize-use-default-member-init.UseAssignment: true
   # Allow the destructor-only "= default" declaration PIMPL needs.
   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  # GLib/GObject and the GStreamer libraries are included through their public top-level headers
+  # (<glib.h>, <glib-object.h>, <gst/gst.h>, <gst/app/gstappsink.h>, ...), but the check would ask
+  # for their internal ones, so all headers under these include directories are ignored. The
+  # regex is matched anywhere in the absolute path: "gst/.*" would also match the project's own
+  # headers under libdhgst/src/.
+  misc-include-cleaner.IgnoreHeaders: '/gstreamer-1\.0/.*;/glib-2\.0/.*'

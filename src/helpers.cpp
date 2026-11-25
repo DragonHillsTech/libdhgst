@@ -21,6 +21,8 @@
 #include "helpers.hpp"
 
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 
 namespace dh::gst::helpers
 {

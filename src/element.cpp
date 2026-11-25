@@ -21,14 +21,18 @@
 // local includes
 #include "element.hpp"
 #include "elementfactory.hpp"
+#include "object.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
 // std
+#include <functional>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
-
-// C
-#include <unordered_set>
+#include <vector>
 
 namespace dh::gst
 {
