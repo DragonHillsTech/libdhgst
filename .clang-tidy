@@ -5,8 +5,7 @@
 #                      Add --fix to apply automatic fixes.
 # Suppress a finding only with a reason:  // NOLINT(check-name): why
 ---
-# Introduced step by step, see TODO_clang-tidy.md. Each step enables more checks after fixing
-# their findings, so the code is always free of findings.
+# The library is kept free of findings: WarningsAsErrors makes every new finding fail the CI job.
 Checks: >
   -*,
   bugprone-*,
@@ -17,6 +16,7 @@ Checks: >
   misc-*,
   modernize-*,
   performance-*,
+  readability-*,
   -bugprone-easily-swappable-parameters,
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-avoid-const-or-ref-data-members,
@@ -33,14 +33,12 @@ Checks: >
   -cppcoreguidelines-use-default-member-init,
   -misc-no-recursion,
   -modernize-use-trailing-return-type,
-  -performance-enum-size
+  -performance-enum-size,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion
 
-# To disable when their groups are enabled:
-#   -readability-function-cognitive-complexity
-#   -readability-identifier-length
-#   -readability-implicit-bool-conversion
-#
-# Reasons for the exclusions above:
+# Reasons for the exclusions:
 #   Too noisy / disputed: swappable parameters, constant array index, recursion ban,
 #   trailing return types, enum underlying-type size, complexity limit, short-name ban.
 #   Unavoidable in a wrapper of a C API: const_cast, because the GStreamer functions take
@@ -50,8 +48,7 @@ Checks: >
 #   everywhere, and clang-tidy can't allow only the harmless bool -> gboolean direction.
 #   Intended: const data members, they mark members that are set once (e.g. the callback slots
 #   in the Private classes, which are never copied or assigned).
-#   Duplicates (aliases of checks enabled elsewhere): the rest. avoid-magic-numbers is an alias
-#   of readability-magic-numbers, which comes with step 10 of TODO_clang-tidy.md.
+#   Duplicates (aliases of checks enabled elsewhere): the rest.
 
 WarningsAsErrors: '*'
 # All headers of the project; third-party headers must be included as SYSTEM
@@ -67,6 +64,8 @@ CheckOptions:
   readability-identifier-naming.UnionCase: CamelCase
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.TypeAliasCase: CamelCase
+  # Type traits name their result "type", like the standard library (std::remove_pointer<T>::type)
+  readability-identifier-naming.TypeAliasIgnoredRegexp: '^type$'
   readability-identifier-naming.TypedefCase: CamelCase
   readability-identifier-naming.ConceptCase: CamelCase
   readability-identifier-naming.TemplateParameterCase: CamelCase

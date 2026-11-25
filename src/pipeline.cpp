@@ -121,12 +121,7 @@ bool Pipeline::isLive() const
 }
 #endif
 
-GstPipelineSPtr Pipeline::getGstPipeline()
-{
-  return makeGstSharedPtr(GST_PIPELINE_CAST(getGstObject().get()), TransferType::none);
-}
-
-const GstPipelineSPtr Pipeline::getGstPipeline() const
+GstPipelineSPtr Pipeline::getGstPipeline() const
 {
   return makeGstSharedPtr(GST_PIPELINE_CAST(getGstObject().get()), TransferType::none);
 }

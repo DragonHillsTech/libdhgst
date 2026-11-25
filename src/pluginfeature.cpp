@@ -58,12 +58,7 @@ std::shared_ptr<PluginFeature> PluginFeature::create(const GstPluginFeatureSPtr&
   return pluginFeature;
 }
 
-GstPluginFeatureSPtr PluginFeature::getGstPluginFeature()
-{
-  return makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(getGstObject().get()), TransferType::none);
-}
-
-const std::shared_ptr<GstPluginFeature> PluginFeature::getGstPluginFeature() const
+GstPluginFeatureSPtr PluginFeature::getGstPluginFeature() const
 {
   return makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(getGstObject().get()), TransferType::none);
 }

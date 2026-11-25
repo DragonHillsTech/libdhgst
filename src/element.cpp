@@ -80,13 +80,7 @@ Element::Element(const GstElementSPtr& gstElement)
 {
 }
 
-GstElementSPtr Element::getGstElement()
-{
-  // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::none);
-}
-
-const GstElementSPtr Element::getGstElement() const
+GstElementSPtr Element::getGstElement() const
 {
   // we can not use *pointer_cast because these are C types
   return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::none);

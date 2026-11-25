@@ -54,8 +54,7 @@ public:
    * @brief get the GstBusSPtr of the Bus
    * @return the internal GstBus.
    */
-  [[nodiscard]] GstBusSPtr getGstBus();
-  [[nodiscard]] const GstBusSPtr getGstBus() const;
+  [[nodiscard]] GstBusSPtr getGstBus() const;
 
   /**
    * @brief Posts a message on the bus.

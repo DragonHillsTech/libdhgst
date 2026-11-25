@@ -70,8 +70,7 @@ public:
    * @brief get the GstBinSPtr of the Bin
    * @return the GstBin.
    */
-  [[nodiscard]] GstBinSPtr getGstBin();
-  [[nodiscard]] const GstBinSPtr getGstBin() const;
+  [[nodiscard]] GstBinSPtr getGstBin() const;
 
   /**
    * @brief Adds an element to the bin.

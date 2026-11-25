@@ -105,12 +105,10 @@ public:
   [[nodiscard]] GType getElementType() const;
 
   /**
-   * @brief get the GstElementSPtr of the Element
-   * @return the internal GstElement.
+   * @brief get the GstElementFactorySPtr of the ElementFactory
+   * @return the internal GstElementFactory.
    */
-  [[nodiscard]] GstElementFactorySPtr getGstElementFactory();
-
-  [[nodiscard]] const GstElementFactorySPtr getGstElementFactory() const;
+  [[nodiscard]] GstElementFactorySPtr getGstElementFactory() const;
 
 private:
   [[nodiscard]] GstElementFactory* getRawGstElementFactory();

@@ -67,13 +67,7 @@ public:
    * @brief Gets the underlying GstPluginFeature object
    * @return A shared pointer to the GstPluginFeature
    */
-  [[nodiscard]] GstPluginFeatureSPtr getGstPluginFeature();
-
-  /**
-   * @brief Gets the underlying GstPluginFeature object (const)
-   * @return A shared pointer to the GstPluginFeature (const)
-   */
-  [[nodiscard]] const GstPluginFeatureSPtr getGstPluginFeature() const;
+  [[nodiscard]] GstPluginFeatureSPtr getGstPluginFeature() const;
 
   /**
    * @brief Gets the rank of this plugin feature

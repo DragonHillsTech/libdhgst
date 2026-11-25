@@ -90,13 +90,7 @@ std::shared_ptr<Bin> Bin::fromDescription(const std::string& description, bool g
   return create(GST_BIN_CAST(gstElement), TransferType::floating);
 }
 
-GstBinSPtr Bin::getGstBin()
-{
-  // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::none);
-}
-
-const GstBinSPtr Bin::getGstBin() const
+GstBinSPtr Bin::getGstBin() const
 {
   return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::none);
 }

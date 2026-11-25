@@ -100,8 +100,7 @@ public:
    * @brief Get the GstPipelineSPtr of the Pipeline.
    * @return The GstPipeline shared pointer.
    */
-  [[nodiscard]] GstPipelineSPtr getGstPipeline();
-  [[nodiscard]] const GstPipelineSPtr getGstPipeline() const;
+  [[nodiscard]] GstPipelineSPtr getGstPipeline() const;
 
   [[nodiscard]] std::shared_ptr<Bus> getBus() const;
 

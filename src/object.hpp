@@ -85,16 +85,8 @@ public:
   /**
    * @brief get the GstObjectSPtr of the Object
    * @return the internal GstObject.
-   * @throws std::logic_error if internal GstObject is empty (moved)
    */
-  [[nodiscard]] GstObjectSPtr getGstObject();
-
-  /**
-   * @brief get the GstObjectSPtr of the Object
-   * @return the internal GstObject.
-   * @throws std::logic_error if internal GstObject is empty (moved)
-   */
-  [[nodiscard]] const GstObjectSPtr getGstObject() const;
+  [[nodiscard]] GstObjectSPtr getGstObject() const;
 
   /**
    * @brief Gets the name of the GStreamer object.
@@ -124,8 +116,6 @@ public:
    * @throws std::invalid_argument if the property name is empty.
    */
   [[nodiscard]] bool propertyExists(const std::string& name) const;
-
-  void disconnectSignal(SignalConnection& connection) const;
 
   /**
    * @brief Read a property of the GObject.
@@ -235,10 +225,10 @@ private:
   struct SignalHandler
   {
     static void
-    callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer user_data)
+    callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer userData)
     {
       using Callback = std::function<void(Args...)>;
-      auto* callback = static_cast<Callback*>(user_data);
+      auto* callback = static_cast<Callback*>(userData);
       if (!callback)
       {
         return;

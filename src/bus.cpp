@@ -98,13 +98,7 @@ std::shared_ptr<Bus> Bus::create(GstBus* gstBus, TransferType transferType)
   return bus;
 }
 
-GstBusSPtr Bus::getGstBus()
-{
-  // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::none);
-}
-
-const GstBusSPtr Bus::getGstBus() const
+GstBusSPtr Bus::getGstBus() const
 {
   // we can not use *pointer_cast because these are C types
   return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::none);

@@ -151,12 +151,7 @@ GType ElementFactory::getElementType() const
   );
 }
 
-GstElementFactorySPtr ElementFactory::getGstElementFactory()
-{
-  return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::none);
-}
-
-const GstElementFactorySPtr ElementFactory::getGstElementFactory() const
+GstElementFactorySPtr ElementFactory::getGstElementFactory() const
 {
   return makeGstSharedPtr(GST_ELEMENT_FACTORY_CAST(getGstObject().get()), TransferType::none);
 }

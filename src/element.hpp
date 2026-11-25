@@ -81,9 +81,7 @@ public:
    * @brief get the GstElementSPtr of the Element
    * @return the internal GstElement.
    */
-  [[nodiscard]] GstElementSPtr getGstElement();
-
-  [[nodiscard]] const GstElementSPtr getGstElement() const;
+  [[nodiscard]] GstElementSPtr getGstElement() const;
 
   GstStateChangeReturn setState(GstState newState);
 
