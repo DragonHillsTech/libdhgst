@@ -21,6 +21,8 @@
 #include "helpers.hpp"
 
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 
 namespace dh::gst::helpers
 {
@@ -107,7 +109,7 @@ GstVideoInfo createVideoInfo(const GstBuffer& buffer)
         }
       }
       const gsize rows = (defaultEnd - defaultOffset) / GST_VIDEO_INFO_PLANE_STRIDE(&vinfo, plane);
-      frameSize = std::max(frameSize, videoMeta->offset[plane] + rows * videoMeta->stride[plane]);
+      frameSize = std::max(frameSize, videoMeta->offset[plane] + (rows * videoMeta->stride[plane]));
     }
   }
 

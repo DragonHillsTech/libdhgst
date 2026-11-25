@@ -29,8 +29,10 @@ namespace dh::gst
 
 /**
  * @brief Move-only RAII handle for a signal connection.
+ *
+ * Discarding a returned connection destroys it and disconnects the signal immediately.
  */
-class SignalConnection
+class [[nodiscard]] SignalConnection
 {
 public:
   SignalConnection() = default;
@@ -57,7 +59,7 @@ public:
 
 private:
   void clearWeakRef();
-  void moveFrom(SignalConnection&& other) noexcept;
+  void moveFrom(SignalConnection& other) noexcept;
 
   GWeakRef weakObject{};
   gulong handlerId{0};

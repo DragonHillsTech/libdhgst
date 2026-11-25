@@ -27,7 +27,7 @@ public:
 BOOST_FIXTURE_TEST_CASE(GetStringProperty, ObjectPropertiesTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   // "name" is a gchar* property of every GstObject
   const auto name = element->getProperty<std::string>("name");
@@ -37,7 +37,7 @@ BOOST_FIXTURE_TEST_CASE(GetStringProperty, ObjectPropertiesTest)
 BOOST_FIXTURE_TEST_CASE(SetStringProperty, ObjectPropertiesTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   element->setProperty<std::string>("name", "renamed_source");
   BOOST_CHECK_EQUAL(element->getProperty<std::string>("name"), "renamed_source");
@@ -174,7 +174,7 @@ BOOST_FIXTURE_TEST_CASE(SetObjectPropertyAcceptsSubtype, ObjectPropertiesTest)
   auto playbin = ElementFactory::makeElement("playbin", "test_playbin");
   const GstAppSinkSPtr appsink = makeGstSharedPtr(
     GST_APP_SINK(gst_element_factory_make("appsink", nullptr)),
-    TransferType::Floating
+    TransferType::floating
   );
   BOOST_CHECK_NO_THROW(playbin->setProperty("video-sink", appsink));
   BOOST_CHECK_EQUAL(
@@ -210,12 +210,12 @@ BOOST_FIXTURE_TEST_CASE(SetObjectPropertyWithBaseOrUnrelatedTypeThrows, ObjectPr
   // a GstObject is not necessarily a GstElement
   const GstObjectSPtr object = makeGstSharedPtr(
     GST_OBJECT(gst_element_factory_make("fakesink", nullptr)),
-    TransferType::Floating
+    TransferType::floating
   );
   BOOST_CHECK_THROW(playbin->setProperty("video-sink", object), std::invalid_argument);
   // a GstPad is no GstElement
   const GstPadSPtr pad =
-    makeGstSharedPtr(gst_pad_new("test_pad", GST_PAD_SRC), TransferType::Floating);
+    makeGstSharedPtr(gst_pad_new("test_pad", GST_PAD_SRC), TransferType::floating);
   BOOST_CHECK_THROW(playbin->setProperty("video-sink", pad), std::invalid_argument);
 }
 

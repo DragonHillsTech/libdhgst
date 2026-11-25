@@ -50,11 +50,11 @@ BOOST_FIXTURE_TEST_CASE(ElementRejectsNonElement, ObjectTypeChecksTest)
   const int baseline = refCount(bus);
 
   BOOST_CHECK_THROW(
-    (void)Element::create(reinterpret_cast<GstElement*>(bus), TransferType::None),
+    (void)Element::create(reinterpret_cast<GstElement*>(bus), TransferType::none),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)Element::create(makeGstSharedPtr(reinterpret_cast<GstElement*>(bus), TransferType::None)),
+    (void)Element::create(makeGstSharedPtr(reinterpret_cast<GstElement*>(bus), TransferType::none)),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(
@@ -72,11 +72,11 @@ BOOST_FIXTURE_TEST_CASE(BinRejectsNonBin, ObjectTypeChecksTest)
   const int baseline = refCount(fakesrc);
 
   BOOST_CHECK_THROW(
-    (void)Bin::create(reinterpret_cast<GstBin*>(fakesrc), TransferType::None),
+    (void)Bin::create(reinterpret_cast<GstBin*>(fakesrc), TransferType::none),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)Bin::create(makeGstSharedPtr(reinterpret_cast<GstBin*>(fakesrc), TransferType::None)),
+    (void)Bin::create(makeGstSharedPtr(reinterpret_cast<GstBin*>(fakesrc), TransferType::none)),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(refCount(fakesrc), baseline);
@@ -91,12 +91,12 @@ BOOST_FIXTURE_TEST_CASE(PipelineRejectsNonPipeline, ObjectTypeChecksTest)
   const int baseline = refCount(bin);
 
   BOOST_CHECK_THROW(
-    (void)Pipeline::create(reinterpret_cast<GstPipeline*>(bin), TransferType::None),
+    (void)Pipeline::create(reinterpret_cast<GstPipeline*>(bin), TransferType::none),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
     (void)
-      Pipeline::create(makeGstSharedPtr(reinterpret_cast<GstPipeline*>(bin), TransferType::None)),
+      Pipeline::create(makeGstSharedPtr(reinterpret_cast<GstPipeline*>(bin), TransferType::none)),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(refCount(bin), baseline);
@@ -111,11 +111,11 @@ BOOST_FIXTURE_TEST_CASE(BusRejectsNonBus, ObjectTypeChecksTest)
   const int baseline = refCount(fakesrc);
 
   BOOST_CHECK_THROW(
-    (void)Bus::create(reinterpret_cast<GstBus*>(fakesrc), TransferType::None),
+    (void)Bus::create(reinterpret_cast<GstBus*>(fakesrc), TransferType::none),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
-    (void)Bus::create(makeGstSharedPtr(reinterpret_cast<GstBus*>(fakesrc), TransferType::None)),
+    (void)Bus::create(makeGstSharedPtr(reinterpret_cast<GstBus*>(fakesrc), TransferType::none)),
     std::invalid_argument
   );
   BOOST_CHECK_EQUAL(refCount(fakesrc), baseline);
@@ -130,12 +130,12 @@ BOOST_FIXTURE_TEST_CASE(ElementFactoryRejectsNonElementFactory, ObjectTypeChecks
   const int baseline = refCount(fakesrc);
 
   BOOST_CHECK_THROW(
-    (void)ElementFactory::create(reinterpret_cast<GstElementFactory*>(fakesrc), TransferType::None),
+    (void)ElementFactory::create(reinterpret_cast<GstElementFactory*>(fakesrc), TransferType::none),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
     (void)ElementFactory::create(
-      makeGstSharedPtr(reinterpret_cast<GstElementFactory*>(fakesrc), TransferType::None)
+      makeGstSharedPtr(reinterpret_cast<GstElementFactory*>(fakesrc), TransferType::none)
     ),
     std::invalid_argument
   );
@@ -151,12 +151,12 @@ BOOST_FIXTURE_TEST_CASE(PluginFeatureRejectsNonPluginFeature, ObjectTypeChecksTe
   const int baseline = refCount(fakesrc);
 
   BOOST_CHECK_THROW(
-    (void)PluginFeature::create(reinterpret_cast<GstPluginFeature*>(fakesrc), TransferType::None),
+    (void)PluginFeature::create(reinterpret_cast<GstPluginFeature*>(fakesrc), TransferType::none),
     std::invalid_argument
   );
   BOOST_CHECK_THROW(
     (void)PluginFeature::create(
-      makeGstSharedPtr(reinterpret_cast<GstPluginFeature*>(fakesrc), TransferType::None)
+      makeGstSharedPtr(reinterpret_cast<GstPluginFeature*>(fakesrc), TransferType::none)
     ),
     std::invalid_argument
   );
@@ -171,15 +171,15 @@ BOOST_FIXTURE_TEST_CASE(MatchingTypesAreAccepted, ObjectTypeChecksTest)
   auto pipeline = Pipeline::create("test_pipeline");
   GstElement* rawPipeline = pipeline->getGstElement().get();
 
-  BOOST_CHECK_NO_THROW((void)Element::create(rawPipeline, TransferType::None));
-  BOOST_CHECK_NO_THROW((void)Bin::create(GST_BIN_CAST(rawPipeline), TransferType::None));
+  BOOST_CHECK_NO_THROW((void)Element::create(rawPipeline, TransferType::none));
+  BOOST_CHECK_NO_THROW((void)Bin::create(GST_BIN_CAST(rawPipeline), TransferType::none));
   BOOST_CHECK_NO_THROW((void)Bus::create(pipeline->getBus()->getGstBus()));
 
   GstElementFactory* factory = gst_element_factory_find("fakesrc");
   BOOST_REQUIRE(factory);
-  BOOST_CHECK_NO_THROW((void)ElementFactory::create(factory, TransferType::None));
+  BOOST_CHECK_NO_THROW((void)ElementFactory::create(factory, TransferType::none));
   BOOST_CHECK_NO_THROW(
-    (void)PluginFeature::create(GST_PLUGIN_FEATURE_CAST(factory), TransferType::None)
+    (void)PluginFeature::create(GST_PLUGIN_FEATURE_CAST(factory), TransferType::none)
   );
   gst_object_unref(factory);
 }

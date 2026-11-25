@@ -33,7 +33,7 @@ BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, ElementTest)
 {
   // ctor GstElementSPtr
   auto element1 = Element::create(
-    makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::Floating)
+    makeGstSharedPtr(gst_element_factory_make("fakesrc", "testSource1"), TransferType::floating)
   );
   BOOST_REQUIRE_EQUAL(
     element1->getGstElement().use_count(),
@@ -47,7 +47,7 @@ BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, ElementTest)
 
   // ctor GstElement*
   auto element2 =
-    Element::create(gst_element_factory_make("fakesrc", "testSource2"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "testSource2"), TransferType::floating);
   BOOST_REQUIRE_EQUAL(
     element2->getGstElement().use_count(),
     1
@@ -61,7 +61,7 @@ BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetNameReturnsCorrectName, ElementTest)
 {
   const auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   // Check that getName returns the correct name
   BOOST_CHECK_EQUAL(element->getName(), "test_source");
@@ -70,7 +70,7 @@ BOOST_FIXTURE_TEST_CASE(GetNameReturnsCorrectName, ElementTest)
 BOOST_FIXTURE_TEST_CASE(SetState, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   BOOST_REQUIRE_EQUAL(element->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_SUCCESS);
   BOOST_REQUIRE_EQUAL(element->getState(), GST_STATE_PLAYING);
@@ -138,7 +138,7 @@ BOOST_FIXTURE_TEST_CASE(GetStateThrowsOnFailedStateChange, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   std::vector<GstPadSPtr> pads = element->getPads();
   BOOST_REQUIRE_EQUAL(pads.size(), 1); // fakesrc has one "src" pad
@@ -147,7 +147,7 @@ BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetSinkPads, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   std::vector<GstPadSPtr> sinkPads = element->getSinkPads();
   BOOST_REQUIRE_EQUAL(sinkPads.size(), 0); // fakesrc has no sink pads
@@ -156,7 +156,7 @@ BOOST_FIXTURE_TEST_CASE(GetSinkPads, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetSrcPads, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   std::vector<GstPadSPtr> srcPads = element->getSrcPads();
   BOOST_REQUIRE_EQUAL(srcPads.size(), 1); // fakesrc has one "src" pad
@@ -168,7 +168,7 @@ BOOST_FIXTURE_TEST_CASE(GetSrcPads, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetPadsReferencesPads, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
   GstPad* pad =
     gst_element_get_static_pad(element->getGstElement().get(), "src"); // our own reference
   BOOST_REQUIRE_NE(pad, nullptr);
@@ -191,7 +191,7 @@ BOOST_FIXTURE_TEST_CASE(GetPadsReferencesPads, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetStaticPad, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   const auto staticPad = element->getStaticPad("src");
   BOOST_REQUIRE(staticPad); // fakesrc has a "src" pad
@@ -215,9 +215,9 @@ BOOST_FIXTURE_TEST_CASE(GetStaticPad, ElementTest)
 BOOST_FIXTURE_TEST_CASE(GetCompatiblePad, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
-  const auto sinkPad = makeGstSharedPtr(gst_pad_new("sink", GST_PAD_SINK), TransferType::Floating);
+  const auto sinkPad = makeGstSharedPtr(gst_pad_new("sink", GST_PAD_SINK), TransferType::floating);
   // Create capabilities for the sink pad
   const auto caps = makeGstSharedPtr(
     gst_caps_new_simple(
@@ -237,7 +237,7 @@ BOOST_FIXTURE_TEST_CASE(GetCompatiblePad, ElementTest)
       1,
       nullptr
     ),
-    TransferType::Full
+    TransferType::full
   );
   BOOST_REQUIRE(caps);
 
@@ -262,10 +262,10 @@ BOOST_FIXTURE_TEST_CASE(GetCompatiblePad, ElementTest)
 BOOST_FIXTURE_TEST_CASE(LinkAndUnlink, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "test_source"), TransferType::floating);
 
   auto sink =
-    Element::create(gst_element_factory_make("fakesink", "test_sink"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesink", "test_sink"), TransferType::floating);
 
   const auto sourcePad = element->getStaticPad("src");
   BOOST_REQUIRE(sourcePad);
@@ -309,7 +309,7 @@ BOOST_FIXTURE_TEST_CASE(LinkReturnsOtherForChaining, ElementTest)
 BOOST_FIXTURE_TEST_CASE(SetName, ElementTest)
 {
   auto element =
-    Element::create(gst_element_factory_make("fakesrc", "firstName"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "firstName"), TransferType::floating);
   BOOST_REQUIRE_EQUAL(element->getName(), "firstName");
 
   BOOST_REQUIRE_NO_THROW(element->setName("secondName"));

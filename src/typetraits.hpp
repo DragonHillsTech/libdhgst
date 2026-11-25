@@ -130,7 +130,7 @@ struct IsGstMiniObject<GstBuffer> : std::true_type
 // Type trait to determine if a type is a GObject-derived type
 template<typename T>
 struct IsGObjectType
-  : std::integral_constant<bool, std::is_same<T, GObject>::value || IsGstObject<T>::value>
+  : std::integral_constant<bool, std::is_same_v<T, GObject> || IsGstObject<T>::value>
 {
 };
 

@@ -52,13 +52,13 @@ protected:
    * @brief Constructs an ElementFactory from a shared pointer to GstElementFactory
    * @param gstElementFactory The GStreamer element factory shared pointer
    */
-  ElementFactory(GstElementFactorySPtr gstElementFactory);
+  explicit ElementFactory(const GstElementFactorySPtr& gstElementFactory);
 
 public:
   [[nodiscard]] static std::shared_ptr<ElementFactory>
   create(GstElementFactory* gstElementFactory, TransferType transferType);
   [[nodiscard]] static std::shared_ptr<ElementFactory>
-  create(GstElementFactorySPtr gstElementFactory);
+  create(const GstElementFactorySPtr& gstElementFactory);
 
   /**
    * @brief Creates an ElementFactory from the factory name
@@ -105,12 +105,10 @@ public:
   [[nodiscard]] GType getElementType() const;
 
   /**
-   * @brief get the GstElementSPtr of the Element
-   * @return the internal GstElement.
+   * @brief get the GstElementFactorySPtr of the ElementFactory
+   * @return the internal GstElementFactory.
    */
-  [[nodiscard]] GstElementFactorySPtr getGstElementFactory();
-
-  [[nodiscard]] const GstElementFactorySPtr getGstElementFactory() const;
+  [[nodiscard]] GstElementFactorySPtr getGstElementFactory() const;
 
 private:
   [[nodiscard]] GstElementFactory* getRawGstElementFactory();

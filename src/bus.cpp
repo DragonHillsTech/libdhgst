@@ -19,8 +19,13 @@
  */
 
 #include "bus.hpp"
+#include "object.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
 #include <cassert>
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -56,18 +61,20 @@ public:
   }
 
   SyncMessageEmission(const SyncMessageEmission&) = delete;
+  SyncMessageEmission(SyncMessageEmission&&) = delete;
   SyncMessageEmission& operator=(const SyncMessageEmission&) = delete;
+  SyncMessageEmission& operator=(SyncMessageEmission&&) = delete;
 
 private:
-  GWeakRef weakBus;
+  GWeakRef weakBus{};
 };
 
 } // namespace
 
-Bus::Bus(GstBusSPtr gstBus)
+Bus::Bus(const GstBusSPtr& gstBus)
   : Object(
       GST_OBJECT_CAST(gstBus.get()),
-      TransferType::None
+      TransferType::none
     ) // no pointer_cast because C inheritance
 {
 }
@@ -77,7 +84,7 @@ Bus::Bus(GstBus* gstBus, TransferType transferType)
 {
 }
 
-std::shared_ptr<Bus> Bus::create(GstBusSPtr gstBus)
+std::shared_ptr<Bus> Bus::create(const GstBusSPtr& gstBus)
 {
   std::shared_ptr<Bus> bus(new Bus(gstBus));
   bus->requireType<GstBus>();
@@ -91,16 +98,10 @@ std::shared_ptr<Bus> Bus::create(GstBus* gstBus, TransferType transferType)
   return bus;
 }
 
-GstBusSPtr Bus::getGstBus()
+GstBusSPtr Bus::getGstBus() const
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
-}
-
-const GstBusSPtr Bus::getGstBus() const
-{
-  // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_BUS_CAST(getGstObject().get()), TransferType::none);
 }
 
 void Bus::post(GstMessage& message)

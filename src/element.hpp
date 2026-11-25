@@ -50,13 +50,13 @@ protected:
    * @brief Create a new Element object that wraps a GstElementSPtr.
    * @param gstElement
    */
-  explicit Element(GstElementSPtr gstElement);
+  explicit Element(const GstElementSPtr& gstElement);
 
   /**
    * @brief Create a new Element object that wraps a GstElement.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstElement
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Element(GstElement* gstElement, TransferType transferType);
 
@@ -73,7 +73,7 @@ public:
     GstState pending; ///< the pending state, GST_STATE_VOID_PENDING if no state change is pending
   };
 
-  [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
+  [[nodiscard]] static std::shared_ptr<Element> create(const GstElementSPtr& gstElement);
   [[nodiscard]] static std::shared_ptr<Element>
   create(GstElement* gstElement, TransferType transferType);
 
@@ -81,9 +81,7 @@ public:
    * @brief get the GstElementSPtr of the Element
    * @return the internal GstElement.
    */
-  [[nodiscard]] GstElementSPtr getGstElement();
-
-  [[nodiscard]] const GstElementSPtr getGstElement() const;
+  [[nodiscard]] GstElementSPtr getGstElement() const;
 
   GstStateChangeReturn setState(GstState newState);
 
@@ -138,7 +136,7 @@ public:
    * @brief Retrieves the factory that was used to create this element.
    * @return the factory name or empty string if element has not been registered (static element).
    */
-  std::string getFactoryName() const;
+  [[nodiscard]] std::string getFactoryName() const;
 
   /**
    * @brief Gets the currently configured clock of the element.
@@ -147,7 +145,7 @@ public:
    * state.
    * @return the clock of the Element or empty ptr
    */
-  GstClockSPtr getElementClock() const;
+  [[nodiscard]] GstClockSPtr getElementClock() const;
 
   /**
    * @brief Gets the start time of the element.

@@ -20,6 +20,7 @@
 
 #include "signalconnection.hpp"
 
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -65,7 +66,7 @@ SignalConnection::SignalConnection(
 
 SignalConnection::SignalConnection(SignalConnection&& other) noexcept
 {
-  moveFrom(std::move(other));
+  moveFrom(other);
 }
 
 SignalConnection& SignalConnection::operator=(SignalConnection&& other) noexcept
@@ -74,7 +75,7 @@ SignalConnection& SignalConnection::operator=(SignalConnection&& other) noexcept
   {
     disconnect();
     clearWeakRef();
-    moveFrom(std::move(other));
+    moveFrom(other);
   }
   return *this;
 }
@@ -102,7 +103,7 @@ void SignalConnection::disconnect()
     return;
   }
 
-  GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&weakObject)));
+  const GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&weakObject)));
   if (object)
   {
     if (g_signal_handler_is_connected(object.get(), handlerId))
@@ -125,7 +126,7 @@ bool SignalConnection::connected() const
     return false;
   }
 
-  GObjectUniquePtr object(
+  const GObjectUniquePtr object(
     static_cast<GObject*>(g_weak_ref_get(const_cast<GWeakRef*>(&weakObject)))
   );
   if (!object)
@@ -150,7 +151,7 @@ void SignalConnection::clearWeakRef()
   }
 }
 
-void SignalConnection::moveFrom(SignalConnection&& other) noexcept
+void SignalConnection::moveFrom(SignalConnection& other) noexcept
 {
   handlerId = other.handlerId;
   customDisconnectHandler = std::move(other.customDisconnectHandler);
@@ -160,7 +161,7 @@ void SignalConnection::moveFrom(SignalConnection&& other) noexcept
 
   if (other.weakRefInitialized)
   {
-    GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&other.weakObject)));
+    const GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&other.weakObject)));
     if (object)
     {
       g_weak_ref_init(&weakObject, object.get());

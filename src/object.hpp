@@ -60,13 +60,13 @@ protected:
    * @brief Create a new Object that wraps a GstObject
    * @param gstObject
    */
-  Object(GstObjectSPtr gstObject);
+  explicit Object(GstObjectSPtr gstObject);
 
   /**
    * @brief Create a new Object that wraps a GstObject.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstObject
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Object(GstObject* gstObject, TransferType transferType);
 
@@ -74,7 +74,7 @@ public:
   /**
    * @brief Create an Object that wraps any GstObject, e.g. the source of a GstMessage.
    * @param gstObject the GstObject to wrap
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    * @throws std::runtime_error if gstObject is nullptr
    */
   [[nodiscard]] static std::shared_ptr<Object>
@@ -85,16 +85,8 @@ public:
   /**
    * @brief get the GstObjectSPtr of the Object
    * @return the internal GstObject.
-   * @throws std::logic_error if internal GstObject is empty (moved)
    */
-  [[nodiscard]] GstObjectSPtr getGstObject();
-
-  /**
-   * @brief get the GstObjectSPtr of the Object
-   * @return the internal GstObject.
-   * @throws std::logic_error if internal GstObject is empty (moved)
-   */
-  [[nodiscard]] const GstObjectSPtr getGstObject() const;
+  [[nodiscard]] GstObjectSPtr getGstObject() const;
 
   /**
    * @brief Gets the name of the GStreamer object.
@@ -124,8 +116,6 @@ public:
    * @throws std::invalid_argument if the property name is empty.
    */
   [[nodiscard]] bool propertyExists(const std::string& name) const;
-
-  void disconnectSignal(SignalConnection& connection) const;
 
   /**
    * @brief Read a property of the GObject.
@@ -185,7 +175,7 @@ protected:
    * @throws std::runtime_error if signal could not be connected
    */
   template<typename... Args>
-  SignalConnection
+  [[nodiscard]] SignalConnection
   connectGobjectSignal(const std::string& signalName, std::function<void(Args...)> callback) const;
 
 private:
@@ -235,10 +225,10 @@ private:
   struct SignalHandler
   {
     static void
-    callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer user_data)
+    callback(GObject* object, typename ConvertToGlibType<Args>::type... args, gpointer userData)
     {
       using Callback = std::function<void(Args...)>;
-      auto* callback = static_cast<Callback*>(user_data);
+      auto* callback = static_cast<Callback*>(userData);
       if (!callback)
       {
         return;
@@ -307,13 +297,20 @@ bool Object::signalSignatureMatches(const GSignalQuery& query)
   {
     return false;
   }
-  [[maybe_unused]] guint index = 0;
-  return (
-    true && ...
-    && GValueTraits<std::decay_t<Args>>::matchesGet(
-      query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE
-    )
-  );
+  if constexpr (sizeof...(Args) == 0)
+  {
+    return true;
+  }
+  else
+  {
+    guint index = 0;
+    return (
+      GValueTraits<std::decay_t<Args>>::matchesGet(
+        query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE
+      )
+      && ...
+    );
+  }
 }
 
 /** Connect a callback to a GObject signal.
@@ -330,7 +327,7 @@ SignalConnection Object::connectGobjectSignal(
 ) const
 {
   static_assert(
-    (... && (!(std::is_pointer<Args>::value && IsGstObject<std::remove_pointer_t<Args>>::value))),
+    (... && (!(std::is_pointer_v<Args> && IsGstObject<std::remove_pointer_t<Args>>::value))),
     "Error: Template arguments cannot be of type GstObject*. Use shared_ptr instead, see "
     "sharedptrs.hpp"
   );
@@ -363,11 +360,14 @@ SignalConnection Object::connectGobjectSignal(
   const auto connectionId = g_signal_connect_data(
     const_cast<GstObject*>(getRawGstObject()),
     signalName.c_str(),
+    // GLib calls the handler with the signal's signature, which was checked above
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): GLib stores it as GCallback
     reinterpret_cast<GCallback>(SignalHandler<Args...>::callback),
     callbackData.get(),
     [](gpointer data, GClosure* /*closure*/)
     {
-      delete static_cast<Callback*>(data);
+      // clang-tidy complains about a simple "delete static_cast<Callback*>(data)"
+      const std::unique_ptr<Callback> owned{static_cast<Callback*>(data)};
     },
     G_CONNECT_AFTER
   );

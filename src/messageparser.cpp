@@ -22,9 +22,13 @@
 #include "internal/callbackslot.hpp"
 #include "internal/objectname.hpp"
 #include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
+#include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace dh::gst
 {
@@ -186,10 +190,9 @@ void MessageParser::parse(const GstMessage& message)
   {
     // The task may run after this parser is destroyed, or never: keep the message alive
     // only as long as the task exists and do not touch the parser if it is already gone.
-    auto messageSPtr = makeGstSharedPtr(const_cast<GstMessage*>(&message), TransferType::None);
-    std::weak_ptr<Private> weakPrv = prv;
+    auto messageSPtr = makeGstSharedPtr(const_cast<GstMessage*>(&message), TransferType::none);
     prv->asyncHandler(
-      [weakPrv, messageSPtr = std::move(messageSPtr)]()
+      [weakPrv = std::weak_ptr<Private>(prv), messageSPtr = std::move(messageSPtr)]()
       {
         if (auto lockedPrv = weakPrv.lock())
         {
@@ -219,6 +222,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_ERROR:
     {
+      // NOLINTNEXTLINE(misc-const-correctness): &error is passed as GError** to fill and clear it
       GError* error = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_error(messagePtr, &error, &debugInfo);
@@ -231,6 +235,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_WARNING:
     {
+      // NOLINTNEXTLINE(misc-const-correctness): &warning is passed as GError** to fill and clear it
       GError* warning = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_warning(messagePtr, &warning, &debugInfo);
@@ -246,6 +251,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_INFO:
     {
+      // NOLINTNEXTLINE(misc-const-correctness): &info is passed as GError** to fill and clear it
       GError* info = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_info(messagePtr, &info, &debugInfo);
@@ -258,7 +264,9 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_STATE_CHANGED:
     {
-      GstState oldState, newState, pendingState;
+      GstState oldState{GST_STATE_VOID_PENDING};
+      GstState newState{GST_STATE_VOID_PENDING};
+      GstState pendingState{GST_STATE_VOID_PENDING};
       gst_message_parse_state_changed(messagePtr, &oldState, &newState, &pendingState);
       prv.stateChangedSlot->call(sourceName, oldState, newState, pendingState);
       break;
@@ -272,8 +280,8 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_STREAM_STATUS:
     {
-      GstStreamStatusType statusType;
-      GstElement* ownerElement;
+      GstStreamStatusType statusType{GST_STREAM_STATUS_TYPE_CREATE};
+      GstElement* ownerElement{nullptr};
       gst_message_parse_stream_status(messagePtr, &statusType, &ownerElement);
       const std::string ownerName = getObjectNameOrUnknown(GST_OBJECT_CAST(ownerElement));
       prv.streamStatusSlot->call(sourceName, statusType, ownerName);
@@ -295,7 +303,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_ASYNC_DONE:
     {
-      GstClockTime runningTime;
+      GstClockTime runningTime{GST_CLOCK_TIME_NONE};
       gst_message_parse_async_done(messagePtr, &runningTime);
       prv.asyncDoneSlot->call(sourceName, runningTime);
       break;

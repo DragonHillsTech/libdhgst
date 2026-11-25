@@ -35,13 +35,13 @@ protected:
    * @brief Create a new Bin object that wraps a GstBinSPtr.
    * @param gstBin
    */
-  explicit Bin(GstBinSPtr gstBin);
+  explicit Bin(const GstBinSPtr& gstBin);
 
   /**
    * @brief Create a new Bin object that wraps a GstBin*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstBin
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Bin(GstBin* gstBin, TransferType transferType);
 
@@ -52,7 +52,7 @@ protected:
   explicit Bin(const std::string& name);
 
 public:
-  [[nodiscard]] static std::shared_ptr<Bin> create(GstBinSPtr gstBin);
+  [[nodiscard]] static std::shared_ptr<Bin> create(const GstBinSPtr& gstBin);
   [[nodiscard]] static std::shared_ptr<Bin> create(GstBin* gstBin, TransferType transferType);
   [[nodiscard]] static std::shared_ptr<Bin> create(const std::string& name);
   /**
@@ -70,8 +70,7 @@ public:
    * @brief get the GstBinSPtr of the Bin
    * @return the GstBin.
    */
-  [[nodiscard]] GstBinSPtr getGstBin();
-  [[nodiscard]] const GstBinSPtr getGstBin() const;
+  [[nodiscard]] GstBinSPtr getGstBin() const;
 
   /**
    * @brief Adds an element to the bin.

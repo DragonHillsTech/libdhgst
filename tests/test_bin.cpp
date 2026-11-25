@@ -44,7 +44,7 @@ BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, BinTest)
 {
   // ctor GstBinSPtr
   auto bin1 =
-    Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::Floating));
+    Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin1")), TransferType::floating));
   BOOST_REQUIRE_EQUAL(
     bin1->getGstBin().use_count(),
     1
@@ -56,7 +56,7 @@ BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, BinTest)
 
   // ctor GstBin*
   auto bin2 =
-    Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin2")), TransferType::Floating));
+    Bin::create(makeGstSharedPtr(GST_BIN_CAST(gst_bin_new("bin2")), TransferType::floating));
   BOOST_REQUIRE_EQUAL(
     bin2->getGstBin().use_count(),
     1
@@ -95,7 +95,7 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveGstElement, BinTest)
 {
   auto bin1 = Bin::create("bin1");
   auto element1SPtr =
-    makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+    makeGstSharedPtr(gst_element_factory_make("fakesrc", "element1"), TransferType::floating);
 
   // add
   BOOST_CHECK_NO_THROW(bin1->addElement(*element1SPtr));
@@ -110,7 +110,7 @@ BOOST_FIXTURE_TEST_CASE(AddAndRemoveElement, BinTest)
 {
   auto bin1 = Bin::create("bin1");
   auto element1 =
-    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::floating);
 
   // add
   BOOST_CHECK_NO_THROW(bin1->addElement(*element1));
@@ -125,7 +125,7 @@ BOOST_FIXTURE_TEST_CASE(GetElementByName, BinTest)
 {
   auto bin1 = Bin::create("bin1");
   auto element1 =
-    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::floating);
 
   // find existing
   bin1->addElement(*element1);
@@ -141,7 +141,7 @@ BOOST_FIXTURE_TEST_CASE(GetElementByNameRecurseUp, BinTest)
 {
   auto bin1 = Bin::create("bin1");
   auto element1 =
-    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::Floating);
+    Element::create(gst_element_factory_make("fakesrc", "element1"), TransferType::floating);
 
   // find existing
   bin1->addElement(*element1);

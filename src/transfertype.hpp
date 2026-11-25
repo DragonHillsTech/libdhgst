@@ -24,11 +24,12 @@
 namespace dh::gst
 {
 
+/// What happens to the reference that is passed together with a raw GObject or GLib pointer
 enum class TransferType
 {
-  Full,
-  None,
-  Floating
+  full, ///< take over the caller's reference
+  none, ///< the caller keeps its reference, an own one is added
+  floating ///< sink a floating reference, or add an own one if it is not floating
 };
 
 } // namespace dh::gst

@@ -54,37 +54,32 @@ protected:
    * @brief Constructs a PluginFeature from a shared pointer to GstPluginFeature
    * @param gstPluginFeature The GStreamer plugin feature shared pointer
    */
-  explicit PluginFeature(GstPluginFeatureSPtr gstPluginFeature);
+  explicit PluginFeature(const GstPluginFeatureSPtr& gstPluginFeature);
 
 public:
   [[nodiscard]] static std::shared_ptr<PluginFeature>
   create(GstPluginFeature* gstPluginFeature, TransferType transferType);
 
-  [[nodiscard]] static std::shared_ptr<PluginFeature> create(GstPluginFeatureSPtr gstPluginFeature);
+  [[nodiscard]] static std::shared_ptr<PluginFeature>
+  create(const GstPluginFeatureSPtr& gstPluginFeature);
 
   /**
    * @brief Gets the underlying GstPluginFeature object
    * @return A shared pointer to the GstPluginFeature
    */
-  [[nodiscard]] GstPluginFeatureSPtr getGstPluginFeature();
-
-  /**
-   * @brief Gets the underlying GstPluginFeature object (const)
-   * @return A shared pointer to the GstPluginFeature (const)
-   */
-  [[nodiscard]] const GstPluginFeatureSPtr getGstPluginFeature() const;
+  [[nodiscard]] GstPluginFeatureSPtr getGstPluginFeature() const;
 
   /**
    * @brief Gets the rank of this plugin feature
-   * @return The rank of the plugin feature
+   * @return The rank of the plugin feature, a GstRank value such as GST_RANK_PRIMARY
    */
-  [[nodiscard]] int getRank() const;
+  [[nodiscard]] unsigned int getRank() const;
 
   /**
    * @brief Sets the rank of this plugin feature
-   * @param rank The new rank to set
+   * @param rank The new rank, a GstRank value such as GST_RANK_PRIMARY
    */
-  void setRank(int rank);
+  void setRank(unsigned int rank);
 
 private:
   [[nodiscard]] const GstPluginFeature* getRawGstPluginFeature() const;

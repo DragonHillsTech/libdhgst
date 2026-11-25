@@ -41,13 +41,13 @@ protected:
    * @brief Create a new Pipeline object that wraps a GstPipelineSPtr.
    * @param gstPipeline
    */
-  explicit Pipeline(GstPipelineSPtr gstPipeline);
+  explicit Pipeline(const GstPipelineSPtr& gstPipeline);
 
   /**
    * @brief Create a new Pipeline object that wraps a GstPipeline*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstPipeline
-   * @param transferType if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Pipeline(GstPipeline* gstPipeline, TransferType transferType);
 
@@ -58,7 +58,7 @@ protected:
   explicit Pipeline(const std::string& name);
 
 public:
-  [[nodiscard]] static std::shared_ptr<Pipeline> create(GstPipelineSPtr gstPipeline);
+  [[nodiscard]] static std::shared_ptr<Pipeline> create(const GstPipelineSPtr& gstPipeline);
   [[nodiscard]] static std::shared_ptr<Pipeline> create(const std::string& name);
   [[nodiscard]] static std::shared_ptr<Pipeline>
   create(GstPipeline* gstPipeline, TransferType transferType);
@@ -86,7 +86,7 @@ public:
    * The clock will be distributed to all the elements managed by the pipeline.
    * @param clock The clock to set.
    */
-  void setPipelineClock(GstClockSPtr clock);
+  void setPipelineClock(const GstClockSPtr& clock);
 
 #if DH_GST_HAS_PIPELINE_IS_LIVE
   /**
@@ -100,8 +100,7 @@ public:
    * @brief Get the GstPipelineSPtr of the Pipeline.
    * @return The GstPipeline shared pointer.
    */
-  [[nodiscard]] GstPipelineSPtr getGstPipeline();
-  [[nodiscard]] const GstPipelineSPtr getGstPipeline() const;
+  [[nodiscard]] GstPipelineSPtr getGstPipeline() const;
 
   [[nodiscard]] std::shared_ptr<Bus> getBus() const;
 

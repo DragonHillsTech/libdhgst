@@ -20,8 +20,13 @@
 
 #include "object.hpp"
 #include "internal/objectname.hpp"
+#include "sharedptrs.hpp"
+#include "transfertype.hpp"
 
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace dh::gst
 {
@@ -49,12 +54,7 @@ std::shared_ptr<Object> Object::create(GstObject* gstObject, TransferType transf
 
 Object::~Object() = default;
 
-GstObjectSPtr Object::getGstObject()
-{
-  return gstObject;
-}
-
-const GstObjectSPtr Object::getGstObject() const
+GstObjectSPtr Object::getGstObject() const
 {
   return gstObject;
 }
@@ -162,11 +162,6 @@ void Object::throwSignalSignatureMismatch(const GSignalQuery& query)
     "Callback does not match signal " + signature
     + ": it must return void and take exactly these parameter types"
   );
-}
-
-void Object::disconnectSignal(SignalConnection& connection) const
-{
-  connection.disconnect();
 }
 
 void Object::requireType(GType expectedType) const

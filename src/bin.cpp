@@ -19,15 +19,22 @@
  */
 
 #include "bin.hpp"
+#include "element.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
+#include <functional>
+#include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace dh::gst
 {
 
-Bin::Bin(GstBinSPtr gstBin)
-  : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::None)
+Bin::Bin(const GstBinSPtr& gstBin)
+  : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::none)
 {
 }
 
@@ -37,11 +44,11 @@ Bin::Bin(GstBin* gstBin, TransferType transferType)
 }
 
 Bin::Bin(const std::string& name)
-  : Element(GST_ELEMENT_CAST(gst_bin_new(name.c_str())), TransferType::Floating)
+  : Element(GST_ELEMENT_CAST(gst_bin_new(name.c_str())), TransferType::floating)
 {
 }
 
-std::shared_ptr<Bin> Bin::create(GstBinSPtr gstBin)
+std::shared_ptr<Bin> Bin::create(const GstBinSPtr& gstBin)
 {
   std::shared_ptr<Bin> bin(new Bin(gstBin));
   bin->requireType<GstBin>();
@@ -69,7 +76,7 @@ std::shared_ptr<Bin> Bin::fromDescription(const std::string& description, bool g
     gst_parse_bin_from_description(description.c_str(), ghostUnlinkedPads, &error);
 
   // Create a smart pointer for the GError if it exists
-  GErrorSPtr errorSPtr(error, GlibDeleter());
+  const GErrorSPtr errorSPtr(error, GlibDeleter());
 
   // If parsing fails, throw an exception with the error message
   if (!gstElement)
@@ -80,18 +87,12 @@ std::shared_ptr<Bin> Bin::fromDescription(const std::string& description, bool g
   }
 
   // Return a Bin object created from the parsed pipeline
-  return create(GST_BIN_CAST(gstElement), TransferType::Floating);
+  return create(GST_BIN_CAST(gstElement), TransferType::floating);
 }
 
-GstBinSPtr Bin::getGstBin()
+GstBinSPtr Bin::getGstBin() const
 {
-  // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::None);
-}
-
-const GstBinSPtr Bin::getGstBin() const
-{
-  return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_BIN_CAST(getGstObject().get()), TransferType::none);
 }
 
 void Bin::addElement(GstElement& element)
@@ -118,7 +119,7 @@ std::shared_ptr<Element> Bin::getElementByName(const std::string& name)
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
 
-  return Element::create(gstElement, TransferType::Full);
+  return Element::create(gstElement, TransferType::full);
 }
 
 std::shared_ptr<Element> Bin::getElementByNameRecurseUp(const std::string& name)
@@ -131,7 +132,7 @@ std::shared_ptr<Element> Bin::getElementByNameRecurseUp(const std::string& name)
     throw std::runtime_error("Element with name '" + name + "' not found.");
   }
 
-  return Element::create(gstElement, TransferType::Full);
+  return Element::create(gstElement, TransferType::full);
 }
 
 void Bin::removeElement(GstElement& element)

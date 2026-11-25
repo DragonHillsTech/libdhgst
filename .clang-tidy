@@ -1,0 +1,98 @@
+# clang-tidy configuration matching guidelines/cpp.md (requires clang-tidy 21+).
+# Run while building:  cmake -B build -DENABLE_CLANG_TIDY=ON && cmake --build build
+# Run by hand:         clang-tidy -p build src/*.cpp   (uses build/compile_commands.json, which
+#                      CMake writes by default)
+#                      Add --fix to apply automatic fixes.
+# Suppress a finding only with a reason:  // NOLINT(check-name): why
+---
+# The library is kept free of findings: WarningsAsErrors makes every new finding fail the CI job.
+Checks: >
+  -*,
+  bugprone-*,
+  cert-err58-cpp,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  google-explicit-constructor,
+  misc-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-c-copy-assignment-signature,
+  -cppcoreguidelines-explicit-virtual-functions,
+  -cppcoreguidelines-macro-to-enum,
+  -cppcoreguidelines-narrowing-conversions,
+  -cppcoreguidelines-noexcept-*,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-const-cast,
+  -cppcoreguidelines-use-default-member-init,
+  -misc-no-recursion,
+  -modernize-use-trailing-return-type,
+  -performance-enum-size,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion
+
+# Reasons for the exclusions:
+#   Too noisy / disputed: swappable parameters, constant array index, recursion ban,
+#   trailing return types, enum underlying-type size, complexity limit, short-name ban.
+#   Unavoidable in a wrapper of a C API: const_cast, because the GStreamer functions take
+#   non-const pointers even where they don't modify the object, as in the const member functions;
+#   pointer arithmetic, for the NULL-terminated C arrays that GLib and GStreamer return;
+#   implicit bool conversions, because GLib uses gboolean (an int) and pointers as truth values
+#   everywhere, and clang-tidy can't allow only the harmless bool -> gboolean direction.
+#   Intended: const data members, they mark members that are set once (e.g. the callback slots
+#   in the Private classes, which are never copied or assigned).
+#   Duplicates (aliases of checks enabled elsewhere): the rest.
+
+WarningsAsErrors: '*'
+# All headers of the project; third-party headers must be included as SYSTEM
+# (CMake: imported targets or target_include_directories(... SYSTEM ...)).
+HeaderFilterRegex: '.*'
+FormatStyle: file
+
+CheckOptions:
+  # --- Naming (guidelines/cpp.md) ---
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  # Type traits name their result "type", like the standard library (std::remove_pointer<T>::type)
+  readability-identifier-naming.TypeAliasIgnoredRegexp: '^type$'
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.ConceptCase: CamelCase
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.ValueTemplateParameterCase: camelBack
+  readability-identifier-naming.FunctionCase: camelBack
+  readability-identifier-naming.MethodCase: camelBack
+  readability-identifier-naming.VariableCase: camelBack
+  readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.MemberCase: camelBack
+  readability-identifier-naming.ConstantCase: camelBack
+  readability-identifier-naming.ConstexprVariableCase: camelBack
+  readability-identifier-naming.GlobalConstantCase: camelBack
+  readability-identifier-naming.StaticConstantCase: camelBack
+  readability-identifier-naming.EnumConstantCase: camelBack
+  readability-identifier-naming.ScopedEnumConstantCase: camelBack
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+
+  # --- Other options ---
+  # PIMPL "class Private" and plain aggregates may have public data members.
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+  # Default member initializers with braces: "int timeoutMs{1000};".
+  modernize-use-default-member-init.UseAssignment: false
+  # Allow the destructor-only "= default" declaration PIMPL needs.
+  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  # GLib/GObject and the GStreamer libraries are included through their public top-level headers
+  # (<glib.h>, <glib-object.h>, <gst/gst.h>, <gst/app/gstappsink.h>, ...), but the check would ask
+  # for their internal ones, so all headers under these include directories are ignored. The
+  # regex is matched anywhere in the absolute path: "gst/.*" would also match the project's own
+  # headers under libdhgst/src/.
+  misc-include-cleaner.IgnoreHeaders: '/gstreamer-1\.0/.*;/glib-2\.0/.*'

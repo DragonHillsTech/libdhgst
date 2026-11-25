@@ -74,8 +74,11 @@ public:
     return std::shared_ptr<CallbackSlot>(new CallbackSlot(std::move(name)));
   }
 
+  ~CallbackSlot() = default;
   CallbackSlot(const CallbackSlot&) = delete;
+  CallbackSlot(CallbackSlot&&) = delete;
   CallbackSlot& operator=(const CallbackSlot&) = delete;
+  CallbackSlot& operator=(CallbackSlot&&) = delete;
 
   /**
    * @brief Connect the callback.
@@ -123,9 +126,9 @@ public:
     // a copy keeps the callback alive if it disconnects itself. Declared before the locks,
     // so it is destroyed after unlocking: its captures may run arbitrary code
     Callback callback;
-    std::lock_guard<std::recursive_mutex> callLock(callMutex);
+    const std::scoped_lock callLock(callMutex);
     {
-      std::lock_guard<std::mutex> lock(callbackMutex);
+      const std::scoped_lock lock(callbackMutex);
       callback = connectedCallback;
     }
     if (callback)
@@ -146,7 +149,7 @@ private:
   /// store the callback, only one callback can be connected at once
   void store(const Callback& callback)
   {
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    const std::scoped_lock lock(callbackMutex);
     if (connectedCallback)
     {
       throw std::logic_error("a callback for " + name + " is already connected");
@@ -160,8 +163,8 @@ private:
     // declared before the locks, so it is destroyed after unlocking: its captures may run arbitrary
     // code
     Callback removed;
-    std::lock_guard<std::recursive_mutex> callLock(callMutex); // waits for a running call
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    // callMutex waits for a running call. scoped_lock takes both without deadlock, in any order.
+    const std::scoped_lock locks(callMutex, callbackMutex);
     if (isConnectedCallback(callback))
     {
       removed = std::exchange(connectedCallback, nullptr);
@@ -171,7 +174,7 @@ private:
   /// check whether the callback is still the connected one
   [[nodiscard]] bool isConnected(const WeakCallback& callback) const
   {
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    const std::scoped_lock lock(callbackMutex);
     return isConnectedCallback(callback);
   }
 
@@ -187,7 +190,8 @@ private:
   /**
    * Held while the callback runs. disconnect() takes it, so it waits for a running call
    * and no call starts after it returned. Recursive, so the callback may disconnect itself.
-   * Lock order: callMutex before callbackMutex.
+   * call() takes callbackMutex while holding callMutex. Never block on callMutex while holding
+   * callbackMutex; disconnect() takes both at once with std::scoped_lock.
    */
   std::recursive_mutex callMutex;
 

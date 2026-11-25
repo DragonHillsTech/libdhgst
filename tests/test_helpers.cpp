@@ -47,7 +47,7 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromValidCaps, VideoInfoTest)
       1,
       nullptr
     ),
-    dh::gst::TransferType::Full
+    dh::gst::TransferType::full
   );
 
   // Test successful creation
@@ -78,7 +78,7 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromInvalidCaps, VideoInfoTest)
       // Missing width and height
       nullptr
     ),
-    dh::gst::TransferType::Full
+    dh::gst::TransferType::full
   );
 
   BOOST_CHECK_THROW(dh::gst::helpers::createVideoInfo(*invalidCaps), std::runtime_error);
@@ -101,7 +101,7 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromNonVideoCaps, VideoInfoTest)
       2,
       nullptr
     ),
-    dh::gst::TransferType::Full
+    dh::gst::TransferType::full
   );
 
   BOOST_CHECK_THROW(dh::gst::helpers::createVideoInfo(*audioCaps), std::runtime_error);
@@ -121,7 +121,7 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromBufferWithPaddedLayout, VideoInfoTest
 
   auto buffer = dh::gst::makeGstSharedPtr(
     gst_buffer_new_allocate(nullptr, size, nullptr),
-    dh::gst::TransferType::Full
+    dh::gst::TransferType::full
   );
   BOOST_REQUIRE(gst_buffer_add_video_meta_full(
     buffer.get(),
@@ -168,7 +168,7 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromBufferWithDefaultLayout, VideoInfoTes
 
       auto buffer = dh::gst::makeGstSharedPtr(
         gst_buffer_new_allocate(nullptr, GST_VIDEO_INFO_SIZE(&expected), nullptr),
-        dh::gst::TransferType::Full
+        dh::gst::TransferType::full
       );
       BOOST_REQUIRE(
         gst_buffer_add_video_meta(buffer.get(), GST_VIDEO_FRAME_FLAG_NONE, format, 33, 17)
@@ -196,7 +196,7 @@ BOOST_FIXTURE_TEST_CASE(CreateVideoInfoFromBufferWithoutMetaThrows, VideoInfoTes
 {
   auto buffer = dh::gst::makeGstSharedPtr(
     gst_buffer_new_allocate(nullptr, 16, nullptr),
-    dh::gst::TransferType::Full
+    dh::gst::TransferType::full
   );
   BOOST_CHECK_THROW(dh::gst::helpers::createVideoInfo(*buffer), std::runtime_error);
 }

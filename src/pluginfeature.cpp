@@ -20,6 +20,12 @@
 
 // local includes
 #include "pluginfeature.hpp"
+#include "object.hpp"
+#include "sharedptrs.hpp"
+#include "transfertype.hpp"
+
+// std
+#include <memory>
 
 namespace dh::gst
 {
@@ -29,10 +35,10 @@ PluginFeature::PluginFeature(GstPluginFeature* gstPluginFeature, TransferType tr
 {
 }
 
-PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
+PluginFeature::PluginFeature(const GstPluginFeatureSPtr& gstPluginFeature)
   : Object(
       GST_OBJECT_CAST(gstPluginFeature.get()),
-      TransferType::None
+      TransferType::none
     ) // No pointer_cast due to C inheritance
 {
 }
@@ -45,29 +51,24 @@ PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferT
   return pluginFeature;
 }
 
-std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeatureSPtr gstPluginFeature)
+std::shared_ptr<PluginFeature> PluginFeature::create(const GstPluginFeatureSPtr& gstPluginFeature)
 {
   std::shared_ptr<PluginFeature> pluginFeature(new PluginFeature(gstPluginFeature));
   pluginFeature->requireType<GstPluginFeature>();
   return pluginFeature;
 }
 
-GstPluginFeatureSPtr PluginFeature::getGstPluginFeature()
+GstPluginFeatureSPtr PluginFeature::getGstPluginFeature() const
 {
-  return makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(getGstObject().get()), TransferType::none);
 }
 
-const std::shared_ptr<GstPluginFeature> PluginFeature::getGstPluginFeature() const
-{
-  return makeGstSharedPtr(GST_PLUGIN_FEATURE_CAST(getGstObject().get()), TransferType::None);
-}
-
-int PluginFeature::getRank() const
+unsigned int PluginFeature::getRank() const
 {
   return gst_plugin_feature_get_rank(const_cast<GstPluginFeature*>(getRawGstPluginFeature()));
 }
 
-void PluginFeature::setRank(int rank)
+void PluginFeature::setRank(unsigned int rank)
 {
   gst_plugin_feature_set_rank(getRawGstPluginFeature(), rank);
 }

@@ -36,26 +36,25 @@ protected:
    * @brief Create a new Bus object that wraps a GstBusSPtr.
    * @param gstBus
    */
-  explicit Bus(GstBusSPtr gstBus);
+  explicit Bus(const GstBusSPtr& gstBus);
 
   /**
    * @brief Create a new Bus object that wraps a GstBus.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstBus
-   * @param transferType see if None, then increase use count
+   * @param transferType ownership of the passed reference, see TransferType
    */
   Bus(GstBus* gstBus, TransferType transferType);
 
 public:
-  [[nodiscard]] static std::shared_ptr<Bus> create(GstBusSPtr gstBus);
+  [[nodiscard]] static std::shared_ptr<Bus> create(const GstBusSPtr& gstBus);
   [[nodiscard]] static std::shared_ptr<Bus> create(GstBus* gstBus, TransferType transferType);
 
   /**
    * @brief get the GstBusSPtr of the Bus
    * @return the internal GstBus.
    */
-  [[nodiscard]] GstBusSPtr getGstBus();
-  [[nodiscard]] const GstBusSPtr getGstBus() const;
+  [[nodiscard]] GstBusSPtr getGstBus() const;
 
   /**
    * @brief Posts a message on the bus.

@@ -21,14 +21,18 @@
 // local includes
 #include "element.hpp"
 #include "elementfactory.hpp"
+#include "object.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
 // std
+#include <functional>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
-
-// C
-#include <unordered_set>
+#include <vector>
 
 namespace dh::gst
 {
@@ -43,7 +47,7 @@ namespace
 gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
 {
   auto& pads = *static_cast<std::vector<GstPadSPtr>*>(userData);
-  pads.push_back(makeGstSharedPtr(pad, TransferType::None));
+  pads.push_back(makeGstSharedPtr(pad, TransferType::none));
   return TRUE; // continue iteration
 }
 
@@ -54,7 +58,7 @@ Element::Element(GstElement* gstElement, TransferType transferType)
 {
 }
 
-std::shared_ptr<Element> Element::create(GstElementSPtr gstElement)
+std::shared_ptr<Element> Element::create(const GstElementSPtr& gstElement)
 {
   std::shared_ptr<Element> element(new Element(gstElement));
   element->requireType<GstElement>();
@@ -68,24 +72,18 @@ std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType tr
   return element;
 }
 
-Element::Element(GstElementSPtr gstElement)
+Element::Element(const GstElementSPtr& gstElement)
   : Object(
       GST_OBJECT_CAST(gstElement.get()),
-      TransferType::None
+      TransferType::none
     ) // no pointer_cast because C inheritance
 {
 }
 
-GstElementSPtr Element::getGstElement()
+GstElementSPtr Element::getGstElement() const
 {
   // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::None);
-}
-
-const GstElementSPtr Element::getGstElement() const
-{
-  // we can not use *pointer_cast because these are C types
-  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_ELEMENT_CAST(getGstObject().get()), TransferType::none);
 }
 
 GstStateChangeReturn Element::setState(GstState newState)
@@ -123,7 +121,7 @@ GstPadSPtr Element::getCompatiblePad(const GstPadSPtr& pad, const GstCapsSPtr& c
   // gst_element_get_compatible_pad: transfer full, nullable
   return makeGstSharedPtr(
     gst_element_get_compatible_pad(getRawGstElement(), pad.get(), caps.get()),
-    TransferType::Full
+    TransferType::full
   );
 }
 
@@ -132,7 +130,7 @@ GstPadSPtr Element::getStaticPad(const std::string& name)
   // gst_element_get_static_pad: transfer full, nullable
   return makeGstSharedPtr(
     gst_element_get_static_pad(getRawGstElement(), name.c_str()),
-    TransferType::Full
+    TransferType::full
   );
 }
 
@@ -158,7 +156,7 @@ std::string Element::getFactoryName() const
   {
     return {};
   }
-  const auto factory = ElementFactory::create(gstElementFactoryRawPtr, TransferType::None);
+  const auto factory = ElementFactory::create(gstElementFactoryRawPtr, TransferType::none);
   return factory->getName();
 }
 
@@ -166,7 +164,7 @@ GstClockSPtr Element::getElementClock() const
 {
   return makeGstSharedPtr(
     gst_element_get_clock(const_cast<GstElement*>(getRawGstElement())),
-    TransferType::Full
+    TransferType::full
   );
 }
 
