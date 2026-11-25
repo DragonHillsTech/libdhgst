@@ -108,3 +108,48 @@ jobs:
 
       - name: Check formatting
         run: git ls-files -z '*.cpp' '*.hpp' | xargs -0 -r clang-format --dry-run --Werror
+
+  # Pull requests to master: check the library sources with clang-tidy. .clang-tidy turns every
+  # finding into an error, so the build fails on any finding.
+  check-clang-tidy:
+    if: github.event_name == 'pull_request'
+    needs: build-and-test-sanitized
+    runs-on: ubuntu-latest
+
+    env:
+      # .clang-tidy needs 21+; 21.1.8 (as locally) isn't on PyPI, 21.1.6 is the closest release
+      CLANG_TIDY_VERSION: 21.1.6
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get remove libunwind-*
+          sudo apt-get install -y \
+            cmake \
+            g++ \
+            libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev
+          pipx install "clang-tidy==${{ env.CLANG_TIDY_VERSION }}"
+
+      # The runner image has an older clang-tidy in /usr/bin. Fail if PATH finds that one instead of
+      # the pipx one, rather than checking with a version that reports different findings.
+      - name: Check the clang-tidy version
+        run: |
+          clang-tidy --version
+          clang-tidy --version | grep -q "LLVM version ${{ env.CLANG_TIDY_VERSION }}$"
+
+      # Pass the checked clang-tidy explicitly: CMake prefers clang-tidy-21, which the runner image
+      # may provide in a different patch version
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_CLANG_TIDY=ON \
+            -DDHGST_CLANG_TIDY_EXE="$(command -v clang-tidy)"
+
+      - name: Build the library with clang-tidy
+        run: cmake --build build --parallel "$(nproc)"

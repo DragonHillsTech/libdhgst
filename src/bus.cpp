@@ -56,7 +56,9 @@ public:
   }
 
   SyncMessageEmission(const SyncMessageEmission&) = delete;
+  SyncMessageEmission(SyncMessageEmission&&) = delete;
   SyncMessageEmission& operator=(const SyncMessageEmission&) = delete;
+  SyncMessageEmission& operator=(SyncMessageEmission&&) = delete;
 
 private:
   GWeakRef weakBus{};

@@ -74,8 +74,11 @@ public:
     return std::shared_ptr<CallbackSlot>(new CallbackSlot(std::move(name)));
   }
 
+  ~CallbackSlot() = default;
   CallbackSlot(const CallbackSlot&) = delete;
+  CallbackSlot(CallbackSlot&&) = delete;
   CallbackSlot& operator=(const CallbackSlot&) = delete;
+  CallbackSlot& operator=(CallbackSlot&&) = delete;
 
   /**
    * @brief Connect the callback.

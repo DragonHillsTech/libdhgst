@@ -222,6 +222,10 @@ struct ExactTypeMatch
   {
     return Derived::matches(propertyType);
   }
+
+private:
+  ExactTypeMatch() = default;
+  friend Derived;
 };
 
 } // namespace detail

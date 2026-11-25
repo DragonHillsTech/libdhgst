@@ -57,7 +57,7 @@ public:
 
 private:
   void clearWeakRef();
-  void moveFrom(SignalConnection&& other) noexcept;
+  void moveFrom(SignalConnection& other) noexcept;
 
   GWeakRef weakObject{};
   gulong handlerId{0};

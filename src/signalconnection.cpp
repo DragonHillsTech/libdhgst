@@ -65,7 +65,7 @@ SignalConnection::SignalConnection(
 
 SignalConnection::SignalConnection(SignalConnection&& other) noexcept
 {
-  moveFrom(std::move(other));
+  moveFrom(other);
 }
 
 SignalConnection& SignalConnection::operator=(SignalConnection&& other) noexcept
@@ -74,7 +74,7 @@ SignalConnection& SignalConnection::operator=(SignalConnection&& other) noexcept
   {
     disconnect();
     clearWeakRef();
-    moveFrom(std::move(other));
+    moveFrom(other);
   }
   return *this;
 }
@@ -150,7 +150,7 @@ void SignalConnection::clearWeakRef()
   }
 }
 
-void SignalConnection::moveFrom(SignalConnection&& other) noexcept
+void SignalConnection::moveFrom(SignalConnection& other) noexcept
 {
   handlerId = other.handlerId;
   customDisconnectHandler = std::move(other.customDisconnectHandler);
