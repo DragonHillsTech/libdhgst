@@ -20,16 +20,16 @@ Checks: >
   cppcoreguidelines-virtual-class-destructor,
   google-explicit-constructor,
   misc-*,
+  modernize-*,
   performance-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,
   -misc-no-recursion,
+  -modernize-use-trailing-return-type,
   -performance-enum-size
 
 # To disable when their groups are enabled:
 #   -cppcoreguidelines-pro-bounds-constant-array-index
-#   -modernize-use-nodiscard
-#   -modernize-use-trailing-return-type
 #   -readability-function-cognitive-complexity
 #   -readability-identifier-length
 #   -cppcoreguidelines-pro-type-const-cast
@@ -47,8 +47,7 @@ Checks: >
 #
 # Reasons for the exclusions above:
 #   Too noisy / disputed: swappable parameters, constant array index, recursion ban,
-#   [[nodiscard]] everywhere, trailing return types, enum underlying-type size, complexity limit,
-#   short-name ban.
+#   trailing return types, enum underlying-type size, complexity limit, short-name ban.
 #   Unavoidable in a wrapper of a C API: const_cast, because the GStreamer functions take
 #   non-const pointers even where they don't modify the object, as in the const member functions;
 #   pointer arithmetic, for the NULL-terminated C arrays that GLib and GStreamer return;
@@ -94,8 +93,8 @@ CheckOptions:
   # --- Other options ---
   # PIMPL "class Private" and plain aggregates may have public data members.
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
-  # Default member initializers as "int timeoutMs = 1000;".
-  modernize-use-default-member-init.UseAssignment: true
+  # Default member initializers with braces: "int timeoutMs{1000};".
+  modernize-use-default-member-init.UseAssignment: false
   # Allow the destructor-only "= default" declaration PIMPL needs.
   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
   # GLib/GObject and the GStreamer libraries are included through their public top-level headers

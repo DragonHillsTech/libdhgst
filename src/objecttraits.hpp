@@ -62,20 +62,20 @@ struct ConvertToGlibType<
 {
   // Static assertion to produce a compilation error if GlibType is a pointer to a GstObject
   static_assert(
-    !(std::is_pointer<GlibType>::value && IsGstObject<std::remove_pointer_t<GlibType>>::value),
+    !(std::is_pointer_v<GlibType> && IsGstObject<std::remove_pointer_t<GlibType>>::value),
     "GlibType cannot be a raw pointer to a GstObject."
   );
   using type = GlibType*;
 };
 
+// Types that convertParamToCppType passes through unchanged
+template<typename T>
+inline constexpr bool isPlainParam = !IsGObjectType<std::remove_pointer_t<T>>::value
+  && !IsGstMiniObject<std::remove_pointer_t<T>>::value;
+
 // General case: For types not needing special handling
 template<typename T>
-typename std::enable_if<
-  !IsGObjectType<typename std::remove_pointer<T>::type>::value
-    && !IsGstMiniObject<typename std::remove_pointer<T>::type>::value,
-  T
->::type
-convertParamToCppType(T value)
+std::enable_if_t<isPlainParam<T>, T> convertParamToCppType(T value)
 {
   return value;
 }

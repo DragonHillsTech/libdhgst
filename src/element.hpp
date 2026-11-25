@@ -138,7 +138,7 @@ public:
    * @brief Retrieves the factory that was used to create this element.
    * @return the factory name or empty string if element has not been registered (static element).
    */
-  std::string getFactoryName() const;
+  [[nodiscard]] std::string getFactoryName() const;
 
   /**
    * @brief Gets the currently configured clock of the element.
@@ -147,7 +147,7 @@ public:
    * state.
    * @return the clock of the Element or empty ptr
    */
-  GstClockSPtr getElementClock() const;
+  [[nodiscard]] GstClockSPtr getElementClock() const;
 
   /**
    * @brief Gets the start time of the element.

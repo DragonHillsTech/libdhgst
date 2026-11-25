@@ -185,7 +185,7 @@ protected:
    * @throws std::runtime_error if signal could not be connected
    */
   template<typename... Args>
-  SignalConnection
+  [[nodiscard]] SignalConnection
   connectGobjectSignal(const std::string& signalName, std::function<void(Args...)> callback) const;
 
 private:
@@ -337,7 +337,7 @@ SignalConnection Object::connectGobjectSignal(
 ) const
 {
   static_assert(
-    (... && (!(std::is_pointer<Args>::value && IsGstObject<std::remove_pointer_t<Args>>::value))),
+    (... && (!(std::is_pointer_v<Args> && IsGstObject<std::remove_pointer_t<Args>>::value))),
     "Error: Template arguments cannot be of type GstObject*. Use shared_ptr instead, see "
     "sharedptrs.hpp"
   );
