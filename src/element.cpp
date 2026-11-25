@@ -54,7 +54,7 @@ Element::Element(GstElement* gstElement, TransferType transferType)
 {
 }
 
-std::shared_ptr<Element> Element::create(GstElementSPtr gstElement)
+std::shared_ptr<Element> Element::create(const GstElementSPtr& gstElement)
 {
   std::shared_ptr<Element> element(new Element(gstElement));
   element->requireType<GstElement>();
@@ -68,7 +68,7 @@ std::shared_ptr<Element> Element::create(GstElement* gstElement, TransferType tr
   return element;
 }
 
-Element::Element(GstElementSPtr gstElement)
+Element::Element(const GstElementSPtr& gstElement)
   : Object(
       GST_OBJECT_CAST(gstElement.get()),
       TransferType::none

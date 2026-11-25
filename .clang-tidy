@@ -19,8 +19,10 @@ Checks: >
   cppcoreguidelines-special-member-functions,
   cppcoreguidelines-virtual-class-destructor,
   google-explicit-constructor,
+  performance-*,
   -bugprone-easily-swappable-parameters,
-  -bugprone-narrowing-conversions
+  -bugprone-narrowing-conversions,
+  -performance-enum-size
 
 # To disable when their groups are enabled:
 #   -cppcoreguidelines-pro-bounds-constant-array-index
@@ -28,7 +30,6 @@ Checks: >
 #   -misc-no-recursion
 #   -modernize-use-nodiscard
 #   -modernize-use-trailing-return-type
-#   -performance-enum-size
 #   -readability-function-cognitive-complexity
 #   -readability-identifier-length
 #   -cppcoreguidelines-pro-type-const-cast

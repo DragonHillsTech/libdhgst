@@ -29,7 +29,7 @@ PluginFeature::PluginFeature(GstPluginFeature* gstPluginFeature, TransferType tr
 {
 }
 
-PluginFeature::PluginFeature(GstPluginFeatureSPtr gstPluginFeature)
+PluginFeature::PluginFeature(const GstPluginFeatureSPtr& gstPluginFeature)
   : Object(
       GST_OBJECT_CAST(gstPluginFeature.get()),
       TransferType::none
@@ -45,7 +45,7 @@ PluginFeature::create(GstPluginFeature* gstPluginFeature, TransferType transferT
   return pluginFeature;
 }
 
-std::shared_ptr<PluginFeature> PluginFeature::create(GstPluginFeatureSPtr gstPluginFeature)
+std::shared_ptr<PluginFeature> PluginFeature::create(const GstPluginFeatureSPtr& gstPluginFeature)
 {
   std::shared_ptr<PluginFeature> pluginFeature(new PluginFeature(gstPluginFeature));
   pluginFeature->requireType<GstPluginFeature>();

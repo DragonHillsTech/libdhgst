@@ -54,13 +54,14 @@ protected:
    * @brief Constructs a PluginFeature from a shared pointer to GstPluginFeature
    * @param gstPluginFeature The GStreamer plugin feature shared pointer
    */
-  explicit PluginFeature(GstPluginFeatureSPtr gstPluginFeature);
+  explicit PluginFeature(const GstPluginFeatureSPtr& gstPluginFeature);
 
 public:
   [[nodiscard]] static std::shared_ptr<PluginFeature>
   create(GstPluginFeature* gstPluginFeature, TransferType transferType);
 
-  [[nodiscard]] static std::shared_ptr<PluginFeature> create(GstPluginFeatureSPtr gstPluginFeature);
+  [[nodiscard]] static std::shared_ptr<PluginFeature>
+  create(const GstPluginFeatureSPtr& gstPluginFeature);
 
   /**
    * @brief Gets the underlying GstPluginFeature object

@@ -66,7 +66,7 @@ private:
 
 } // namespace
 
-Bus::Bus(GstBusSPtr gstBus)
+Bus::Bus(const GstBusSPtr& gstBus)
   : Object(
       GST_OBJECT_CAST(gstBus.get()),
       TransferType::none
@@ -79,7 +79,7 @@ Bus::Bus(GstBus* gstBus, TransferType transferType)
 {
 }
 
-std::shared_ptr<Bus> Bus::create(GstBusSPtr gstBus)
+std::shared_ptr<Bus> Bus::create(const GstBusSPtr& gstBus)
 {
   std::shared_ptr<Bus> bus(new Bus(gstBus));
   bus->requireType<GstBus>();

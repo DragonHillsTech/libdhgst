@@ -32,7 +32,7 @@ ElementFactory::ElementFactory(GstElementFactory* gstElementFactory, TransferTyp
 {
 }
 
-ElementFactory::ElementFactory(GstElementFactorySPtr gstElementFactory)
+ElementFactory::ElementFactory(const GstElementFactorySPtr& gstElementFactory)
   : PluginFeature(
       GST_PLUGIN_FEATURE_CAST(gstElementFactory.get()),
       TransferType::none
@@ -50,7 +50,8 @@ ElementFactory::create(GstElementFactory* gstElementFactory, TransferType transf
   return elementFactory;
 }
 
-std::shared_ptr<ElementFactory> ElementFactory::create(GstElementFactorySPtr gstElementFactory)
+std::shared_ptr<ElementFactory>
+ElementFactory::create(const GstElementFactorySPtr& gstElementFactory)
 {
   std::shared_ptr<ElementFactory> elementFactory(new ElementFactory(gstElementFactory));
   elementFactory->requireType<GstElementFactory>();

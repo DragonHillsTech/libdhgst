@@ -41,7 +41,7 @@ protected:
    * @brief Create a new Pipeline object that wraps a GstPipelineSPtr.
    * @param gstPipeline
    */
-  explicit Pipeline(GstPipelineSPtr gstPipeline);
+  explicit Pipeline(const GstPipelineSPtr& gstPipeline);
 
   /**
    * @brief Create a new Pipeline object that wraps a GstPipeline*.
@@ -58,7 +58,7 @@ protected:
   explicit Pipeline(const std::string& name);
 
 public:
-  [[nodiscard]] static std::shared_ptr<Pipeline> create(GstPipelineSPtr gstPipeline);
+  [[nodiscard]] static std::shared_ptr<Pipeline> create(const GstPipelineSPtr& gstPipeline);
   [[nodiscard]] static std::shared_ptr<Pipeline> create(const std::string& name);
   [[nodiscard]] static std::shared_ptr<Pipeline>
   create(GstPipeline* gstPipeline, TransferType transferType);
@@ -86,7 +86,7 @@ public:
    * The clock will be distributed to all the elements managed by the pipeline.
    * @param clock The clock to set.
    */
-  void setPipelineClock(GstClockSPtr clock);
+  void setPipelineClock(const GstClockSPtr& clock);
 
 #if DH_GST_HAS_PIPELINE_IS_LIVE
   /**

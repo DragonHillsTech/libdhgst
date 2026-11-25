@@ -26,7 +26,7 @@
 namespace dh::gst
 {
 
-Bin::Bin(GstBinSPtr gstBin)
+Bin::Bin(const GstBinSPtr& gstBin)
   : Element(GST_ELEMENT_CAST(gstBin.get()), TransferType::none)
 {
 }
@@ -41,7 +41,7 @@ Bin::Bin(const std::string& name)
 {
 }
 
-std::shared_ptr<Bin> Bin::create(GstBinSPtr gstBin)
+std::shared_ptr<Bin> Bin::create(const GstBinSPtr& gstBin)
 {
   std::shared_ptr<Bin> bin(new Bin(gstBin));
   bin->requireType<GstBin>();

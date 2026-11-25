@@ -28,7 +28,7 @@
 namespace dh::gst
 {
 
-Pipeline::Pipeline(GstPipelineSPtr gstPipeline)
+Pipeline::Pipeline(const GstPipelineSPtr& gstPipeline)
   : Bin(
       GST_BIN_CAST(gstPipeline.get()),
       TransferType::none
@@ -49,7 +49,7 @@ Pipeline::Pipeline(const std::string& name)
 {
 }
 
-std::shared_ptr<Pipeline> Pipeline::create(GstPipelineSPtr gstPipeline)
+std::shared_ptr<Pipeline> Pipeline::create(const GstPipelineSPtr& gstPipeline)
 {
   std::shared_ptr<Pipeline> pipeline(new Pipeline(gstPipeline));
   pipeline->requireType<GstPipeline>();
@@ -103,7 +103,7 @@ GstClockSPtr Pipeline::getPipelineClock() const
   );
 }
 
-void Pipeline::setPipelineClock(GstClockSPtr clock)
+void Pipeline::setPipelineClock(const GstClockSPtr& clock)
 {
   // transfer: none :-)
   gst_pipeline_set_clock(getRawGstPipeline(), clock.get());

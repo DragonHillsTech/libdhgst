@@ -35,7 +35,7 @@ protected:
    * @brief Create a new Bin object that wraps a GstBinSPtr.
    * @param gstBin
    */
-  explicit Bin(GstBinSPtr gstBin);
+  explicit Bin(const GstBinSPtr& gstBin);
 
   /**
    * @brief Create a new Bin object that wraps a GstBin*.
@@ -52,7 +52,7 @@ protected:
   explicit Bin(const std::string& name);
 
 public:
-  [[nodiscard]] static std::shared_ptr<Bin> create(GstBinSPtr gstBin);
+  [[nodiscard]] static std::shared_ptr<Bin> create(const GstBinSPtr& gstBin);
   [[nodiscard]] static std::shared_ptr<Bin> create(GstBin* gstBin, TransferType transferType);
   [[nodiscard]] static std::shared_ptr<Bin> create(const std::string& name);
   /**

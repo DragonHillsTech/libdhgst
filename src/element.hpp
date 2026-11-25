@@ -50,7 +50,7 @@ protected:
    * @brief Create a new Element object that wraps a GstElementSPtr.
    * @param gstElement
    */
-  explicit Element(GstElementSPtr gstElement);
+  explicit Element(const GstElementSPtr& gstElement);
 
   /**
    * @brief Create a new Element object that wraps a GstElement.
@@ -73,7 +73,7 @@ public:
     GstState pending; ///< the pending state, GST_STATE_VOID_PENDING if no state change is pending
   };
 
-  [[nodiscard]] static std::shared_ptr<Element> create(GstElementSPtr gstElement);
+  [[nodiscard]] static std::shared_ptr<Element> create(const GstElementSPtr& gstElement);
   [[nodiscard]] static std::shared_ptr<Element>
   create(GstElement* gstElement, TransferType transferType);
 
