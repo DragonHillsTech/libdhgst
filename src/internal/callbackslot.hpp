@@ -123,9 +123,9 @@ public:
     // a copy keeps the callback alive if it disconnects itself. Declared before the locks,
     // so it is destroyed after unlocking: its captures may run arbitrary code
     Callback callback;
-    std::lock_guard<std::recursive_mutex> callLock(callMutex);
+    const std::lock_guard<std::recursive_mutex> callLock(callMutex);
     {
-      std::lock_guard<std::mutex> lock(callbackMutex);
+      const std::lock_guard<std::mutex> lock(callbackMutex);
       callback = connectedCallback;
     }
     if (callback)
@@ -146,7 +146,7 @@ private:
   /// store the callback, only one callback can be connected at once
   void store(const Callback& callback)
   {
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    const std::lock_guard<std::mutex> lock(callbackMutex);
     if (connectedCallback)
     {
       throw std::logic_error("a callback for " + name + " is already connected");
@@ -160,8 +160,8 @@ private:
     // declared before the locks, so it is destroyed after unlocking: its captures may run arbitrary
     // code
     Callback removed;
-    std::lock_guard<std::recursive_mutex> callLock(callMutex); // waits for a running call
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    const std::lock_guard<std::recursive_mutex> callLock(callMutex); // waits for a running call
+    const std::lock_guard<std::mutex> lock(callbackMutex);
     if (isConnectedCallback(callback))
     {
       removed = std::exchange(connectedCallback, nullptr);
@@ -171,7 +171,7 @@ private:
   /// check whether the callback is still the connected one
   [[nodiscard]] bool isConnected(const WeakCallback& callback) const
   {
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    const std::lock_guard<std::mutex> lock(callbackMutex);
     return isConnectedCallback(callback);
   }
 

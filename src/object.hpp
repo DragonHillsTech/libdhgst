@@ -307,13 +307,20 @@ bool Object::signalSignatureMatches(const GSignalQuery& query)
   {
     return false;
   }
-  [[maybe_unused]] guint index = 0;
-  return (
-    true && ...
-    && GValueTraits<std::decay_t<Args>>::matchesGet(
-      query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE
-    )
-  );
+  if constexpr (sizeof...(Args) == 0)
+  {
+    return true;
+  }
+  else
+  {
+    guint index = 0;
+    return (
+      GValueTraits<std::decay_t<Args>>::matchesGet(
+        query.param_types[index++] & ~G_SIGNAL_TYPE_STATIC_SCOPE
+      )
+      && ...
+    );
+  }
 }
 
 /** Connect a callback to a GObject signal.

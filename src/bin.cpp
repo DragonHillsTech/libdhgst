@@ -69,7 +69,7 @@ std::shared_ptr<Bin> Bin::fromDescription(const std::string& description, bool g
     gst_parse_bin_from_description(description.c_str(), ghostUnlinkedPads, &error);
 
   // Create a smart pointer for the GError if it exists
-  GErrorSPtr errorSPtr(error, GlibDeleter());
+  const GErrorSPtr errorSPtr(error, GlibDeleter());
 
   // If parsing fails, throw an exception with the error message
   if (!gstElement)

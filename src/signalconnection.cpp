@@ -102,7 +102,7 @@ void SignalConnection::disconnect()
     return;
   }
 
-  GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&weakObject)));
+  const GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&weakObject)));
   if (object)
   {
     if (g_signal_handler_is_connected(object.get(), handlerId))
@@ -125,7 +125,7 @@ bool SignalConnection::connected() const
     return false;
   }
 
-  GObjectUniquePtr object(
+  const GObjectUniquePtr object(
     static_cast<GObject*>(g_weak_ref_get(const_cast<GWeakRef*>(&weakObject)))
   );
   if (!object)
@@ -160,7 +160,7 @@ void SignalConnection::moveFrom(SignalConnection&& other) noexcept
 
   if (other.weakRefInitialized)
   {
-    GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&other.weakObject)));
+    const GObjectUniquePtr object(static_cast<GObject*>(g_weak_ref_get(&other.weakObject)));
     if (object)
     {
       g_weak_ref_init(&weakObject, object.get());

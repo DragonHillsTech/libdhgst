@@ -187,9 +187,8 @@ void MessageParser::parse(const GstMessage& message)
     // The task may run after this parser is destroyed, or never: keep the message alive
     // only as long as the task exists and do not touch the parser if it is already gone.
     auto messageSPtr = makeGstSharedPtr(const_cast<GstMessage*>(&message), TransferType::none);
-    std::weak_ptr<Private> weakPrv = prv;
     prv->asyncHandler(
-      [weakPrv, messageSPtr = std::move(messageSPtr)]()
+      [weakPrv = std::weak_ptr<Private>(prv), messageSPtr = std::move(messageSPtr)]()
       {
         if (auto lockedPrv = weakPrv.lock())
         {
@@ -219,6 +218,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_ERROR:
     {
+      // NOLINTNEXTLINE(misc-const-correctness): &error is passed as GError** to fill and clear it
       GError* error = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_error(messagePtr, &error, &debugInfo);
@@ -231,6 +231,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_WARNING:
     {
+      // NOLINTNEXTLINE(misc-const-correctness): &warning is passed as GError** to fill and clear it
       GError* warning = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_warning(messagePtr, &warning, &debugInfo);
@@ -246,6 +247,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_INFO:
     {
+      // NOLINTNEXTLINE(misc-const-correctness): &info is passed as GError** to fill and clear it
       GError* info = nullptr;
       gchar* debugInfo = nullptr;
       gst_message_parse_info(messagePtr, &info, &debugInfo);

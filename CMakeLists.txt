@@ -14,13 +14,25 @@ include(GNUInstallDirs)
 option(BUILD_TESTS "Build the unit tests" OFF)
 option(BUILD_EXAMPLES "Build example programs" OFF)
 option(BUILD_DOCUMENTATION "Build Doxygen documentation" OFF)
+# Off by default: .clang-tidy turns all warnings into errors, and other clang-tidy versions report
+# different findings
+option(ENABLE_CLANG_TIDY "Check the library sources with clang-tidy while compiling" OFF)
 
 message(STATUS "")
 message(STATUS "Project options:")
 message(STATUS "  BUILD_TESTS         = ${BUILD_TESTS}")
 message(STATUS "  BUILD_EXAMPLES      = ${BUILD_EXAMPLES}")
 message(STATUS "  BUILD_DOCUMENTATION = ${BUILD_DOCUMENTATION}")
+message(STATUS "  ENABLE_CLANG_TIDY   = ${ENABLE_CLANG_TIDY}")
 message(STATUS "")
+
+# For running clang-tidy by hand and for IDEs, can still be turned off with -D...=OFF. CMake
+# creates the cache entry empty, so empty means the user didn't set it. Only at top level: a parent
+# project that includes this one with add_subdirectory decides for itself.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR
+   AND "${CMAKE_EXPORT_COMPILE_COMMANDS}" STREQUAL "")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+endif()
 
 # Set the source and header files
 set(SOURCES
@@ -79,6 +91,18 @@ pkg_check_modules(DHGST_GST_VIDEO REQUIRED IMPORTED_TARGET gstreamer-video-1.0)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 # Same name as the exported target, so in-tree users can link it the same way
 add_library(dh::gst::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+# Only the library: the tests and examples include third-party headers that .clang-tidy would check
+if(ENABLE_CLANG_TIDY)
+  # No REQUIRED, which needs CMake 3.18. The versioned name first, the unversioned clang-tidy may be
+  # an older one installed next to it.
+  find_program(DHGST_CLANG_TIDY_EXE NAMES clang-tidy-21 clang-tidy)
+  if(NOT DHGST_CLANG_TIDY_EXE)
+    message(FATAL_ERROR "ENABLE_CLANG_TIDY is ON, but clang-tidy (21 or newer) was not found."
+      " Install it or set -DDHGST_CLANG_TIDY_EXE=/path/to/clang-tidy")
+  endif()
+  set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${DHGST_CLANG_TIDY_EXE}")
+endif()
 
 # PUBLIC: the headers use C++17 features, so consumers need at least C++17, too
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
@@ -141,7 +165,7 @@ include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/libdhgstConfigVersion.cmake
   VERSION ${PROJECT_VERSION}
-  COMPATIBILITY AnyNewerVersion
+  COMPATIBILITY SameMajorVersion
 )
 
 configure_package_config_file(
