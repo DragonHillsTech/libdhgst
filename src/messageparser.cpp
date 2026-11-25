@@ -260,7 +260,9 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_STATE_CHANGED:
     {
-      GstState oldState, newState, pendingState;
+      GstState oldState{GST_STATE_VOID_PENDING};
+      GstState newState{GST_STATE_VOID_PENDING};
+      GstState pendingState{GST_STATE_VOID_PENDING};
       gst_message_parse_state_changed(messagePtr, &oldState, &newState, &pendingState);
       prv.stateChangedSlot->call(sourceName, oldState, newState, pendingState);
       break;
@@ -274,8 +276,8 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_STREAM_STATUS:
     {
-      GstStreamStatusType statusType;
-      GstElement* ownerElement;
+      GstStreamStatusType statusType{GST_STREAM_STATUS_TYPE_CREATE};
+      GstElement* ownerElement{nullptr};
       gst_message_parse_stream_status(messagePtr, &statusType, &ownerElement);
       const std::string ownerName = getObjectNameOrUnknown(GST_OBJECT_CAST(ownerElement));
       prv.streamStatusSlot->call(sourceName, statusType, ownerName);
@@ -297,7 +299,7 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
 
     case GST_MESSAGE_ASYNC_DONE:
     {
-      GstClockTime runningTime;
+      GstClockTime runningTime{GST_CLOCK_TIME_NONE};
       gst_message_parse_async_done(messagePtr, &runningTime);
       prv.asyncDoneSlot->call(sourceName, runningTime);
       break;

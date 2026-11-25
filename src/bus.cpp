@@ -59,7 +59,7 @@ public:
   SyncMessageEmission& operator=(const SyncMessageEmission&) = delete;
 
 private:
-  GWeakRef weakBus;
+  GWeakRef weakBus{};
 };
 
 } // namespace
