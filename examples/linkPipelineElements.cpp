@@ -1,7 +1,8 @@
 /* -*- mode: c++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*- */
 /**
- * @file pipelineFromDesc.cpp
+ * @file linkPipelineElements.cpp
  * @brief This program starts a test video, rotates it 45° and displays it.
+ * quit with [ctl]+[C] or by closing the window
  * @author Sandro Stiller
  * @date 2024-09-15
  */
@@ -9,9 +10,17 @@
 #include "elementfactory.hpp"
 #include "pipeline.hpp"
 
-int main(const int argc, const char** argv)
+// C
+#include <glib-unix.h>
+#include <gst/gst.h>
+
+// std
+#include <csignal>
+#include <iostream>
+
+int main(int argc, char** argv)
 {
-  gst_init(const_cast<int*>(&argc), const_cast<char***>(&argv));
+  gst_init(&argc, &argv);
 
   using namespace dh::gst;
 
@@ -35,9 +44,45 @@ int main(const int argc, const char** argv)
   // link all the elements
   srcElement->link(*rotateElement).link(*convertElement).link(*dstElement);
 
-  // start the pipeline
-  pipeline->setState(GST_STATE_PLAYING);
+  GMainLoop* mainLoop{g_main_loop_new(nullptr, FALSE)};
 
-  gst_deinit(); // hangs :-) That's good because we currently have no main loop
+  // quit on Ctrl+C
+  g_unix_signal_add(
+    SIGINT,
+    [](gpointer loop) -> gboolean
+    {
+      g_main_loop_quit(static_cast<GMainLoop*>(loop));
+      return G_SOURCE_REMOVE;
+    },
+    mainLoop
+  );
+
+  // quit on error (also posted when the window is closed) or end of stream
+  gst_bus_add_watch(
+    pipeline->getBus()->getGstBus().get(),
+    [](GstBus*, GstMessage* message, gpointer loop) -> gboolean
+    {
+      if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR)
+      {
+        GError* error{nullptr};
+        gst_message_parse_error(message, &error, nullptr);
+        std::cerr << "Error: " << error->message << std::endl;
+        g_error_free(error);
+      }
+      if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR
+          || GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS)
+      {
+        g_main_loop_quit(static_cast<GMainLoop*>(loop));
+      }
+      return G_SOURCE_CONTINUE;
+    },
+    mainLoop
+  );
+
+  pipeline->setState(GST_STATE_PLAYING);
+  g_main_loop_run(mainLoop);
+
+  pipeline->setState(GST_STATE_NULL);
+  g_main_loop_unref(mainLoop);
   return 0;
 }
