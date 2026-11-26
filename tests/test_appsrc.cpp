@@ -36,7 +36,7 @@ GstBufferSPtr createBuffer(gsize size, guint8 value)
 {
   GstBuffer* buffer = gst_buffer_new_allocate(nullptr, size, nullptr);
   gst_buffer_memset(buffer, 0, value, size);
-  return makeGstSharedPtr(buffer, TransferType::Full);
+  return makeGstSharedPtr(buffer, TransferType::full);
 }
 
 /// the first byte of the buffer of the sample
@@ -49,7 +49,7 @@ guint8 firstByte(const GstSampleSPtr& sample)
 
 GstCapsSPtr createCaps(const char* caps)
 {
-  return makeGstSharedPtr(gst_caps_from_string(caps), TransferType::Full);
+  return makeGstSharedPtr(gst_caps_from_string(caps), TransferType::full);
 }
 
 } // namespace
@@ -165,7 +165,7 @@ BOOST_FIXTURE_TEST_CASE(PushSample, AppSrcTest)
   const GstBufferSPtr buffer = createBuffer(4, 7);
   const GstSampleSPtr sample = makeGstSharedPtr(
     gst_sample_new(buffer.get(), caps.get(), nullptr, nullptr),
-    TransferType::Full
+    TransferType::full
   );
   BOOST_CHECK_EQUAL(appSrc->pushSample(sample), GST_FLOW_OK);
 

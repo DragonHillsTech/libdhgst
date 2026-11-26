@@ -20,12 +20,18 @@
 
 // local includes
 #include "appsrc.hpp"
+#include "element.hpp"
 #include "internal/appcallbacks.hpp"
 #include "internal/callbackslot.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
 // std
 #include <atomic>
 #include <exception>
+#include <functional>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -128,8 +134,11 @@ std::shared_ptr<CallbackSlots> getCallbackSlots(GstAppSrc& appSrc)
 
 } // namespace
 
-AppSrc::AppSrc(GstAppSrcSPtr gstAppSrc)
-: Element(GST_ELEMENT_CAST(gstAppSrc.get()), TransferType::None) // no pointer_cast because C inheritance
+AppSrc::AppSrc(const GstAppSrcSPtr& gstAppSrc)
+  : Element(
+      GST_ELEMENT_CAST(gstAppSrc.get()),
+      TransferType::none
+    ) // no pointer_cast because C inheritance
 {
 }
 
@@ -138,7 +147,7 @@ AppSrc::AppSrc(GstAppSrc* gstAppSrc, TransferType transferType)
 {
 }
 
-std::shared_ptr<AppSrc> AppSrc::create(GstAppSrcSPtr gstAppSrc)
+std::shared_ptr<AppSrc> AppSrc::create(const GstAppSrcSPtr& gstAppSrc)
 {
   std::shared_ptr<AppSrc> appSrc(new AppSrc(gstAppSrc));
   appSrc->requireType<GstAppSrc>();
@@ -160,22 +169,17 @@ std::shared_ptr<AppSrc> AppSrc::create(const std::string& name)
   {
     throw std::runtime_error("Failed to create appsrc element");
   }
-  return create(GST_APP_SRC_CAST(gstElement), TransferType::Floating);
+  return create(GST_APP_SRC_CAST(gstElement), TransferType::floating);
 }
 
 std::shared_ptr<AppSrc> AppSrc::fromElement(const Element& element)
 {
-  return create(GST_APP_SRC_CAST(element.getGstElement().get()), TransferType::None);
+  return create(GST_APP_SRC_CAST(element.getGstElement().get()), TransferType::none);
 }
 
-GstAppSrcSPtr AppSrc::getGstAppSrc()
+GstAppSrcSPtr AppSrc::getGstAppSrc() const
 {
-  return makeGstSharedPtr(GST_APP_SRC_CAST(getGstObject().get()), TransferType::None);
-}
-
-const GstAppSrcSPtr AppSrc::getGstAppSrc() const
-{
-  return makeGstSharedPtr(GST_APP_SRC_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_APP_SRC_CAST(getGstObject().get()), TransferType::none);
 }
 
 void AppSrc::setCaps(const GstCapsSPtr& caps)
@@ -186,7 +190,10 @@ void AppSrc::setCaps(const GstCapsSPtr& caps)
 GstCapsSPtr AppSrc::getCaps() const
 {
   // gst_app_src_get_caps: transfer:full, nullable
-  return makeGstSharedPtr(gst_app_src_get_caps(const_cast<GstAppSrc*>(getRawGstAppSrc())), TransferType::Full);
+  return makeGstSharedPtr(
+    gst_app_src_get_caps(const_cast<GstAppSrc*>(getRawGstAppSrc())),
+    TransferType::full
+  );
 }
 
 void AppSrc::setStreamType(GstAppStreamType streamType)

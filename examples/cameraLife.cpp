@@ -120,7 +120,7 @@ dh::gst::GstBufferSPtr renderLifeFrame(const dh::gst::GstSampleSPtr& sample, Lif
   // a new buffer with the default layout of the caps, the display pipeline has the same caps
   dh::gst::GstBufferSPtr outputBuffer = dh::gst::makeGstSharedPtr(
     gst_buffer_new_allocate(nullptr, GST_VIDEO_INFO_SIZE(&info), nullptr),
-    dh::gst::TransferType::Full
+    dh::gst::TransferType::full
   );
 
   MappedFrame input(info, *gst_sample_get_buffer(sample.get()), GST_MAP_READ);
@@ -202,7 +202,12 @@ public:
   , appSink(dh::gst::AppSink::fromElement(*camera->getElementByName("sink")))
   , appSrc(dh::gst::AppSrc::fromElement(*display->getElementByName("src")))
   {
-    appSrc->setCaps(dh::gst::makeGstSharedPtr(gst_caps_from_string(videoCaps.c_str()), dh::gst::TransferType::Full));
+    appSrc->setCaps(
+      dh::gst::makeGstSharedPtr(
+        gst_caps_from_string(videoCaps.c_str()),
+        dh::gst::TransferType::full
+      )
+    );
 
     sampleConnection = appSink->connectNewSample(
       [this](dh::gst::GstSampleSPtr sample)

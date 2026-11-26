@@ -56,18 +56,18 @@ private:
    * @brief Create a new AppSink object that wraps a GstAppSinkSPtr.
    * @param gstAppSink
    */
-  explicit AppSink(GstAppSinkSPtr gstAppSink);
+  explicit AppSink(const GstAppSinkSPtr& gstAppSink);
 
   /**
    * @brief Create a new AppSink object that wraps a GstAppSink*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstAppSink
-   * @param transferType if None, then increase use count
+   * @param transferType if none, then increase use count
    */
   AppSink(GstAppSink* gstAppSink, TransferType transferType);
 
 public:
-  [[nodiscard]] static std::shared_ptr<AppSink> create(GstAppSinkSPtr gstAppSink);
+  [[nodiscard]] static std::shared_ptr<AppSink> create(const GstAppSinkSPtr& gstAppSink);
   [[nodiscard]] static std::shared_ptr<AppSink> create(GstAppSink* gstAppSink, TransferType transferType);
 
   /**
@@ -88,8 +88,7 @@ public:
    * @brief get the GstAppSinkSPtr of the AppSink
    * @return the internal GstAppSink.
    */
-  [[nodiscard]] GstAppSinkSPtr getGstAppSink();
-  [[nodiscard]] const GstAppSinkSPtr getGstAppSink() const;
+  [[nodiscard]] GstAppSinkSPtr getGstAppSink() const;
 
   /**
    * @brief Set the caps the appsink accepts.

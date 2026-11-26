@@ -73,7 +73,8 @@ BOOST_FIXTURE_TEST_CASE(Properties, AppSinkTest)
   auto appSink = AppSink::create();
 
   BOOST_CHECK(!appSink->getCaps());
-  const GstCapsSPtr caps = makeGstSharedPtr(gst_caps_from_string("video/x-raw"), TransferType::Full);
+  const GstCapsSPtr caps =
+    makeGstSharedPtr(gst_caps_from_string("video/x-raw"), TransferType::full);
   appSink->setCaps(caps);
   BOOST_REQUIRE(appSink->getCaps());
   BOOST_CHECK(gst_caps_is_equal(appSink->getCaps().get(), caps.get()));

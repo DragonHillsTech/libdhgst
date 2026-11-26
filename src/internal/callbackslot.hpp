@@ -120,7 +120,7 @@ public:
    */
   [[nodiscard]] bool hasCallback() const
   {
-    std::lock_guard<std::mutex> lock(callbackMutex);
+    const std::scoped_lock lock(callbackMutex);
     return connectedCallback != nullptr;
   }
 

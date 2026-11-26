@@ -58,18 +58,18 @@ private:
    * @brief Create a new AppSrc object that wraps a GstAppSrcSPtr.
    * @param gstAppSrc
    */
-  explicit AppSrc(GstAppSrcSPtr gstAppSrc);
+  explicit AppSrc(const GstAppSrcSPtr& gstAppSrc);
 
   /**
    * @brief Create a new AppSrc object that wraps a GstAppSrc*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
    * @param gstAppSrc
-   * @param transferType if None, then increase use count
+   * @param transferType if none, then increase use count
    */
   AppSrc(GstAppSrc* gstAppSrc, TransferType transferType);
 
 public:
-  [[nodiscard]] static std::shared_ptr<AppSrc> create(GstAppSrcSPtr gstAppSrc);
+  [[nodiscard]] static std::shared_ptr<AppSrc> create(const GstAppSrcSPtr& gstAppSrc);
   [[nodiscard]] static std::shared_ptr<AppSrc> create(GstAppSrc* gstAppSrc, TransferType transferType);
 
   /**
@@ -90,8 +90,7 @@ public:
    * @brief get the GstAppSrcSPtr of the AppSrc
    * @return the internal GstAppSrc.
    */
-  [[nodiscard]] GstAppSrcSPtr getGstAppSrc();
-  [[nodiscard]] const GstAppSrcSPtr getGstAppSrc() const;
+  [[nodiscard]] GstAppSrcSPtr getGstAppSrc() const;
 
   /**
    * @brief Set the caps of the pushed buffers.

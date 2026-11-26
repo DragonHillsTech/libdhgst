@@ -70,35 +70,41 @@ std::shared_ptr<Slots> getInstalledCallbackSlots(
 
   // guards looking up and installing the Slots of any object
   static std::mutex installMutex;
-  std::lock_guard<std::mutex> lock(installMutex);
+  const std::scoped_lock lock(installMutex);
 
   auto* slots = static_cast<SlotsSPtr*>(g_object_get_qdata(G_OBJECT(&object), quark));
   if(!slots)
   {
-    slots = new SlotsSPtr(std::make_shared<Slots>());
+    auto ownedSlots = std::make_unique<SlotsSPtr>(std::make_shared<Slots>());
+    slots = ownedSlots.release();
     g_object_set_qdata_full(
       G_OBJECT(&object),
       quark,
       slots,
       [](gpointer data)
       {
-        delete static_cast<SlotsSPtr*>(data);
+        // clang-tidy complains about a simple "delete static_cast<SlotsSPtr*>(data)"
+        const std::unique_ptr<SlotsSPtr> owned{static_cast<SlotsSPtr*>(data)};
       }
     );
   }
 
   if(!(*slots)->installed)
   {
+    // allocate before setting the flag: a failed allocation must not leave the callbacks marked as
+    // installed. Set the flag before installing: a concurrent set_callbacks call may replace our
+    // callbacks right away, and the destroy notify it triggers on our user data must reset the
+    // flag.
+    auto userData = std::make_unique<SlotsSPtr>(*slots);
     (*slots)->installed = true;
     setCallbacks(
       &object,
       &callbacks,
-      new SlotsSPtr(*slots),
+      userData.release(),
       [](gpointer data)
       {
-        auto* userData = static_cast<SlotsSPtr*>(data);
-        (*userData)->installed = false;
-        delete userData;
+        const std::unique_ptr<SlotsSPtr> owned{static_cast<SlotsSPtr*>(data)};
+        (*owned)->installed = false;
       }
     );
   }

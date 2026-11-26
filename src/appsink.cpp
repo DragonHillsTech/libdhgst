@@ -20,12 +20,18 @@
 
 // local includes
 #include "appsink.hpp"
+#include "element.hpp"
 #include "internal/appcallbacks.hpp"
 #include "internal/callbackslot.hpp"
+#include "sharedptrs.hpp"
+#include "signalconnection.hpp"
+#include "transfertype.hpp"
 
 // std
 #include <atomic>
 #include <exception>
+#include <functional>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -71,7 +77,7 @@ GstFlowReturn callSampleSlot(GstAppSink* appSink, SampleSlot& slot, PullFunction
   }
 
   // try_pull with timeout 0: another thread may have pulled the sample already, don't block then
-  GstSampleSPtr sample = makeGstSharedPtr(pull(appSink, 0), TransferType::Full);
+  GstSampleSPtr sample = makeGstSharedPtr(pull(appSink, 0), TransferType::full);
   if(!sample)
   {
     return GST_FLOW_OK;
@@ -138,8 +144,11 @@ std::shared_ptr<CallbackSlots> getCallbackSlots(GstAppSink& appSink)
 
 } // namespace
 
-AppSink::AppSink(GstAppSinkSPtr gstAppSink)
-: Element(GST_ELEMENT_CAST(gstAppSink.get()), TransferType::None) // no pointer_cast because C inheritance
+AppSink::AppSink(const GstAppSinkSPtr& gstAppSink)
+  : Element(
+      GST_ELEMENT_CAST(gstAppSink.get()),
+      TransferType::none
+    ) // no pointer_cast because C inheritance
 {
 }
 
@@ -148,7 +157,7 @@ AppSink::AppSink(GstAppSink* gstAppSink, TransferType transferType)
 {
 }
 
-std::shared_ptr<AppSink> AppSink::create(GstAppSinkSPtr gstAppSink)
+std::shared_ptr<AppSink> AppSink::create(const GstAppSinkSPtr& gstAppSink)
 {
   std::shared_ptr<AppSink> appSink(new AppSink(gstAppSink));
   appSink->requireType<GstAppSink>();
@@ -170,22 +179,17 @@ std::shared_ptr<AppSink> AppSink::create(const std::string& name)
   {
     throw std::runtime_error("Failed to create appsink element");
   }
-  return create(GST_APP_SINK_CAST(gstElement), TransferType::Floating);
+  return create(GST_APP_SINK_CAST(gstElement), TransferType::floating);
 }
 
 std::shared_ptr<AppSink> AppSink::fromElement(const Element& element)
 {
-  return create(GST_APP_SINK_CAST(element.getGstElement().get()), TransferType::None);
+  return create(GST_APP_SINK_CAST(element.getGstElement().get()), TransferType::none);
 }
 
-GstAppSinkSPtr AppSink::getGstAppSink()
+GstAppSinkSPtr AppSink::getGstAppSink() const
 {
-  return makeGstSharedPtr(GST_APP_SINK_CAST(getGstObject().get()), TransferType::None);
-}
-
-const GstAppSinkSPtr AppSink::getGstAppSink() const
-{
-  return makeGstSharedPtr(GST_APP_SINK_CAST(getGstObject().get()), TransferType::None);
+  return makeGstSharedPtr(GST_APP_SINK_CAST(getGstObject().get()), TransferType::none);
 }
 
 void AppSink::setCaps(const GstCapsSPtr& caps)
@@ -196,7 +200,10 @@ void AppSink::setCaps(const GstCapsSPtr& caps)
 GstCapsSPtr AppSink::getCaps() const
 {
   // gst_app_sink_get_caps: transfer:full, nullable
-  return makeGstSharedPtr(gst_app_sink_get_caps(const_cast<GstAppSink*>(getRawGstAppSink())), TransferType::Full);
+  return makeGstSharedPtr(
+    gst_app_sink_get_caps(const_cast<GstAppSink*>(getRawGstAppSink())),
+    TransferType::full
+  );
 }
 
 bool AppSink::isEos() const
@@ -217,25 +224,31 @@ guint AppSink::getMaxBuffers() const
 GstSampleSPtr AppSink::pullSample()
 {
   // gst_app_sink_pull_sample: transfer:full, nullable
-  return makeGstSharedPtr(gst_app_sink_pull_sample(getRawGstAppSink()), TransferType::Full);
+  return makeGstSharedPtr(gst_app_sink_pull_sample(getRawGstAppSink()), TransferType::full);
 }
 
 GstSampleSPtr AppSink::tryPullSample(GstClockTime timeout)
 {
   // gst_app_sink_try_pull_sample: transfer:full, nullable
-  return makeGstSharedPtr(gst_app_sink_try_pull_sample(getRawGstAppSink(), timeout), TransferType::Full);
+  return makeGstSharedPtr(
+    gst_app_sink_try_pull_sample(getRawGstAppSink(), timeout),
+    TransferType::full
+  );
 }
 
 GstSampleSPtr AppSink::pullPreroll()
 {
   // gst_app_sink_pull_preroll: transfer:full, nullable
-  return makeGstSharedPtr(gst_app_sink_pull_preroll(getRawGstAppSink()), TransferType::Full);
+  return makeGstSharedPtr(gst_app_sink_pull_preroll(getRawGstAppSink()), TransferType::full);
 }
 
 GstSampleSPtr AppSink::tryPullPreroll(GstClockTime timeout)
 {
   // gst_app_sink_try_pull_preroll: transfer:full, nullable
-  return makeGstSharedPtr(gst_app_sink_try_pull_preroll(getRawGstAppSink(), timeout), TransferType::Full);
+  return makeGstSharedPtr(
+    gst_app_sink_try_pull_preroll(getRawGstAppSink(), timeout),
+    TransferType::full
+  );
 }
 
 SignalConnection AppSink::connectNewSample(std::function<void(GstSampleSPtr)> callback)
