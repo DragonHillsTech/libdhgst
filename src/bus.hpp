@@ -62,6 +62,24 @@ public:
   void post(GstMessage& message);
 
   /**
+   * @brief Take the next message from the bus without waiting.
+   * @param types the message types to take. Messages of other types are taken from the bus and
+   *        discarded, also if no matching message is found.
+   * @return the message, nullptr if there is none.
+   */
+  [[nodiscard]] GstMessageSPtr pop(GstMessageType types = GST_MESSAGE_ANY);
+
+  /**
+   * @brief Take the next message from the bus, wait at most timeout.
+   * @param timeout how long to wait. 0 returns immediately, GST_CLOCK_TIME_NONE waits forever.
+   * @param types the message types to take. Messages of other types are taken from the bus and
+   *        discarded, also if no matching message is found.
+   * @return the message, nullptr on timeout.
+   */
+  [[nodiscard]] GstMessageSPtr
+  timedPop(GstClockTime timeout, GstMessageType types = GST_MESSAGE_ANY);
+
+  /**
    * @brief  A message has been posted on the bus.
    * This signal is emitted from the thread that posted the message so one has to be careful
    * with locking.
