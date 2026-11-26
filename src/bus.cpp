@@ -111,6 +111,21 @@ void Bus::post(GstMessage& message)
   gst_bus_post(getRawGstBus(), gst_message_ref(&message));
 }
 
+GstMessageSPtr Bus::pop(GstMessageType types)
+{
+  // gst_bus_pop_filtered: transfer:full
+  return makeGstSharedPtr(gst_bus_pop_filtered(getRawGstBus(), types), TransferType::full);
+}
+
+GstMessageSPtr Bus::timedPop(GstClockTime timeout, GstMessageType types)
+{
+  // gst_bus_timed_pop_filtered: transfer:full
+  return makeGstSharedPtr(
+    gst_bus_timed_pop_filtered(getRawGstBus(), timeout, types),
+    TransferType::full
+  );
+}
+
 SignalConnection
 Bus::connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const
 {
