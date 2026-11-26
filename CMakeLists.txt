@@ -36,6 +36,8 @@ endif()
 
 # Set the source and header files
 set(SOURCES
+  src/appsink.cpp
+  src/appsrc.cpp
   src/bin.cpp
   src/bus.cpp
   src/element.cpp
@@ -49,6 +51,8 @@ set(SOURCES
 )
 
 set(HEADERS
+  src/appsink.hpp
+  src/appsrc.hpp
   src/bin.hpp
   src/bus.hpp
   src/element.hpp
