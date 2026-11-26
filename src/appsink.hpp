@@ -55,12 +55,13 @@ private:
 
 public:
   [[nodiscard]] static std::shared_ptr<AppSink> create(const GstAppSinkSPtr& gstAppSink);
-  [[nodiscard]] static std::shared_ptr<AppSink> create(GstAppSink* gstAppSink, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<AppSink>
+  create(GstAppSink* gstAppSink, TransferType transferType);
 
   /**
    * @brief Create a new appsink element.
    * @param name the name of the element. If empty, a unique name is used.
-   * @throws std::runtime_error if the appsink element can not be created (e.g. the plugin is missing).
+   * @throws std::runtime_error if the appsink can not be created (e.g. the plugin is missing).
    */
   [[nodiscard]] static std::shared_ptr<AppSink> create(const std::string& name = "");
 
@@ -96,7 +97,7 @@ public:
 
   /**
    * @brief Set the maximum number of queued buffers.
-   * If the queue is full, the streaming thread blocks (or old buffers are dropped if the "drop" property is set).
+   * If the queue is full, the streaming thread blocks, or old buffers are dropped if "drop" is set.
    * @param maxBuffers the maximum number of buffers, 0 means unlimited.
    */
   void setMaxBuffers(unsigned int maxBuffers);
@@ -116,24 +117,26 @@ public:
 
   /**
    * @brief Pull the next sample, wait at most timeout.
-   * @param timeout how long to wait for a sample. 0 returns immediately, GST_CLOCK_TIME_NONE waits like pullSample().
-   * @return the sample, nullptr on timeout, end-of-stream or if the appsink is not PAUSED or PLAYING.
+   * @param timeout how long to wait for a sample. 0 returns immediately,
+   *        GST_CLOCK_TIME_NONE waits like pullSample().
+   * @return the sample, nullptr on timeout, end-of-stream or if the appsink is not PAUSED/PLAYING.
    */
   [[nodiscard]] GstSampleSPtr tryPullSample(GstClockTime timeout);
 
   /**
    * @brief Get the preroll sample. Blocks until the appsink prerolled, end-of-stream is reached
    * or the appsink is set to READY or NULL.
-   * This consumes the preroll sample: a second call waits for the next preroll (after a flush or state change).
+   * This consumes the preroll sample: a second call waits for the next preroll,
+   * after a flush or state change.
    * The preroll sample is also delivered by pullSample() when the appsink is PLAYING.
-   * @return the preroll sample, nullptr on end-of-stream or if the appsink is not PAUSED or PLAYING.
+   * @return the preroll sample, nullptr on end-of-stream or if the appsink is not PAUSED/PLAYING.
    */
   [[nodiscard]] GstSampleSPtr pullPreroll();
 
   /**
    * @brief Get the preroll sample, wait at most timeout.
    * @param timeout see tryPullSample()
-   * @return the preroll sample, nullptr on timeout, end-of-stream or if the appsink is not PAUSED or PLAYING.
+   * @return the preroll sample, nullptr in the same cases as tryPullSample().
    */
   [[nodiscard]] GstSampleSPtr tryPullPreroll(GstClockTime timeout);
 
@@ -143,10 +146,10 @@ public:
 
   /**
    * @brief Connect a callback that is called with every new sample.
-   * The sample is pulled from the appsink before the callback is called. While no callback is connected,
-   * samples are queued and can be pulled with pullSample().
-   * If the callback throws, the exception is logged and GST_FLOW_ERROR is returned to the streaming thread,
-   * which stops the pipeline with an error.
+   * The sample is pulled from the appsink before the callback is called.
+   * While no callback is connected, samples are queued and can be pulled with pullSample().
+   * If the callback throws, the exception is logged and GST_FLOW_ERROR is returned to the
+   * streaming thread, which stops the pipeline with an error.
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a new-sample callback is already connected to this GstAppSink
    */
@@ -162,7 +165,7 @@ public:
 
   /**
    * @brief Connect a callback that is called when end-of-stream is reached.
-   * With the "wait-on-eos" property set (the default), this happens only after all queued samples were pulled.
+   * With "wait-on-eos" set (the default), this happens only after all queued samples were pulled.
    * If the callback throws, the exception is logged.
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if an end-of-stream callback is already connected to this GstAppSink

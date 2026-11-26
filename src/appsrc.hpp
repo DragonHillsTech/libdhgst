@@ -60,12 +60,13 @@ private:
 
 public:
   [[nodiscard]] static std::shared_ptr<AppSrc> create(const GstAppSrcSPtr& gstAppSrc);
-  [[nodiscard]] static std::shared_ptr<AppSrc> create(GstAppSrc* gstAppSrc, TransferType transferType);
+  [[nodiscard]] static std::shared_ptr<AppSrc>
+  create(GstAppSrc* gstAppSrc, TransferType transferType);
 
   /**
    * @brief Create a new appsrc element.
    * @param name the name of the element. If empty, a unique name is used.
-   * @throws std::runtime_error if the appsrc element can not be created (e.g. the plugin is missing).
+   * @throws std::runtime_error if the appsrc can not be created (e.g. the plugin is missing).
    */
   [[nodiscard]] static std::shared_ptr<AppSrc> create(const std::string& name = "");
 
@@ -132,22 +133,23 @@ public:
   GstFlowReturn pushBuffer(const GstBufferSPtr& buffer);
 
   /**
-   * @brief Push the buffer of a sample into the internal queue. The caps of the sample replace the caps
-   * of the appsrc (see setCaps()), if they are set.
+   * @brief Push the buffer of a sample into the internal queue. The caps of the sample replace the
+   * caps of the appsrc (see setCaps()), if they are set.
    * @return see pushBuffer()
    * @throws std::invalid_argument if sample is nullptr or has no buffer
    */
   GstFlowReturn pushSample(const GstSampleSPtr& sample);
 
   /**
-   * @brief Signal that no more buffers will be pushed. The queued buffers are still sent downstream.
+   * @brief Signal that no more buffers will be pushed.
+   * The queued buffers are still sent downstream.
    * @return GST_FLOW_OK, or GST_FLOW_FLUSHING if the appsrc is flushing, e.g. after it was stopped.
    */
   GstFlowReturn endOfStream();
 
   // callbacks
-  // They are called from the streaming thread, or from the thread that calls pushBuffer() (enough-data).
-  // Only one callback per kind can be connected at once, see CallbackSlot for the thread safety guarantees.
+  // They are called from the streaming thread, enough-data also from the thread of pushBuffer().
+  // Only one callback per kind can be connected at once, see CallbackSlot for thread safety.
 
   /**
    * @brief Connect a callback that is called when the appsrc needs more data.
@@ -170,9 +172,9 @@ public:
 
   /**
    * @brief Connect a callback that is called when the stream must continue at another position.
-   * Only called for the stream types GST_APP_STREAM_TYPE_SEEKABLE and GST_APP_STREAM_TYPE_RANDOM_ACCESS.
-   * The parameter is the new position: bytes for the default format GST_FORMAT_BYTES, otherwise in the format
-   * of the "format" property (e.g. nanoseconds for GST_FORMAT_TIME).
+   * Only called for GST_APP_STREAM_TYPE_SEEKABLE and GST_APP_STREAM_TYPE_RANDOM_ACCESS streams.
+   * The parameter is the new position: bytes for the default format GST_FORMAT_BYTES, otherwise
+   * in the format of the "format" property (e.g. nanoseconds for GST_FORMAT_TIME).
    * The callback returns whether the seek succeeded. Without a connected callback, seeking fails.
    * If the callback throws, the exception is logged and the seek fails.
    * @throws std::invalid_argument if the callback is empty

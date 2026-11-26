@@ -4,8 +4,8 @@
 #include "pipeline.hpp"
 
 #define BOOST_TEST_MODULE libdhgst_tests
-#include <boost/test/included/unit_test.hpp>
 #include "fatalgliblog.hpp"
+#include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <gst/gst.h>
@@ -60,7 +60,8 @@ BOOST_FIXTURE_TEST_CASE(CreationAndDestruction, AppSrcTest)
   auto appSrc = AppSrc::create("src1");
   BOOST_CHECK_EQUAL(appSrc->getName(), "src1");
   BOOST_CHECK_EQUAL(appSrc->getFactoryName(), "appsrc");
-  BOOST_CHECK_EQUAL(GST_OBJECT_REFCOUNT(appSrc->getGstAppSrc().get()), 2); // wrapper + returned shared_ptr
+  // wrapper + returned shared_ptr
+  BOOST_CHECK_EQUAL(GST_OBJECT_REFCOUNT(appSrc->getGstAppSrc().get()), 2);
 
   auto unnamed = AppSrc::create();
   BOOST_CHECK(!unnamed->getName().empty());
@@ -134,7 +135,7 @@ BOOST_FIXTURE_TEST_CASE(PushBuffersToAppSink, AppSrcTest)
   appSrc->setCaps(createCaps("application/x-test"));
   BOOST_REQUIRE_NE(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_FAILURE);
 
-  for(guint8 i = 1; i <= 3; ++i)
+  for (guint8 i = 1; i <= 3; ++i)
   {
     const GstBufferSPtr buffer = createBuffer(4, i);
     BOOST_CHECK_EQUAL(appSrc->pushBuffer(buffer), GST_FLOW_OK);
@@ -143,7 +144,7 @@ BOOST_FIXTURE_TEST_CASE(PushBuffersToAppSink, AppSrcTest)
   BOOST_CHECK_EQUAL(appSrc->endOfStream(), GST_FLOW_OK);
   BOOST_CHECK_EQUAL(appSrc->pushBuffer(createBuffer(4, 4)), GST_FLOW_EOS);
 
-  for(guint8 i = 1; i <= 3; ++i)
+  for (guint8 i = 1; i <= 3; ++i)
   {
     GstSampleSPtr sample = appSink->tryPullSample(5 * GST_SECOND);
     BOOST_REQUIRE(sample);
@@ -207,14 +208,18 @@ BOOST_FIXTURE_TEST_CASE(NeedData, AppSrcTest)
 
   std::atomic<int> received{0};
   std::promise<void> eos;
-  auto sampleConnection = appSink->connectNewSample([&](GstSampleSPtr sample)
-  {
-    BOOST_CHECK_EQUAL(firstByte(sample), ++received);
-  });
-  auto eosConnection = appSink->connectEndOfStream([&]()
-  {
-    eos.set_value();
-  });
+  auto sampleConnection = appSink->connectNewSample(
+    [&](GstSampleSPtr sample)
+    {
+      BOOST_CHECK_EQUAL(firstByte(sample), ++received);
+    }
+  );
+  auto eosConnection = appSink->connectEndOfStream(
+    [&]()
+    {
+      eos.set_value();
+    }
+  );
 
   BOOST_REQUIRE_NE(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_FAILURE);
   BOOST_REQUIRE(eos.get_future().wait_for(waitTimeout) == std::future_status::ready);
@@ -226,17 +231,20 @@ BOOST_FIXTURE_TEST_CASE(NeedData, AppSrcTest)
 BOOST_FIXTURE_TEST_CASE(EnoughData, AppSrcTest)
 {
   // the appsink blocks after one sample, so the queue of the appsrc fills up
-  auto pipeline = Pipeline::fromDescription("appsrc name=src max-bytes=16 ! appsink name=sink max-buffers=1");
+  auto pipeline =
+    Pipeline::fromDescription("appsrc name=src max-bytes=16 ! appsink name=sink max-buffers=1");
   auto appSrc = AppSrc::fromElement(*pipeline->getElementByName("src"));
 
   std::atomic<bool> enoughData{false};
-  auto connection = appSrc->connectEnoughData([&]()
-  {
-    enoughData = true;
-  });
+  auto connection = appSrc->connectEnoughData(
+    [&]()
+    {
+      enoughData = true;
+    }
+  );
   BOOST_REQUIRE_NE(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_FAILURE);
 
-  for(int i = 0; i < 100 && !enoughData; ++i)
+  for (int i = 0; i < 100 && !enoughData; ++i)
   {
     BOOST_REQUIRE_EQUAL(appSrc->pushBuffer(createBuffer(8, 0)), GST_FLOW_OK);
   }
@@ -278,7 +286,10 @@ BOOST_FIXTURE_TEST_CASE(SeekData, AppSrcTest)
   BOOST_REQUIRE_NE(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_FAILURE);
   BOOST_REQUIRE_EQUAL(pipeline->getState(5 * GST_SECOND), GST_STATE_PAUSED);
   BOOST_REQUIRE(gst_element_seek_simple(
-    pipeline->getGstElement().get(), GST_FORMAT_BYTES, GST_SEEK_FLAG_FLUSH, 100
+    pipeline->getGstElement().get(),
+    GST_FORMAT_BYTES,
+    GST_SEEK_FLAG_FLUSH,
+    100
   ));
 
   auto future = seekOffset.get_future();
@@ -307,7 +318,11 @@ BOOST_FIXTURE_TEST_CASE(CallbacksSharedByWrappers, AppSrcTest)
     std::logic_error
   );
   // the other kinds have their own slots
-  auto enoughConnection = otherWrapper->connectEnoughData([]() {});
+  auto enoughConnection = otherWrapper->connectEnoughData(
+    []()
+    {
+    }
+  );
   BOOST_CHECK(enoughConnection.connected());
 
   connection.disconnect();

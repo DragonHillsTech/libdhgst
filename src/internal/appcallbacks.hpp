@@ -30,16 +30,17 @@ namespace dh::gst
 {
 
 /**
- * Helpers for the callbacks of appsink and appsrc, which are installed with a set_callbacks function
- * (gst_app_sink_set_callbacks, gst_app_src_set_callbacks): one struct of C function pointers and one
- * user data pointer per object, instead of GObject signals.
+ * Helpers for the callbacks of appsink and appsrc, installed with a set_callbacks function
+ * (gst_app_sink_set_callbacks, gst_app_src_set_callbacks): one struct of C function pointers and
+ * one user data pointer per object, instead of GObject signals.
  *
  * The callback slots (a struct Slots of CallbackSlots) belong to the GObject, not to a C++ wrapper,
  * so all wrappers of the same object share them. They are owned twice:
  * - by the object as qdata, so every wrapper finds them,
- * - by the installed callbacks as user data, so they stay valid as long as the callbacks can be called.
- * Slots must have a member `std::atomic<bool> installed{false}`: it is reset when the callbacks are
- * replaced by another set_callbacks call, so they are installed again on the next connect.
+ * - by the installed callbacks as user data, so they stay valid while the callbacks can be called.
+ *
+ * Slots must have a member `std::atomic<bool> installed{false}`: it is reset when the callbacks
+ * are replaced by another set_callbacks call, so they are installed again on the next connect.
  */
 
 /**
@@ -73,7 +74,7 @@ std::shared_ptr<Slots> getInstalledCallbackSlots(
   const std::scoped_lock lock(installMutex);
 
   auto* slots = static_cast<SlotsSPtr*>(g_object_get_qdata(G_OBJECT(&object), quark));
-  if(!slots)
+  if (!slots)
   {
     auto ownedSlots = std::make_unique<SlotsSPtr>(std::make_shared<Slots>());
     slots = ownedSlots.release();
@@ -89,7 +90,7 @@ std::shared_ptr<Slots> getInstalledCallbackSlots(
     );
   }
 
-  if(!(*slots)->installed)
+  if (!(*slots)->installed)
   {
     // allocate before setting the flag: a failed allocation must not leave the callbacks marked as
     // installed. Set the flag before installing: a concurrent set_callbacks call may replace our

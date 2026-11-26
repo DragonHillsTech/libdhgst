@@ -44,11 +44,12 @@ namespace
 
 using NeedDataSlot = CallbackSlot<unsigned int>;
 using EnoughDataSlot = CallbackSlot<>;
-// the callback stores its result in the bool&, CallbackSlot only supports callbacks without return value
+// the callback stores its result in the bool&: CallbackSlot callbacks have no return value
 using SeekDataSlot = CallbackSlot<std::uint64_t, bool&>;
 
 /**
- * @brief The callback slots of one GstAppSrc, shared by all AppSrc wrappers of it, see appcallbacks.hpp.
+ * @brief The callback slots of one GstAppSrc, shared by all AppSrc wrappers of it.
+ * See appcallbacks.hpp.
  */
 struct CallbackSlots
 {
@@ -56,7 +57,7 @@ struct CallbackSlots
   const std::shared_ptr<EnoughDataSlot> enoughDataSlot{EnoughDataSlot::create("enough-data")};
   const std::shared_ptr<SeekDataSlot> seekDataSlot{SeekDataSlot::create("seek-data")};
 
-  /// false until the callbacks are installed, and again after gst_app_src_set_callbacks replaced them
+  /// false before the callbacks are installed and after gst_app_src_set_callbacks replaced them
   std::atomic<bool> installed{false};
 };
 
@@ -74,11 +75,11 @@ void onNeedData(GstAppSrc* appSrc, guint length, gpointer userData)
   {
     slotsFromUserData<CallbackSlots>(userData).needDataSlot->call(length);
   }
-  catch(const std::exception& e)
+  catch (const std::exception& e)
   {
     GST_ERROR_OBJECT(appSrc, "Exception in need-data callback: %s", e.what());
   }
-  catch(...)
+  catch (...)
   {
     GST_ERROR_OBJECT(appSrc, "Unknown exception in need-data callback");
   }
@@ -90,11 +91,11 @@ void onEnoughData(GstAppSrc* appSrc, gpointer userData)
   {
     slotsFromUserData<CallbackSlots>(userData).enoughDataSlot->call();
   }
-  catch(const std::exception& e)
+  catch (const std::exception& e)
   {
     GST_ERROR_OBJECT(appSrc, "Exception in enough-data callback: %s", e.what());
   }
-  catch(...)
+  catch (...)
   {
     GST_ERROR_OBJECT(appSrc, "Unknown exception in enough-data callback");
   }
@@ -108,12 +109,12 @@ gboolean onSeekData(GstAppSrc* appSrc, guint64 offset, gpointer userData)
   {
     slotsFromUserData<CallbackSlots>(userData).seekDataSlot->call(offset, success);
   }
-  catch(const std::exception& e)
+  catch (const std::exception& e)
   {
     GST_ERROR_OBJECT(appSrc, "Exception in seek-data callback: %s", e.what());
     return FALSE;
   }
-  catch(...)
+  catch (...)
   {
     GST_ERROR_OBJECT(appSrc, "Unknown exception in seek-data callback");
     return FALSE;
@@ -130,7 +131,12 @@ std::shared_ptr<CallbackSlots> getCallbackSlots(GstAppSrc& appSrc)
   callbacks.need_data = &onNeedData;
   callbacks.enough_data = &onEnoughData;
   callbacks.seek_data = &onSeekData;
-  return getInstalledCallbackSlots<CallbackSlots>(appSrc, callbackSlotsQuark(), callbacks, &gst_app_src_set_callbacks);
+  return getInstalledCallbackSlots<CallbackSlots>(
+    appSrc,
+    callbackSlotsQuark(),
+    callbacks,
+    &gst_app_src_set_callbacks
+  );
 }
 
 } // namespace
@@ -144,7 +150,7 @@ AppSrc::AppSrc(const GstAppSrcSPtr& gstAppSrc)
 }
 
 AppSrc::AppSrc(GstAppSrc* gstAppSrc, TransferType transferType)
-: Element(GST_ELEMENT_CAST(gstAppSrc), transferType)
+  : Element(GST_ELEMENT_CAST(gstAppSrc), transferType)
 {
 }
 
@@ -165,8 +171,9 @@ std::shared_ptr<AppSrc> AppSrc::create(GstAppSrc* gstAppSrc, TransferType transf
 std::shared_ptr<AppSrc> AppSrc::create(const std::string& name)
 {
   // gst_element_factory_make: transfer:floating, nullable
-  GstElement* gstElement = gst_element_factory_make("appsrc", name.empty() ? nullptr : name.c_str());
-  if(!gstElement)
+  GstElement* gstElement =
+    gst_element_factory_make("appsrc", name.empty() ? nullptr : name.c_str());
+  if (!gstElement)
   {
     throw std::runtime_error("Failed to create appsrc element");
   }
@@ -234,7 +241,7 @@ std::uint64_t AppSrc::getCurrentLevelBytes() const
 
 GstFlowReturn AppSrc::pushBuffer(const GstBufferSPtr& buffer)
 {
-  if(!buffer)
+  if (!buffer)
   {
     throw std::invalid_argument("AppSrc::pushBuffer: buffer is nullptr");
   }
@@ -244,7 +251,7 @@ GstFlowReturn AppSrc::pushBuffer(const GstBufferSPtr& buffer)
 
 GstFlowReturn AppSrc::pushSample(const GstSampleSPtr& sample)
 {
-  if(!sample || !gst_sample_get_buffer(sample.get()))
+  if (!sample || !gst_sample_get_buffer(sample.get()))
   {
     throw std::invalid_argument("AppSrc::pushSample: sample is nullptr or has no buffer");
   }
@@ -270,7 +277,7 @@ SignalConnection AppSrc::connectEnoughData(std::function<void()> callback)
 SignalConnection AppSrc::connectSeekData(std::function<bool(std::uint64_t offset)> callback)
 {
   // check here: the adapter below is never empty
-  if(!callback)
+  if (!callback)
   {
     throw std::invalid_argument("empty signal callback");
   }

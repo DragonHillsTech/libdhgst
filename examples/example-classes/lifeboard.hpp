@@ -30,7 +30,8 @@ namespace dh::gst::examples
 {
 
 /**
- * @brief Conway's Game of Life on a board of square cells over a video frame, seeded by movement in the frame.
+ * @brief Conway's Game of Life on a board of square cells over a video frame.
+ * Movement in the frame seeds new cells.
  *
  * Frames must be exactly columns * cellSize pixels wide and rows * cellSize pixels high.
  * Not thread-safe: use it from one thread, e.g. the streaming thread of an appsink.
@@ -42,7 +43,7 @@ public:
    * @param columns number of cells per row
    * @param rows number of cells per column
    * @param cellSize edge length of a cell in pixels
-   * @param motionThreshold minimum change of the average brightness of a cell (0-255) that counts as movement
+   * @param motionThreshold average brightness change of a cell (0-255) above which it is movement
    * @throws std::invalid_argument if a parameter is not positive
    */
   LifeBoard(int columns, int rows, int cellSize, int motionThreshold);
@@ -64,8 +65,14 @@ public:
    */
   void draw(const boost::gil::rgb8c_view_t& frame, const boost::gil::rgb8_view_t& output) const;
 
-  [[nodiscard]] unsigned long getGeneration() const { return generation; }
-  [[nodiscard]] int getPopulation() const { return population; }
+  [[nodiscard]] unsigned long getGeneration() const
+  {
+    return generation;
+  }
+  [[nodiscard]] int getPopulation() const
+  {
+    return population;
+  }
 
 private:
   [[nodiscard]] bool isAlive(int x, int y) const;

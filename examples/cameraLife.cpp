@@ -34,7 +34,7 @@
  * Usage: cameraLife [source description]
  *   cameraLife                                          # the default camera (autovideosrc)
  *   cameraLife videotestsrc is-live=true pattern=ball    # no camera
- *   cameraLife "filesrc location=movie.mp4 ! decodebin"  # a video file (quote the "!" for the shell)
+ *   cameraLife "filesrc location=movie.mp4 ! decodebin"  # a video file ("!" quoted for the shell)
  */
 
 // example classes
@@ -74,9 +74,8 @@ constexpr int motionThreshold = 14;
 using dh::gst::examples::LifeBoard;
 
 /// the caps of both pipelines: the camera frames are converted to it, the display gets the same
-const std::string videoCaps =
-  "video/x-raw,format=RGB,width=" + std::to_string(width) + ",height=" + std::to_string(height)
-  + ",framerate=30/1,pixel-aspect-ratio=1/1";
+const std::string videoCaps = "video/x-raw,format=RGB,width=" + std::to_string(width)
+  + ",height=" + std::to_string(height) + ",framerate=30/1,pixel-aspect-ratio=1/1";
 
 /**
  * @brief Maps a video buffer as GstVideoFrame for its lifetime.
@@ -86,7 +85,7 @@ class MappedFrame
 public:
   MappedFrame(GstVideoInfo& info, GstBuffer& buffer, GstMapFlags flags)
   {
-    if(!gst_video_frame_map(&frame, &info, &buffer, flags))
+    if (!gst_video_frame_map(&frame, &info, &buffer, flags))
     {
       throw std::runtime_error("Failed to map video frame");
     }
@@ -100,7 +99,10 @@ public:
   MappedFrame(const MappedFrame&) = delete;
   MappedFrame& operator=(const MappedFrame&) = delete;
 
-  GstVideoFrame& get() { return frame; }
+  GstVideoFrame& get()
+  {
+    return frame;
+  }
 
 private:
   GstVideoFrame frame{};
@@ -112,7 +114,7 @@ private:
 dh::gst::GstBufferSPtr renderLifeFrame(const dh::gst::GstSampleSPtr& sample, LifeBoard& board)
 {
   GstVideoInfo info = dh::gst::helpers::createVideoInfo(*gst_sample_get_caps(sample.get()));
-  if(GST_VIDEO_INFO_WIDTH(&info) != width || GST_VIDEO_INFO_HEIGHT(&info) != height)
+  if (GST_VIDEO_INFO_WIDTH(&info) != width || GST_VIDEO_INFO_HEIGHT(&info) != height)
   {
     throw std::runtime_error("Unexpected frame size");
   }
@@ -138,7 +140,7 @@ void pushFrame(dh::gst::AppSrc& appSrc, const dh::gst::GstBufferSPtr& buffer)
 {
   // GST_FLOW_FLUSHING only means the display is stopping
   const GstFlowReturn result = appSrc.pushBuffer(buffer);
-  if(result != GST_FLOW_OK && result != GST_FLOW_FLUSHING)
+  if (result != GST_FLOW_OK && result != GST_FLOW_FLUSHING)
   {
     throw std::runtime_error(std::string("Failed to push frame: ") + gst_flow_get_name(result));
   }
@@ -147,10 +149,10 @@ void pushFrame(dh::gst::AppSrc& appSrc, const dh::gst::GstBufferSPtr& buffer)
 /// about once per second
 void printStatistics(const LifeBoard& board)
 {
-  if(board.getGeneration() % 30 == 0)
+  if (board.getGeneration() % 30 == 0)
   {
-    std::cout << "\rgeneration " << board.getGeneration() << ", population " << board.getPopulation() << "      "
-              << std::flush;
+    std::cout << "\rgeneration " << board.getGeneration() << ", population "
+              << board.getPopulation() << "      " << std::flush;
   }
 }
 
@@ -161,8 +163,8 @@ class MainLoop
 {
 public:
   MainLoop()
-  : loop(g_main_loop_new(nullptr, FALSE))
-  , interruptSourceId(g_unix_signal_add(SIGINT, &MainLoop::onInterrupt, loop))
+    : loop(g_main_loop_new(nullptr, FALSE))
+    , interruptSourceId(g_unix_signal_add(SIGINT, &MainLoop::onInterrupt, loop))
   {
   }
 
@@ -175,8 +177,14 @@ public:
   MainLoop(const MainLoop&) = delete;
   MainLoop& operator=(const MainLoop&) = delete;
 
-  void run() { g_main_loop_run(loop); }
-  void quit() { g_main_loop_quit(loop); }
+  void run()
+  {
+    g_main_loop_run(loop);
+  }
+  void quit()
+  {
+    g_main_loop_quit(loop);
+  }
 
 private:
   static gboolean onInterrupt(gpointer loop)
@@ -197,10 +205,10 @@ class CameraLife
 {
 public:
   explicit CameraLife(const std::string& source)
-  : camera(createCameraPipeline(source))
-  , display(createDisplayPipeline())
-  , appSink(dh::gst::AppSink::fromElement(*camera->getElementByName("sink")))
-  , appSrc(dh::gst::AppSrc::fromElement(*display->getElementByName("src")))
+    : camera(createCameraPipeline(source))
+    , display(createDisplayPipeline())
+    , appSink(dh::gst::AppSink::fromElement(*camera->getElementByName("sink")))
+    , appSrc(dh::gst::AppSrc::fromElement(*display->getElementByName("src")))
   {
     appSrc->setCaps(
       dh::gst::makeGstSharedPtr(
@@ -240,15 +248,24 @@ public:
    */
   void start()
   {
-    if(display->setState(GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE
-       || camera->setState(GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
+    if (display->setState(GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE
+        || camera->setState(GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE)
     {
-      throw std::runtime_error("Failed to start the pipelines (no camera? try \"videotestsrc is-live=true\")");
+      throw std::runtime_error(
+        "Failed to start the pipelines (no camera? try \"videotestsrc is-live=true\")"
+      );
     }
   }
 
-  [[nodiscard]] std::shared_ptr<dh::gst::Pipeline> getCamera() const { return camera; }
-  [[nodiscard]] std::shared_ptr<dh::gst::Pipeline> getDisplay() const { return display; }
+  [[nodiscard]] std::shared_ptr<dh::gst::Pipeline> getCamera() const
+  {
+    return camera;
+  }
+
+  [[nodiscard]] std::shared_ptr<dh::gst::Pipeline> getDisplay() const
+  {
+    return display;
+  }
 
 private:
   static std::shared_ptr<dh::gst::Pipeline> createCameraPipeline(const std::string& source)
@@ -276,7 +293,8 @@ private:
   const std::shared_ptr<dh::gst::Pipeline> display;
   const std::shared_ptr<dh::gst::AppSink> appSink;
   const std::shared_ptr<dh::gst::AppSrc> appSrc;
-  LifeBoard board{width / cellSize, height / cellSize, cellSize, motionThreshold}; ///< only used by the streaming thread of the appsink
+  /// only used by the streaming thread of the appsink
+  LifeBoard board{width / cellSize, height / cellSize, cellSize, motionThreshold};
   dh::gst::SignalConnection sampleConnection;
   dh::gst::SignalConnection endOfStreamConnection;
 };
@@ -300,7 +318,7 @@ void invokeInMainContext(std::function<void()> task)
 }
 
 /**
- * @brief Quits the main loop on an error in any pipeline, or when the last pipeline reached end-of-stream.
+ * @brief Quits the main loop on an error in any pipeline or at end-of-stream of the last one.
  */
 class QuitOnFinish
 {
@@ -312,23 +330,28 @@ public:
   )
   {
     connections.push_back(messageParser->connectSignalError(
-      [&mainLoop](const std::string& sourceName, const std::string& message, const std::string& debugInfo)
+      [&mainLoop](
+        const std::string& sourceName,
+        const std::string& message,
+        const std::string& debugInfo
+      )
       {
         // also reached when the window is closed
-        std::cerr << "\nError from '" << sourceName << "': " << message << "\n" << debugInfo << std::endl;
+        std::cerr << "\nError from '" << sourceName << "': " << message << "\n"
+                  << debugInfo << std::endl;
         mainLoop.quit();
       }
     ));
     connections.push_back(messageParser->connectSignalEndOfStream(
       [&mainLoop, lastPipelineName](const std::string& sourceName)
       {
-        if(sourceName == lastPipelineName)
+        if (sourceName == lastPipelineName)
         {
           mainLoop.quit();
         }
       }
     ));
-    for(const auto& pipeline : pipelines)
+    for (const auto& pipeline : pipelines)
     {
       connections.push_back(pipeline->getBus()->connectSignalNewSyncMessage(
         [parser = messageParser](dh::gst::GstMessageSPtr message)
@@ -340,7 +363,9 @@ public:
   }
 
 private:
-  const std::shared_ptr<dh::gst::MessageParser> messageParser{dh::gst::MessageParser::create(invokeInMainContext)};
+  const std::shared_ptr<dh::gst::MessageParser> messageParser{
+    dh::gst::MessageParser::create(invokeInMainContext)
+  };
   std::vector<dh::gst::SignalConnection> connections;
 };
 
@@ -350,7 +375,7 @@ private:
 std::string sourceFromArguments(int argc, char** argv)
 {
   std::string source;
-  for(int i = 1; i < argc; ++i)
+  for (int i = 1; i < argc; ++i)
   {
     source += (i > 1 ? " " : "") + std::string(argv[i]);
   }
@@ -382,7 +407,7 @@ int main(int argc, char** argv)
   gst_init(&argc, &argv);
 
   const std::string source = sourceFromArguments(argc, argv);
-  if(source == "-h" || source == "--help")
+  if (source == "-h" || source == "--help")
   {
     printUsage(argv[0]);
     return 0;
@@ -392,7 +417,7 @@ int main(int argc, char** argv)
   {
     run(source);
   }
-  catch(const std::exception& e)
+  catch (const std::exception& e)
   {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;

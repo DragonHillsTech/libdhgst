@@ -30,12 +30,12 @@ namespace dh::gst::examples
 {
 
 LifeBoard::LifeBoard(int columns, int rows, int cellSize, int motionThreshold)
-: columns(columns)
-, rows(rows)
-, cellSize(cellSize)
-, motionThreshold(motionThreshold)
+  : columns(columns)
+  , rows(rows)
+  , cellSize(cellSize)
+  , motionThreshold(motionThreshold)
 {
-  if(columns <= 0 || rows <= 0 || cellSize <= 0 || motionThreshold <= 0)
+  if (columns <= 0 || rows <= 0 || cellSize <= 0 || motionThreshold <= 0)
   {
     throw std::invalid_argument("LifeBoard: all parameters must be positive");
   }
@@ -51,11 +51,11 @@ void LifeBoard::seedFromMotion(const boost::gil::rgb8c_view_t& frame)
   requireBoardSize(frame);
 
   std::fill(brightness.begin(), brightness.end(), 0);
-  for(int y = 0; y < frame.height(); ++y)
+  for (int y = 0; y < frame.height(); ++y)
   {
     const auto row = frame.row_begin(y);
     int* cellRow = &brightness[(y / cellSize) * columns];
-    for(int x = 0; x < frame.width(); ++x)
+    for (int x = 0; x < frame.width(); ++x)
     {
       const auto& pixel = row[x];
       // integer approximation of the luma: (2 R + 5 G + B) / 8
@@ -63,10 +63,11 @@ void LifeBoard::seedFromMotion(const boost::gil::rgb8c_view_t& frame)
     }
   }
 
-  for(std::size_t i = 0; i < brightness.size(); ++i)
+  for (std::size_t i = 0; i < brightness.size(); ++i)
   {
     brightness[i] /= cellSize * cellSize;
-    if(previousBrightness[i] >= 0 && std::abs(brightness[i] - previousBrightness[i]) > motionThreshold && !ages[i])
+    if (previousBrightness[i] >= 0
+        && std::abs(brightness[i] - previousBrightness[i]) > motionThreshold && !ages[i])
     {
       ages[i] = 1;
     }
@@ -77,16 +78,16 @@ void LifeBoard::seedFromMotion(const boost::gil::rgb8c_view_t& frame)
 void LifeBoard::step()
 {
   population = 0;
-  for(int y = 0; y < rows; ++y)
+  for (int y = 0; y < rows; ++y)
   {
-    for(int x = 0; x < columns; ++x)
+    for (int x = 0; x < columns; ++x)
     {
       int neighbours = 0;
-      for(int dy = -1; dy <= 1; ++dy)
+      for (int dy = -1; dy <= 1; ++dy)
       {
-        for(int dx = -1; dx <= 1; ++dx)
+        for (int dx = -1; dx <= 1; ++dx)
         {
-          if((dx || dy) && isAlive(x + dx, y + dy))
+          if ((dx || dy) && isAlive(x + dx, y + dy))
           {
             ++neighbours;
           }
@@ -95,10 +96,12 @@ void LifeBoard::step()
 
       const std::uint8_t age = ages[y * columns + x];
       std::uint8_t& nextAge = nextAges[y * columns + x];
-      if(age)
+      if (age)
       {
         // survives with 2 or 3 neighbours, gets older
-        nextAge = (neighbours == 2 || neighbours == 3) ? static_cast<std::uint8_t>(std::min(age + 1, 255)) : 0;
+        nextAge = (neighbours == 2 || neighbours == 3)
+          ? static_cast<std::uint8_t>(std::min(age + 1, 255))
+          : 0;
       }
       else
       {
@@ -112,22 +115,25 @@ void LifeBoard::step()
   ++generation;
 }
 
-void LifeBoard::draw(const boost::gil::rgb8c_view_t& frame, const boost::gil::rgb8_view_t& output) const
+void LifeBoard::draw(
+  const boost::gil::rgb8c_view_t& frame,
+  const boost::gil::rgb8_view_t& output
+) const
 {
   requireBoardSize(frame);
   requireBoardSize(output);
 
-  for(int y = 0; y < output.height(); ++y)
+  for (int y = 0; y < output.height(); ++y)
   {
     const auto inRow = frame.row_begin(y);
     const auto outRow = output.row_begin(y);
     const std::uint8_t* cellRow = &ages[(y / cellSize) * columns];
     const bool gridLine = (y % cellSize) == cellSize - 1;
 
-    for(int x = 0; x < output.width(); ++x)
+    for (int x = 0; x < output.width(); ++x)
     {
       const std::uint8_t age = cellRow[x / cellSize];
-      if(age && !gridLine && (x % cellSize) != cellSize - 1)
+      if (age && !gridLine && (x % cellSize) != cellSize - 1)
       {
         outRow[x] = colorOfAge(age);
       }
@@ -151,7 +157,7 @@ bool LifeBoard::isAlive(int x, int y) const
 template<typename View>
 void LifeBoard::requireBoardSize(const View& frame) const
 {
-  if(frame.width() != columns * cellSize || frame.height() != rows * cellSize)
+  if (frame.width() != columns * cellSize || frame.height() != rows * cellSize)
   {
     throw std::invalid_argument("LifeBoard: the frame does not have the size of the board");
   }
@@ -159,7 +165,11 @@ void LifeBoard::requireBoardSize(const View& frame) const
 
 boost::gil::rgb8_pixel_t LifeBoard::colorOfAge(std::uint8_t age)
 {
-  struct Stop { int age; int r, g, b; };
+  struct Stop
+  {
+    int age;
+    int r, g, b;
+  };
   static constexpr Stop stops[] = {
     {1, 255, 255, 255},
     {4, 255, 230, 0},
@@ -167,20 +177,23 @@ boost::gil::rgb8_pixel_t LifeBoard::colorOfAge(std::uint8_t age)
     {60, 40, 60, 255},
   };
 
-  if(age >= stops[std::size(stops) - 1].age)
+  if (age >= stops[std::size(stops) - 1].age)
   {
     const Stop& last = stops[std::size(stops) - 1];
     return boost::gil::rgb8_pixel_t(last.r, last.g, last.b);
   }
   std::size_t i = 0;
-  while(age >= stops[i + 1].age)
+  while (age >= stops[i + 1].age)
   {
     ++i;
   }
   const Stop& from = stops[i];
   const Stop& to = stops[i + 1];
   const int t = (age - from.age) * 256 / (to.age - from.age);
-  const auto mix = [t](int a, int b) { return static_cast<std::uint8_t>(a + (b - a) * t / 256); };
+  const auto mix = [t](int a, int b)
+  {
+    return static_cast<std::uint8_t>(a + (b - a) * t / 256);
+  };
   return boost::gil::rgb8_pixel_t(mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b));
 }
 

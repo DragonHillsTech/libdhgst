@@ -45,7 +45,8 @@ using SampleSlot = CallbackSlot<GstSampleSPtr>;
 using EndOfStreamSlot = CallbackSlot<>;
 
 /**
- * @brief The callback slots of one GstAppSink, shared by all AppSink wrappers of it, see appcallbacks.hpp.
+ * @brief The callback slots of one GstAppSink, shared by all AppSink wrappers of it.
+ * See appcallbacks.hpp.
  */
 struct CallbackSlots
 {
@@ -53,7 +54,7 @@ struct CallbackSlots
   const std::shared_ptr<SampleSlot> newPrerollSlot{SampleSlot::create("new-preroll")};
   const std::shared_ptr<EndOfStreamSlot> endOfStreamSlot{EndOfStreamSlot::create("end-of-stream")};
 
-  /// false until the callbacks are installed, and again after gst_app_sink_set_callbacks replaced them
+  /// false before the callbacks are installed and after gst_app_sink_set_callbacks replaced them
   std::atomic<bool> installed{false};
 };
 
@@ -68,17 +69,18 @@ GQuark callbackSlotsQuark()
  * We are called from C code (the streaming thread), so exceptions must not unwind through it.
  */
 template<typename PullFunction>
-GstFlowReturn callSampleSlot(GstAppSink* appSink, SampleSlot& slot, PullFunction pull, const char* slotName)
+GstFlowReturn
+callSampleSlot(GstAppSink* appSink, SampleSlot& slot, PullFunction pull, const char* slotName)
 {
   // without a callback, leave the sample queued for pullSample()
-  if(!slot.hasCallback())
+  if (!slot.hasCallback())
   {
     return GST_FLOW_OK;
   }
 
   // try_pull with timeout 0: another thread may have pulled the sample already, don't block then
   GstSampleSPtr sample = makeGstSharedPtr(pull(appSink, 0), TransferType::full);
-  if(!sample)
+  if (!sample)
   {
     return GST_FLOW_OK;
   }
@@ -87,12 +89,12 @@ GstFlowReturn callSampleSlot(GstAppSink* appSink, SampleSlot& slot, PullFunction
   {
     slot.call(std::move(sample));
   }
-  catch(const std::exception& e)
+  catch (const std::exception& e)
   {
     GST_ERROR_OBJECT(appSink, "Exception in %s callback: %s", slotName, e.what());
     return GST_FLOW_ERROR;
   }
-  catch(...)
+  catch (...)
   {
     GST_ERROR_OBJECT(appSink, "Unknown exception in %s callback", slotName);
     return GST_FLOW_ERROR;
@@ -103,14 +105,20 @@ GstFlowReturn callSampleSlot(GstAppSink* appSink, SampleSlot& slot, PullFunction
 GstFlowReturn onNewSample(GstAppSink* appSink, gpointer userData)
 {
   return callSampleSlot(
-    appSink, *slotsFromUserData<CallbackSlots>(userData).newSampleSlot, &gst_app_sink_try_pull_sample, "new-sample"
+    appSink,
+    *slotsFromUserData<CallbackSlots>(userData).newSampleSlot,
+    &gst_app_sink_try_pull_sample,
+    "new-sample"
   );
 }
 
 GstFlowReturn onNewPreroll(GstAppSink* appSink, gpointer userData)
 {
   return callSampleSlot(
-    appSink, *slotsFromUserData<CallbackSlots>(userData).newPrerollSlot, &gst_app_sink_try_pull_preroll, "new-preroll"
+    appSink,
+    *slotsFromUserData<CallbackSlots>(userData).newPrerollSlot,
+    &gst_app_sink_try_pull_preroll,
+    "new-preroll"
   );
 }
 
@@ -120,11 +128,11 @@ void onEndOfStream(GstAppSink* appSink, gpointer userData)
   {
     slotsFromUserData<CallbackSlots>(userData).endOfStreamSlot->call();
   }
-  catch(const std::exception& e)
+  catch (const std::exception& e)
   {
     GST_ERROR_OBJECT(appSink, "Exception in end-of-stream callback: %s", e.what());
   }
-  catch(...)
+  catch (...)
   {
     GST_ERROR_OBJECT(appSink, "Unknown exception in end-of-stream callback");
   }
@@ -139,7 +147,12 @@ std::shared_ptr<CallbackSlots> getCallbackSlots(GstAppSink& appSink)
   callbacks.eos = &onEndOfStream;
   callbacks.new_preroll = &onNewPreroll;
   callbacks.new_sample = &onNewSample;
-  return getInstalledCallbackSlots<CallbackSlots>(appSink, callbackSlotsQuark(), callbacks, &gst_app_sink_set_callbacks);
+  return getInstalledCallbackSlots<CallbackSlots>(
+    appSink,
+    callbackSlotsQuark(),
+    callbacks,
+    &gst_app_sink_set_callbacks
+  );
 }
 
 } // namespace
@@ -153,7 +166,7 @@ AppSink::AppSink(const GstAppSinkSPtr& gstAppSink)
 }
 
 AppSink::AppSink(GstAppSink* gstAppSink, TransferType transferType)
-: Element(GST_ELEMENT_CAST(gstAppSink), transferType)
+  : Element(GST_ELEMENT_CAST(gstAppSink), transferType)
 {
 }
 
@@ -174,8 +187,9 @@ std::shared_ptr<AppSink> AppSink::create(GstAppSink* gstAppSink, TransferType tr
 std::shared_ptr<AppSink> AppSink::create(const std::string& name)
 {
   // gst_element_factory_make: transfer:floating, nullable
-  GstElement* gstElement = gst_element_factory_make("appsink", name.empty() ? nullptr : name.c_str());
-  if(!gstElement)
+  GstElement* gstElement =
+    gst_element_factory_make("appsink", name.empty() ? nullptr : name.c_str());
+  if (!gstElement)
   {
     throw std::runtime_error("Failed to create appsink element");
   }
