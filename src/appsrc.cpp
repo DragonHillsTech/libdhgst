@@ -29,6 +29,7 @@
 
 // std
 #include <atomic>
+#include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -41,10 +42,10 @@ namespace dh::gst
 namespace
 {
 
-using NeedDataSlot = CallbackSlot<guint>;
+using NeedDataSlot = CallbackSlot<unsigned int>;
 using EnoughDataSlot = CallbackSlot<>;
 // the callback stores its result in the bool&, CallbackSlot only supports callbacks without return value
-using SeekDataSlot = CallbackSlot<guint64, bool&>;
+using SeekDataSlot = CallbackSlot<std::uint64_t, bool&>;
 
 /**
  * @brief The callback slots of one GstAppSrc, shared by all AppSrc wrappers of it, see appcallbacks.hpp.
@@ -206,27 +207,27 @@ GstAppStreamType AppSrc::getStreamType() const
   return gst_app_src_get_stream_type(const_cast<GstAppSrc*>(getRawGstAppSrc()));
 }
 
-void AppSrc::setSize(gint64 size)
+void AppSrc::setSize(std::int64_t size)
 {
   gst_app_src_set_size(getRawGstAppSrc(), size);
 }
 
-gint64 AppSrc::getSize() const
+std::int64_t AppSrc::getSize() const
 {
   return gst_app_src_get_size(const_cast<GstAppSrc*>(getRawGstAppSrc()));
 }
 
-void AppSrc::setMaxBytes(guint64 maxBytes)
+void AppSrc::setMaxBytes(std::uint64_t maxBytes)
 {
   gst_app_src_set_max_bytes(getRawGstAppSrc(), maxBytes);
 }
 
-guint64 AppSrc::getMaxBytes() const
+std::uint64_t AppSrc::getMaxBytes() const
 {
   return gst_app_src_get_max_bytes(const_cast<GstAppSrc*>(getRawGstAppSrc()));
 }
 
-guint64 AppSrc::getCurrentLevelBytes() const
+std::uint64_t AppSrc::getCurrentLevelBytes() const
 {
   return gst_app_src_get_current_level_bytes(const_cast<GstAppSrc*>(getRawGstAppSrc()));
 }
@@ -256,7 +257,7 @@ GstFlowReturn AppSrc::endOfStream()
   return gst_app_src_end_of_stream(getRawGstAppSrc());
 }
 
-SignalConnection AppSrc::connectNeedData(std::function<void(guint length)> callback)
+SignalConnection AppSrc::connectNeedData(std::function<void(unsigned int length)> callback)
 {
   return getCallbackSlots(*getRawGstAppSrc())->needDataSlot->connect(std::move(callback));
 }
@@ -266,19 +267,20 @@ SignalConnection AppSrc::connectEnoughData(std::function<void()> callback)
   return getCallbackSlots(*getRawGstAppSrc())->enoughDataSlot->connect(std::move(callback));
 }
 
-SignalConnection AppSrc::connectSeekData(std::function<bool(guint64 offset)> callback)
+SignalConnection AppSrc::connectSeekData(std::function<bool(std::uint64_t offset)> callback)
 {
   // check here: the adapter below is never empty
   if(!callback)
   {
     throw std::invalid_argument("empty signal callback");
   }
-  return getCallbackSlots(*getRawGstAppSrc())->seekDataSlot->connect(
-    [callback = std::move(callback)](guint64 offset, bool& success)
-    {
-      success = callback(offset);
-    }
-  );
+  return getCallbackSlots(*getRawGstAppSrc())
+    ->seekDataSlot->connect(
+      [callback = std::move(callback)](std::uint64_t offset, bool& success)
+      {
+        success = callback(offset);
+      }
+    );
 }
 
 GstAppSrc* AppSrc::getRawGstAppSrc()

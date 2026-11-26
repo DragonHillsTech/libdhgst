@@ -26,6 +26,7 @@
 #include "sharedptrs.hpp"
 
 // std
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -39,17 +40,8 @@ namespace dh::gst
 
 /**
  * @class AppSrc
- * @brief A wrapper class for GstAppSrc, the source that feeds buffers from the application into a pipeline.
- *
- * Buffers are pushed with pushBuffer() or pushSample(), the end of the stream is signalled with endOfStream().
- * The need-data / enough-data callbacks tell when the internal queue (see setMaxBytes()) wants more data
- * or is full.
- *
- * The callbacks are installed with gst_app_src_set_callbacks() on the first connect and stay installed
- * for the lifetime of the GstAppSrc, also after all connections are disconnected. They are shared by all
- * AppSrc wrappers of the same GstAppSrc. While they are installed, appsrc does not emit its "need-data",
- * "enough-data" and "seek-data" signals. Do not install own callbacks with gst_app_src_set_callbacks()
- * on a GstAppSrc that is used with these callbacks: they replace each other.
+ * @brief A wrapper class for GstAppSrc, the source that feeds buffers from the application into a
+ * pipeline.
  */
 class AppSrc final : public Element
 {
@@ -63,8 +55,6 @@ private:
   /**
    * @brief Create a new AppSrc object that wraps a GstAppSrc*.
    * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
-   * @param gstAppSrc
-   * @param transferType if none, then increase use count
    */
   AppSrc(GstAppSrc* gstAppSrc, TransferType transferType);
 
@@ -114,8 +104,8 @@ public:
   /**
    * @brief Set the size of the stream in bytes, -1 (default) if unknown.
    */
-  void setSize(gint64 size);
-  [[nodiscard]] gint64 getSize() const;
+  void setSize(std::int64_t size);
+  [[nodiscard]] std::int64_t getSize() const;
 
   /**
    * @brief Set the maximum number of bytes in the internal queue.
@@ -123,13 +113,13 @@ public:
    * pushBuffer() blocks until there is space again.
    * @param maxBytes the maximum number of bytes, 0 means unlimited.
    */
-  void setMaxBytes(guint64 maxBytes);
-  [[nodiscard]] guint64 getMaxBytes() const;
+  void setMaxBytes(std::uint64_t maxBytes);
+  [[nodiscard]] std::uint64_t getMaxBytes() const;
 
   /**
    * @brief Get the number of bytes currently in the internal queue.
    */
-  [[nodiscard]] guint64 getCurrentLevelBytes() const;
+  [[nodiscard]] std::uint64_t getCurrentLevelBytes() const;
 
   /**
    * @brief Push a buffer into the internal queue. appsrc takes its own reference.
@@ -161,13 +151,13 @@ public:
 
   /**
    * @brief Connect a callback that is called when the appsrc needs more data.
-   * The parameter is the number of bytes needed, or -1 (as guint) if any amount is fine.
-   * Push buffers until the enough-data callback is called; pushing can be done from the callback, too.
-   * If the callback throws, the exception is logged.
+   * The parameter is the number of bytes needed, or UINT_MAX (-1 in GStreamer) if any amount is
+   * fine. Push buffers until the enough-data callback is called; pushing can be done from the
+   * callback, too. If the callback throws, the exception is logged.
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a need-data callback is already connected to this GstAppSrc
    */
-  [[nodiscard]] SignalConnection connectNeedData(std::function<void(guint length)> callback);
+  [[nodiscard]] SignalConnection connectNeedData(std::function<void(unsigned int length)> callback);
 
   /**
    * @brief Connect a callback that is called when the internal queue is full. Stop pushing until
@@ -188,7 +178,8 @@ public:
    * @throws std::invalid_argument if the callback is empty
    * @throws std::logic_error if a seek-data callback is already connected to this GstAppSrc
    */
-  [[nodiscard]] SignalConnection connectSeekData(std::function<bool(guint64 offset)> callback);
+  [[nodiscard]] SignalConnection
+  connectSeekData(std::function<bool(std::uint64_t offset)> callback);
 
 private:
   [[nodiscard]] GstAppSrc* getRawGstAppSrc();

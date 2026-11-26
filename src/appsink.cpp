@@ -211,12 +211,12 @@ bool AppSink::isEos() const
   return gst_app_sink_is_eos(const_cast<GstAppSink*>(getRawGstAppSink()));
 }
 
-void AppSink::setMaxBuffers(guint maxBuffers)
+void AppSink::setMaxBuffers(unsigned int maxBuffers)
 {
   gst_app_sink_set_max_buffers(getRawGstAppSink(), maxBuffers);
 }
 
-guint AppSink::getMaxBuffers() const
+unsigned int AppSink::getMaxBuffers() const
 {
   return gst_app_sink_get_max_buffers(const_cast<GstAppSink*>(getRawGstAppSink()));
 }

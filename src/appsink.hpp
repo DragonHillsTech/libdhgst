@@ -39,15 +39,8 @@ namespace dh::gst
 
 /**
  * @class AppSink
- * @brief A wrapper class for GstAppSink, the sink that hands the samples of a pipeline to the application.
- *
- * Samples can be pulled (pullSample(), tryPullSample()) or delivered by a callback (connectNewSample()).
- *
- * The callbacks are installed with gst_app_sink_set_callbacks() on the first connect and stay installed
- * for the lifetime of the GstAppSink, also after all connections are disconnected. They are shared by all
- * AppSink wrappers of the same GstAppSink. While they are installed, appsink does not emit its
- * "new-sample" and "new-preroll" signals. Do not install own callbacks with gst_app_sink_set_callbacks()
- * on a GstAppSink that is used with these callbacks: they replace each other.
+ * @brief A wrapper class for GstAppSink, the sink that hands the samples of a pipeline to the
+ * application.
  */
 class AppSink final : public Element
 {
@@ -58,12 +51,6 @@ private:
    */
   explicit AppSink(const GstAppSinkSPtr& gstAppSink);
 
-  /**
-   * @brief Create a new AppSink object that wraps a GstAppSink*.
-   * @ref makeGstSharedPtr is used to wrap in a internal shared_ptr
-   * @param gstAppSink
-   * @param transferType if none, then increase use count
-   */
   AppSink(GstAppSink* gstAppSink, TransferType transferType);
 
 public:
@@ -112,12 +99,12 @@ public:
    * If the queue is full, the streaming thread blocks (or old buffers are dropped if the "drop" property is set).
    * @param maxBuffers the maximum number of buffers, 0 means unlimited.
    */
-  void setMaxBuffers(guint maxBuffers);
+  void setMaxBuffers(unsigned int maxBuffers);
 
   /**
    * @brief Get the maximum number of queued buffers, 0 means unlimited.
    */
-  [[nodiscard]] guint getMaxBuffers() const;
+  [[nodiscard]] unsigned int getMaxBuffers() const;
 
   /**
    * @brief Pull the next sample. Blocks until a sample is available, end-of-stream is reached

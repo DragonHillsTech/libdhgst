@@ -12,6 +12,7 @@ BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <future>
 #include <stdexcept>
 
@@ -189,18 +190,20 @@ BOOST_FIXTURE_TEST_CASE(NeedData, AppSrcTest)
 
   // push 3 buffers, one per need-data call, then end the stream
   std::atomic<int> pushed{0};
-  auto needDataConnection = appSrc->connectNeedData([&](guint /*length*/)
-  {
-    if(pushed < 3)
+  auto needDataConnection = appSrc->connectNeedData(
+    [&](unsigned int /*length*/)
     {
-      ++pushed;
-      (void)appSrc->pushBuffer(createBuffer(4, static_cast<guint8>(pushed.load())));
+      if (pushed < 3)
+      {
+        ++pushed;
+        (void)appSrc->pushBuffer(createBuffer(4, static_cast<guint8>(pushed.load())));
+      }
+      else
+      {
+        (void)appSrc->endOfStream();
+      }
     }
-    else
-    {
-      (void)appSrc->endOfStream();
-    }
-  });
+  );
 
   std::atomic<int> received{0};
   std::promise<void> eos;
@@ -252,21 +255,25 @@ BOOST_FIXTURE_TEST_CASE(SeekData, AppSrcTest)
 
   BOOST_CHECK_THROW((void)appSrc->connectSeekData({}), std::invalid_argument);
 
-  auto needDataConnection = appSrc->connectNeedData([&](guint /*length*/)
-  {
-    (void)appSrc->pushBuffer(createBuffer(10, 0));
-  });
-  std::promise<guint64> seekOffset;
-  std::atomic<bool> seekReported{false};
-  auto seekConnection = appSrc->connectSeekData([&](guint64 offset)
-  {
-    // the first seek-data call is for the start of the stream
-    if(offset != 0 && !seekReported.exchange(true))
+  auto needDataConnection = appSrc->connectNeedData(
+    [&](unsigned int /*length*/)
     {
-      seekOffset.set_value(offset);
+      (void)appSrc->pushBuffer(createBuffer(10, 0));
     }
-    return true;
-  });
+  );
+  std::promise<std::uint64_t> seekOffset;
+  std::atomic<bool> seekReported{false};
+  auto seekConnection = appSrc->connectSeekData(
+    [&](std::uint64_t offset)
+    {
+      // the first seek-data call is for the start of the stream
+      if (offset != 0 && !seekReported.exchange(true))
+      {
+        seekOffset.set_value(offset);
+      }
+      return true;
+    }
+  );
 
   BOOST_REQUIRE_NE(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_FAILURE);
   BOOST_REQUIRE_EQUAL(pipeline->getState(5 * GST_SECOND), GST_STATE_PAUSED);
@@ -286,13 +293,28 @@ BOOST_FIXTURE_TEST_CASE(CallbacksSharedByWrappers, AppSrcTest)
   auto appSrc = AppSrc::create();
   auto otherWrapper = AppSrc::create(appSrc->getGstAppSrc());
 
-  auto connection = appSrc->connectNeedData([](guint) {});
-  BOOST_CHECK_THROW((void)otherWrapper->connectNeedData([](guint) {}), std::logic_error);
+  auto connection = appSrc->connectNeedData(
+    [](unsigned int)
+    {
+    }
+  );
+  BOOST_CHECK_THROW(
+    (void)otherWrapper->connectNeedData(
+      [](unsigned int)
+      {
+      }
+    ),
+    std::logic_error
+  );
   // the other kinds have their own slots
   auto enoughConnection = otherWrapper->connectEnoughData([]() {});
   BOOST_CHECK(enoughConnection.connected());
 
   connection.disconnect();
-  auto otherConnection = otherWrapper->connectNeedData([](guint) {});
+  auto otherConnection = otherWrapper->connectNeedData(
+    [](unsigned int)
+    {
+    }
+  );
   BOOST_CHECK(otherConnection.connected());
 }
