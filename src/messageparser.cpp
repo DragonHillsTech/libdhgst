@@ -74,6 +74,7 @@ public:
     CallbackSlot<const std::string&, GstStreamStatusType, const std::string&>;
   using ElementMessageSlot = CallbackSlot<const std::string&, const GstStructure*>;
   using AsyncDoneSlot = CallbackSlot<const std::string&, GstClockTime>;
+  using BufferingSlot = CallbackSlot<const std::string&, int>;
 
   // one callback slot per message type
   const std::shared_ptr<SourceSlot> endOfStreamSlot = SourceSlot::create("EOS");
@@ -89,6 +90,9 @@ public:
   const std::shared_ptr<ElementMessageSlot> elementMessageSlot =
     ElementMessageSlot::create("ELEMENT");
   const std::shared_ptr<AsyncDoneSlot> asyncDoneSlot = AsyncDoneSlot::create("ASYNC_DONE");
+  const std::shared_ptr<BufferingSlot> bufferingSlot{BufferingSlot::create("BUFFERING")};
+  const std::shared_ptr<SourceSlot> clockLostSlot{SourceSlot::create("CLOCK_LOST")};
+  const std::shared_ptr<SourceSlot> latencySlot{SourceSlot::create("LATENCY")};
 };
 
 MessageParser::MessageParser()
@@ -182,6 +186,25 @@ SignalConnection MessageParser::connectSignalAsyncDone(
 )
 {
   return prv->asyncDoneSlot->connect(std::move(callback));
+}
+
+SignalConnection MessageParser::connectSignalBuffering(
+  std::function<void(const std::string& sourceName, int percent)> callback
+)
+{
+  return prv->bufferingSlot->connect(std::move(callback));
+}
+
+SignalConnection
+MessageParser::connectSignalClockLost(std::function<void(const std::string& sourceName)> callback)
+{
+  return prv->clockLostSlot->connect(std::move(callback));
+}
+
+SignalConnection
+MessageParser::connectSignalLatency(std::function<void(const std::string& sourceName)> callback)
+{
+  return prv->latencySlot->connect(std::move(callback));
 }
 
 void MessageParser::parse(const GstMessage& message)
@@ -306,6 +329,26 @@ void MessageParser::parseSync(Private& prv, const GstMessage& message)
       GstClockTime runningTime{GST_CLOCK_TIME_NONE};
       gst_message_parse_async_done(messagePtr, &runningTime);
       prv.asyncDoneSlot->call(sourceName, runningTime);
+      break;
+    }
+
+    case GST_MESSAGE_BUFFERING:
+    {
+      gint percent{0};
+      gst_message_parse_buffering(messagePtr, &percent);
+      prv.bufferingSlot->call(sourceName, percent);
+      break;
+    }
+
+    case GST_MESSAGE_CLOCK_LOST:
+    {
+      prv.clockLostSlot->call(sourceName);
+      break;
+    }
+
+    case GST_MESSAGE_LATENCY:
+    {
+      prv.latencySlot->call(sourceName);
       break;
     }
 

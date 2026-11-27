@@ -410,6 +410,81 @@ BOOST_FIXTURE_TEST_CASE(AsyncDoneSignalEmittedWithRunningTime, MessageParserTest
   gst_object_unref(element);
 }
 
+BOOST_FIXTURE_TEST_CASE(BufferingSignalEmittedWithPercent, MessageParserTest)
+{
+  auto parser{MessageParser::create()};
+  std::string receivedSourceName;
+  int receivedPercent{-1};
+
+  const auto conn{parser->connectSignalBuffering(
+    [&](const std::string& sourceName, int percent)
+    {
+      receivedSourceName = sourceName;
+      receivedPercent = percent;
+    }
+  )};
+  BOOST_REQUIRE(conn.connected());
+
+  GstElement* element{gst_element_factory_make("fakesrc", "test_element")};
+  constexpr gint expectedPercent{42};
+  GstMessage* message{gst_message_new_buffering(GST_OBJECT(element), expectedPercent)};
+  parser->parse(*message);
+
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
+  BOOST_CHECK_EQUAL(receivedPercent, expectedPercent);
+
+  gst_message_unref(message);
+  gst_object_unref(element);
+}
+
+BOOST_FIXTURE_TEST_CASE(ClockLostSignalEmitted, MessageParserTest)
+{
+  auto parser{MessageParser::create()};
+  std::string receivedSourceName;
+
+  const auto conn{parser->connectSignalClockLost(
+    [&](const std::string& sourceName)
+    {
+      receivedSourceName = sourceName;
+    }
+  )};
+  BOOST_REQUIRE(conn.connected());
+
+  GstElement* element{gst_element_factory_make("fakesrc", "test_element")};
+  GstClock* clock{gst_system_clock_obtain()};
+  GstMessage* message{gst_message_new_clock_lost(GST_OBJECT(element), clock)};
+  parser->parse(*message);
+
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
+
+  gst_message_unref(message);
+  gst_object_unref(clock);
+  gst_object_unref(element);
+}
+
+BOOST_FIXTURE_TEST_CASE(LatencySignalEmitted, MessageParserTest)
+{
+  auto parser{MessageParser::create()};
+  std::string receivedSourceName;
+
+  const auto conn{parser->connectSignalLatency(
+    [&](const std::string& sourceName)
+    {
+      receivedSourceName = sourceName;
+    }
+  )};
+  BOOST_REQUIRE(conn.connected());
+
+  GstElement* element{gst_element_factory_make("fakesrc", "test_element")};
+  GstMessage* message{gst_message_new_latency(GST_OBJECT(element))};
+  parser->parse(*message);
+
+  BOOST_CHECK_EQUAL(receivedSourceName, "test_element");
+
+  gst_message_unref(message);
+  gst_object_unref(element);
+}
+
 BOOST_FIXTURE_TEST_CASE(SignalDisconnectionPreventsEmission, MessageParserTest)
 {
   auto parser = MessageParser::create();

@@ -230,6 +230,34 @@ public:
     std::function<void(const std::string& sourceName, GstClockTime runningTime)> callback
   );
 
+  /**
+   * @brief Connect a callback to the buffering signal.
+   * @param callback The callback invoked when a buffering message is received, with the fill level
+   *        from 0 to 100 percent.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
+   */
+  [[nodiscard]] SignalConnection
+  connectSignalBuffering(std::function<void(const std::string& sourceName, int percent)> callback);
+
+  /**
+   * @brief Connect a callback to the clock lost signal.
+   * @param callback The callback invoked when a clock lost message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
+   */
+  [[nodiscard]] SignalConnection
+  connectSignalClockLost(std::function<void(const std::string& sourceName)> callback);
+
+  /**
+   * @brief Connect a callback to the latency signal.
+   * @param callback The callback invoked when a latency message is received.
+   * @throws std::invalid_argument if the callback is empty
+   * @throws std::logic_error if a callback for this message type is already connected
+   */
+  [[nodiscard]] SignalConnection
+  connectSignalLatency(std::function<void(const std::string& sourceName)> callback);
+
 private:
   class Private;
   static void parseSync(Private& prv, const GstMessage& message);
