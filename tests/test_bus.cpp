@@ -12,8 +12,10 @@
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibWarnings);
 
 #include <chrono>
+#include <stdexcept>
 #include <string>
 #include <thread>
+#include <vector>
 
 using namespace dh::gst;
 
@@ -39,6 +41,40 @@ std::string structureName(const GstMessageSPtr& message)
 {
   return gst_structure_get_name(gst_message_get_structure(message.get()));
 }
+
+/**
+ * @brief A main context that is the thread-default one while it exists, so a bus watch attaches to
+ * it and the test dispatches it without running a main loop.
+ */
+class ThreadDefaultContext
+{
+public:
+  ThreadDefaultContext()
+  {
+    g_main_context_push_thread_default(context);
+  }
+
+  ~ThreadDefaultContext()
+  {
+    g_main_context_pop_thread_default(context);
+    g_main_context_unref(context);
+  }
+
+  ThreadDefaultContext(const ThreadDefaultContext&) = delete;
+  ThreadDefaultContext(ThreadDefaultContext&&) = delete;
+  ThreadDefaultContext& operator=(const ThreadDefaultContext&) = delete;
+  ThreadDefaultContext& operator=(ThreadDefaultContext&&) = delete;
+
+  void dispatchPending()
+  {
+    while (g_main_context_iteration(context, FALSE))
+    {
+    }
+  }
+
+private:
+  GMainContext* context{g_main_context_new()};
+};
 
 } // namespace
 
@@ -213,4 +249,243 @@ BOOST_FIXTURE_TEST_CASE(TimedPopWaitsForMessage, BusTest)
   poster.join();
   BOOST_REQUIRE(message);
   BOOST_CHECK_EQUAL(structureName(message), "Late");
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchCallsCallbackForEachMessage, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  std::vector<std::string> received;
+  const auto connection{bus->connectWatch(
+    [&received](GstMessageSPtr message) -> bool
+    {
+      received.push_back(structureName(message));
+      return true;
+    }
+  )};
+
+  postApplicationMessage(*bus, "First");
+  postApplicationMessage(*bus, "Second");
+  context.dispatchPending();
+
+  BOOST_CHECK(received == (std::vector<std::string>{"First", "Second"}));
+  BOOST_CHECK(connection.connected());
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchReturningFalseRemovesWatch, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  int calls{0};
+  const auto connection{bus->connectWatch(
+    [&calls](GstMessageSPtr /*message*/) -> bool
+    {
+      ++calls;
+      return false;
+    }
+  )};
+
+  postApplicationMessage(*bus, "First");
+  postApplicationMessage(*bus, "Second");
+  context.dispatchPending();
+
+  BOOST_CHECK_EQUAL(calls, 1);
+  BOOST_CHECK(!connection.connected());
+  // the removed watch is released although its connection still exists
+  BOOST_CHECK_NO_THROW((void)bus->connectWatch(
+    [](GstMessageSPtr /*message*/) -> bool
+    {
+      return true;
+    }
+  ));
+}
+
+BOOST_FIXTURE_TEST_CASE(DisconnectRemovesWatch, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  int calls{0};
+  auto connection{bus->connectWatch(
+    [&calls](GstMessageSPtr /*message*/) -> bool
+    {
+      ++calls;
+      return true;
+    }
+  )};
+
+  connection.disconnect();
+  BOOST_CHECK(!connection.connected());
+  postApplicationMessage(*bus, "AfterDisconnect");
+  context.dispatchPending();
+
+  BOOST_CHECK_EQUAL(calls, 0);
+  // the message stays on the bus
+  BOOST_CHECK(bus->pop());
+  BOOST_CHECK_NO_THROW((void)bus->connectWatch(
+    [](GstMessageSPtr /*message*/) -> bool
+    {
+      return true;
+    }
+  ));
+}
+
+BOOST_FIXTURE_TEST_CASE(DestroyedConnectionRemovesWatch, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  int calls{0};
+  {
+    const auto connection{bus->connectWatch(
+      [&calls](GstMessageSPtr /*message*/) -> bool
+      {
+        ++calls;
+        return true;
+      }
+    )};
+  }
+
+  postApplicationMessage(*bus, "AfterDestruction");
+  context.dispatchPending();
+
+  BOOST_CHECK_EQUAL(calls, 0);
+}
+
+BOOST_FIXTURE_TEST_CASE(SecondWatchThrows, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  const auto connection{bus->connectWatch(
+    [](GstMessageSPtr /*message*/) -> bool
+    {
+      return true;
+    }
+  )};
+
+  BOOST_CHECK_THROW(
+    (void)bus->connectWatch(
+      [](GstMessageSPtr /*message*/) -> bool
+      {
+        return true;
+      }
+    ),
+    std::runtime_error
+  );
+  BOOST_CHECK(connection.connected());
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchWithEmptyCallbackThrows, BusTest)
+{
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+
+  BOOST_CHECK_THROW((void)bus->connectWatch({}), std::invalid_argument);
+}
+
+BOOST_FIXTURE_TEST_CASE(ExceptionInWatchCallbackKeepsWatch, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  int calls{0};
+  const auto connection{bus->connectWatch(
+    [&calls](GstMessageSPtr /*message*/) -> bool
+    {
+      ++calls;
+      throw std::runtime_error("test exception");
+    }
+  )};
+
+  postApplicationMessage(*bus, "First");
+  postApplicationMessage(*bus, "Second");
+  context.dispatchPending();
+
+  BOOST_CHECK_EQUAL(calls, 2);
+  BOOST_CHECK(connection.connected());
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchConnectionOutlivesBusWrapper, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  auto connection{bus->connectWatch(
+    [](GstMessageSPtr /*message*/) -> bool
+    {
+      return true;
+    }
+  )};
+
+  bus.reset();
+  BOOST_CHECK(connection.connected());
+  connection.disconnect();
+  BOOST_CHECK(!connection.connected());
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchIsRemovedWithItsContext, BusTest)
+{
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  SignalConnection connection;
+  {
+    ThreadDefaultContext context;
+    connection = bus->connectWatch(
+      [](GstMessageSPtr /*message*/) -> bool
+      {
+        return true;
+      }
+    );
+  }
+
+  BOOST_CHECK(!connection.connected());
+  BOOST_CHECK_NO_THROW((void)bus->connectWatch(
+    [](GstMessageSPtr /*message*/) -> bool
+    {
+      return true;
+    }
+  ));
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchWithoutPushedContextUsesGlobalDefault, BusTest)
+{
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  int calls{0};
+  const auto connection{bus->connectWatch(
+    [&calls](GstMessageSPtr /*message*/) -> bool
+    {
+      ++calls;
+      return true;
+    }
+  )};
+
+  postApplicationMessage(*bus, "Global");
+  while (g_main_context_iteration(nullptr, FALSE))
+  {
+  }
+
+  BOOST_CHECK_EQUAL(calls, 1);
+}
+
+BOOST_FIXTURE_TEST_CASE(WatchCallbackCanDisconnectItself, BusTest)
+{
+  ThreadDefaultContext context;
+  auto bus{Bus::create(gst_bus_new(), TransferType::full)};
+  int calls{0};
+  SignalConnection connection;
+  connection = bus->connectWatch(
+    [&calls, &connection](GstMessageSPtr /*message*/) -> bool
+    {
+      ++calls;
+      connection.disconnect();
+      return true;
+    }
+  );
+
+  postApplicationMessage(*bus, "First");
+  postApplicationMessage(*bus, "Second");
+  context.dispatchPending();
+
+  BOOST_CHECK_EQUAL(calls, 1);
+  BOOST_CHECK(!connection.connected());
+  BOOST_CHECK_NO_THROW((void)bus->connectWatch(
+    [](GstMessageSPtr /*message*/) -> bool
+    {
+      return true;
+    }
+  ));
 }

@@ -87,6 +87,17 @@ public:
   [[nodiscard]] SignalConnection
   connectSignalNewSyncMessage(std::function<void(GstMessageSPtr)> callback) const;
 
+  /**
+   * @brief Calls callback for each message, from the main loop of the calling thread's
+   *        thread-default main context (the global default context if none was pushed).
+   * The callback returns false to remove the watch. Exceptions from it are logged, the watch stays.
+   * A bus has at most one watch, a signal watch included. disconnect() does not wait for a running
+   * callback, and a new watch is accepted only after that callback has returned.
+   * @throws std::invalid_argument if callback is empty.
+   * @throws std::runtime_error if the bus already has a watch.
+   */
+  [[nodiscard]] SignalConnection connectWatch(std::function<bool(GstMessageSPtr)> callback) const;
+
   // TODO: Enable "message" also? (only valid with existing glib main loop)
 private:
   [[nodiscard]] GstBus* getRawGstBus();
