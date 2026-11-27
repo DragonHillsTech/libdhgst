@@ -1,4 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 2 -*-  */
+#include "appsrc.hpp"
+#include "bus.hpp"
 #include "element.hpp"
 #include "elementfactory.hpp"
 #include "pipeline.hpp"
@@ -7,11 +9,20 @@
 #include "fatalgliblog.hpp"
 #include <boost/test/included/unit_test.hpp>
 BOOST_TEST_GLOBAL_FIXTURE(FatalGlibCriticals);
+#include <glib/gstdio.h>
 #include <gst/gst.h>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <future>
+#include <ios>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
 using namespace dh::gst;
@@ -133,6 +144,149 @@ BOOST_FIXTURE_TEST_CASE(GetStateThrowsOnFailedStateChange, ElementTest)
   BOOST_CHECK_EQUAL(filesrc->queryState().result, GST_STATE_CHANGE_FAILURE);
 
   filesrc->setState(GST_STATE_NULL);
+}
+
+namespace
+{
+
+constexpr GstClockTime asyncDoneTimeout{5 * GST_SECOND};
+
+void waitForAsyncDone(Pipeline& pipeline)
+{
+  BOOST_REQUIRE(pipeline.getBus()->timedPop(asyncDoneTimeout, GST_MESSAGE_ASYNC_DONE));
+}
+
+/**
+ * @brief Creates an empty file with a unique name, so parallel test runs do not share it.
+ */
+std::filesystem::path createUniqueTemporaryFile()
+{
+  gchar* rawName{nullptr};
+  GError* rawError{nullptr};
+  const gint fileDescriptor{g_file_open_tmp("libdhgst_test_element-XXXXXX", &rawName, &rawError)};
+  const auto error = makeGlibSharedPtr(rawError, TransferType::full);
+  if (fileDescriptor == -1)
+  {
+    BOOST_FAIL("g_file_open_tmp failed: " << error->message);
+  }
+  g_close(fileDescriptor, nullptr);
+
+  const std::unique_ptr<gchar, decltype(&g_free)> name{rawName, &g_free};
+  return std::filesystem::path{name.get()};
+}
+
+/**
+ * @brief A file with the given number of bytes that is removed again when the test ends.
+ */
+class TemporaryFile
+{
+public:
+  explicit TemporaryFile(std::size_t size)
+  {
+    std::ofstream file{path, std::ios::binary};
+    file << std::string(size, '\0');
+    if (!file)
+    {
+      // the destructor does not run when the constructor fails
+      std::filesystem::remove(path);
+      BOOST_FAIL("cannot write " << path);
+    }
+  }
+
+  ~TemporaryFile()
+  {
+    std::filesystem::remove(path);
+  }
+
+  TemporaryFile(const TemporaryFile&) = delete;
+  TemporaryFile& operator=(const TemporaryFile&) = delete;
+  TemporaryFile(TemporaryFile&&) = delete;
+  TemporaryFile& operator=(TemporaryFile&&) = delete;
+
+  const std::filesystem::path path{createUniqueTemporaryFile()};
+};
+
+} // namespace
+
+BOOST_FIXTURE_TEST_CASE(QueriesFailBeforePreroll, ElementTest)
+{
+  auto pipeline = Pipeline::fromDescription("videotestsrc ! fakesink");
+
+  BOOST_CHECK(!pipeline->queryPosition());
+  BOOST_CHECK(!pipeline->queryDuration());
+  BOOST_CHECK_THROW(pipeline->seek(GST_SECOND), std::runtime_error);
+}
+
+BOOST_FIXTURE_TEST_CASE(QuerySeekingFailsWithoutLinkedPads, ElementTest)
+{
+  const auto identity = ElementFactory::makeElement("identity", "test_identity");
+
+  BOOST_CHECK(!identity->querySeeking());
+}
+
+BOOST_FIXTURE_TEST_CASE(SeekThrowsIfStreamIsNotSeekable, ElementTest)
+{
+  // appsrc defaults to GST_APP_STREAM_TYPE_STREAM, which cannot be seeked
+  auto pipeline = Pipeline::fromDescription("appsrc name=src format=time ! fakesink");
+  auto appSrc = AppSrc::fromElement(*pipeline->getElementByName("src"));
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+  GstBuffer* buffer{gst_buffer_new_allocate(nullptr, 1, nullptr)};
+  GST_BUFFER_PTS(buffer) = 0;
+  BOOST_REQUIRE_EQUAL(
+    appSrc->pushBuffer(makeGstSharedPtr(buffer, TransferType::full)),
+    GST_FLOW_OK
+  );
+  waitForAsyncDone(*pipeline);
+
+  const auto seekRange = pipeline->querySeeking();
+  BOOST_REQUIRE(seekRange);
+  BOOST_CHECK(!seekRange->seekable);
+  BOOST_CHECK_THROW(pipeline->seek(GST_SECOND), std::runtime_error);
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(QueryDurationAndSeekingOfFile, ElementTest)
+{
+  constexpr std::size_t fileSize{1000};
+  const TemporaryFile file{fileSize};
+  auto pipeline =
+    Pipeline::fromDescription("filesrc location=" + file.path.string() + " ! fakesink");
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+  waitForAsyncDone(*pipeline);
+
+  const auto duration = pipeline->queryDuration(GST_FORMAT_BYTES);
+  BOOST_REQUIRE(duration);
+  BOOST_CHECK_EQUAL(*duration, fileSize);
+
+  const auto seekRange = pipeline->querySeeking(GST_FORMAT_BYTES);
+  BOOST_REQUIRE(seekRange);
+  BOOST_CHECK(seekRange->seekable);
+  BOOST_CHECK_EQUAL(seekRange->start, 0);
+  BOOST_CHECK_EQUAL(seekRange->end, fileSize);
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(SeekChangesPosition, ElementTest)
+{
+  auto pipeline = Pipeline::fromDescription("videotestsrc ! fakesink");
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+  waitForAsyncDone(*pipeline);
+
+  // an endless stream answers the duration query with -1
+  BOOST_CHECK(!pipeline->queryDuration());
+
+  const auto seekRange = pipeline->querySeeking();
+  BOOST_REQUIRE(seekRange);
+  BOOST_CHECK(seekRange->seekable);
+
+  BOOST_CHECK(pipeline->queryPosition() == std::optional<std::int64_t>{0});
+  pipeline->seek(GST_SECOND);
+  waitForAsyncDone(*pipeline);
+  BOOST_CHECK(pipeline->queryPosition() == std::optional<std::int64_t>{GST_SECOND});
+
+  pipeline->setState(GST_STATE_NULL);
 }
 
 BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)

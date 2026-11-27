@@ -27,7 +27,9 @@
 #include "transfertype.hpp"
 
 // std
+#include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -71,6 +73,16 @@ public:
     GstStateChangeReturn result;
     GstState current; ///< the current state
     GstState pending; ///< the pending state, GST_STATE_VOID_PENDING if no state change is pending
+  };
+
+  /**
+   * @brief Result of querySeeking().
+   */
+  struct SeekRange
+  {
+    bool seekable{false};
+    std::int64_t start{-1}; ///< first seekable position, -1 if unknown
+    std::int64_t end{-1}; ///< last seekable position, -1 if unknown
   };
 
   [[nodiscard]] static std::shared_ptr<Element> create(const GstElementSPtr& gstElement);
@@ -170,6 +182,43 @@ public:
    * @param timeout see getState()
    */
   [[nodiscard]] StateQuery queryState(GstClockTime timeout = 0) const;
+
+  /**
+   * @brief Gets the current stream position.
+   * @return The position, or std::nullopt if the element cannot answer, e.g. before preroll.
+   */
+  [[nodiscard]] std::optional<std::int64_t> queryPosition(GstFormat format = GST_FORMAT_TIME) const;
+
+  /**
+   * @brief Gets the total stream duration.
+   * @return The duration, or std::nullopt if it is unknown, e.g. before preroll or for live and
+   *         endless streams.
+   */
+  [[nodiscard]] std::optional<std::int64_t> queryDuration(GstFormat format = GST_FORMAT_TIME) const;
+
+  /**
+   * @brief Asks whether the stream can be seeked in the given format, and in which range.
+   * Use it to decide whether to offer seeking before calling seek().
+   * @return The seek range, or std::nullopt if the element cannot answer.
+   */
+  [[nodiscard]] std::optional<SeekRange> querySeeking(GstFormat format = GST_FORMAT_TIME) const;
+
+  /**
+   * @brief Seeks to a position.
+   * The element must be at least PAUSED. A successful return only means that the seek was
+   * accepted: it completes asynchronously. With GST_SEEK_FLAG_FLUSH, an ASYNC_DONE message on the
+   * bus signals the end.
+   * @param position The new position, in the units of format.
+   * @param flags GST_SEEK_FLAG_FLUSH (default) discards the queued data, so the seek takes effect
+   *        immediately.
+   * @throws std::runtime_error if the seek is not accepted, e.g. because the stream is not
+   *         seekable (see querySeeking()) or the element is not PAUSED yet.
+   */
+  void seek(
+    std::int64_t position,
+    GstSeekFlags flags = GST_SEEK_FLAG_FLUSH,
+    GstFormat format = GST_FORMAT_TIME
+  );
 
   /**
    * @brief Unlinks the element from another element.
