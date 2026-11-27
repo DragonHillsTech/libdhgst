@@ -7,6 +7,7 @@
  * @date 2024-09-15
  */
 
+#include "bus.hpp"
 #include "elementfactory.hpp"
 #include "pipeline.hpp"
 
@@ -58,26 +59,24 @@ int main(int argc, char** argv)
   );
 
   // quit on error (also posted when the window is closed) or end of stream
-  gst_bus_add_watch(
-    pipeline->getBus()->getGstBus().get(),
-    [](GstBus*, GstMessage* message, gpointer loop) -> gboolean
+  const auto busWatch{pipeline->getBus()->connectWatch(
+    [mainLoop](GstMessageSPtr message) -> bool
     {
-      if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR)
+      if (GST_MESSAGE_TYPE(message.get()) == GST_MESSAGE_ERROR)
       {
         GError* error{nullptr};
-        gst_message_parse_error(message, &error, nullptr);
+        gst_message_parse_error(message.get(), &error, nullptr);
         std::cerr << "Error: " << error->message << std::endl;
         g_error_free(error);
       }
-      if (GST_MESSAGE_TYPE(message) == GST_MESSAGE_ERROR
-          || GST_MESSAGE_TYPE(message) == GST_MESSAGE_EOS)
+      if (GST_MESSAGE_TYPE(message.get()) == GST_MESSAGE_ERROR
+          || GST_MESSAGE_TYPE(message.get()) == GST_MESSAGE_EOS)
       {
-        g_main_loop_quit(static_cast<GMainLoop*>(loop));
+        g_main_loop_quit(mainLoop);
       }
-      return G_SOURCE_CONTINUE;
-    },
-    mainLoop
-  );
+      return true;
+    }
+  )};
 
   pipeline->setState(GST_STATE_PLAYING);
   g_main_loop_run(mainLoop);
