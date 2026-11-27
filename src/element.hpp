@@ -221,6 +221,25 @@ public:
   );
 
   /**
+   * @brief Sends an event to the element, e.g. to inject it into a pipeline.
+   * The element takes its own reference, so event stays valid for the caller.
+   * @throws std::invalid_argument if event is nullptr.
+   * @throws std::logic_error if event is an end-of-stream that would deadlock, see
+   *         sendEndOfStream().
+   * @throws std::runtime_error if the element does not handle the event.
+   */
+  void sendEvent(const GstEventSPtr& event);
+
+  /**
+   * @brief Sends an end-of-stream event.
+   * @throws std::logic_error if the element is not live and PAUSED or changing its state: the
+   *         call would deadlock. During a state change, only a pipeline with GStreamer >= 1.24
+   *         is recognized as live.
+   * @throws std::runtime_error if the element does not handle the event.
+   */
+  void sendEndOfStream();
+
+  /**
    * @brief Unlinks the element from another element.
    * @param other The Element to unlink from.
    */

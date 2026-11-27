@@ -22,6 +22,7 @@
 #include "element.hpp"
 #include "elementfactory.hpp"
 #include "object.hpp"
+#include "pipeline.hpp"
 #include "sharedptrs.hpp"
 #include "signalconnection.hpp"
 #include "transfertype.hpp"
@@ -64,6 +65,34 @@ std::optional<std::int64_t> toQueryResult(gboolean answered, gint64 value)
     return std::nullopt;
   }
   return value;
+}
+
+bool isLive(GstElement& element, const Element::StateQuery& state)
+{
+  if (state.result == GST_STATE_CHANGE_NO_PREROLL)
+  {
+    return true;
+  }
+#if DH_GST_HAS_PIPELINE_IS_LIVE
+  // during a state change, the result is ASYNC also for live elements, only a pipeline still knows
+  return GST_IS_PIPELINE(&element) && gst_pipeline_is_live(GST_PIPELINE(&element));
+#else
+  (void)element;
+  return false;
+#endif
+}
+
+/**
+ * @brief Whether sending an end-of-stream event in this state deadlocks: a prerolled, non-live
+ * sink blocks the source until PLAYING, while the send holds the state lock PLAYING needs.
+ */
+bool endOfStreamWouldDeadlock(GstElement& element, const Element::StateQuery& state)
+{
+  const bool live{isLive(element, state)};
+  const bool pausedOrChanging{
+    state.current == GST_STATE_PAUSED || state.pending != GST_STATE_VOID_PENDING
+  };
+  return !live && pausedOrChanging;
 }
 
 } // namespace
@@ -255,6 +284,39 @@ void Element::seek(std::int64_t position, GstSeekFlags flags, GstFormat format)
       "Failed to seek element " + getName() + " to position " + std::to_string(position)
     );
   }
+}
+
+void Element::sendEvent(const GstEventSPtr& event)
+{
+  if (!event)
+  {
+    throw std::invalid_argument("sendEvent: event must not be nullptr");
+  }
+  if (GST_EVENT_TYPE(event.get()) == GST_EVENT_EOS)
+  {
+    const StateQuery state{queryState()};
+    if (endOfStreamWouldDeadlock(*getRawGstElement(), state))
+    {
+      throw std::logic_error(
+        "Sending end-of-stream to element " + getName() + " would deadlock (state "
+        + gst_element_state_get_name(state.current) + ", pending "
+        + gst_element_state_get_name(state.pending) + ")"
+      );
+    }
+  }
+  // gst_element_send_event takes ownership (transfer full), the caller keeps its reference
+  if (!gst_element_send_event(getRawGstElement(), gst_event_ref(event.get())))
+  {
+    throw std::runtime_error(
+      std::string("Element ") + getName() + " did not handle the event "
+      + GST_EVENT_TYPE_NAME(event.get())
+    );
+  }
+}
+
+void Element::sendEndOfStream()
+{
+  sendEvent(makeGstSharedPtr(gst_event_new_eos(), TransferType::full));
 }
 
 void Element::unlink(Element& other)

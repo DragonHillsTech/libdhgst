@@ -165,6 +165,21 @@ BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstBuffer_None, GStreamerSharedPtrTest)
   gst_buffer_unref(rawBuffer); // Clean up the initial ref
 }
 
+// Test makeGstSharedPtr with GstEvent and TransferType::none
+BOOST_FIXTURE_TEST_CASE(MakeGstSharedPtr_GstEvent_None, GStreamerSharedPtrTest)
+{
+  GstEvent* rawEvent{gst_event_new_eos()};
+  BOOST_REQUIRE_NE(rawEvent, nullptr);
+
+  auto eventSPtr = dh::gst::makeGstSharedPtr(rawEvent, TransferType::none);
+  BOOST_REQUIRE_NE(eventSPtr, nullptr);
+  BOOST_CHECK_EQUAL(GST_MINI_OBJECT_REFCOUNT_VALUE(rawEvent), 2);
+
+  eventSPtr.reset();
+  BOOST_CHECK_EQUAL(GST_MINI_OBJECT_REFCOUNT_VALUE(rawEvent), 1);
+  gst_event_unref(rawEvent);
+}
+
 // --- makeGlibSharedPtr ---
 
 BOOST_AUTO_TEST_CASE(MakeGlibSharedPtr_Null)
