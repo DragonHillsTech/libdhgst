@@ -27,8 +27,10 @@
 #include "transfertype.hpp"
 
 // std
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -49,6 +51,19 @@ gboolean collectPad(GstElement* /*element*/, GstPad* pad, gpointer userData)
   auto& pads = *static_cast<std::vector<GstPadSPtr>*>(userData);
   pads.push_back(makeGstSharedPtr(pad, TransferType::none));
   return TRUE; // continue iteration
+}
+
+/**
+ * @brief Converts the result of a position or duration query.
+ * Elements may answer a query successfully with -1 when the value is unknown.
+ */
+std::optional<std::int64_t> toQueryResult(gboolean answered, gint64 value)
+{
+  if (!answered || value == -1)
+  {
+    return std::nullopt;
+  }
+  return value;
 }
 
 } // namespace
@@ -193,6 +208,53 @@ Element::StateQuery Element::queryState(GstClockTime timeout) const
     timeout
   );
   return query;
+}
+
+std::optional<std::int64_t> Element::queryPosition(GstFormat format) const
+{
+  gint64 position{-1};
+  const gboolean answered{
+    gst_element_query_position(const_cast<GstElement*>(getRawGstElement()), format, &position)
+  };
+  return toQueryResult(answered, position);
+}
+
+std::optional<std::int64_t> Element::queryDuration(GstFormat format) const
+{
+  gint64 duration{-1};
+  const gboolean answered{
+    gst_element_query_duration(const_cast<GstElement*>(getRawGstElement()), format, &duration)
+  };
+  return toQueryResult(answered, duration);
+}
+
+std::optional<Element::SeekRange> Element::querySeeking(GstFormat format) const
+{
+  // gst_query_new_seeking: transfer full
+  const std::unique_ptr<GstQuery, decltype(&gst_query_unref)> query{
+    gst_query_new_seeking(format),
+    &gst_query_unref
+  };
+  if (!gst_element_query(const_cast<GstElement*>(getRawGstElement()), query.get()))
+  {
+    return std::nullopt;
+  }
+
+  gboolean seekable{FALSE};
+  gint64 start{-1};
+  gint64 end{-1};
+  gst_query_parse_seeking(query.get(), nullptr, &seekable, &start, &end);
+  return SeekRange{seekable != FALSE, start, end};
+}
+
+void Element::seek(std::int64_t position, GstSeekFlags flags, GstFormat format)
+{
+  if (!gst_element_seek_simple(getRawGstElement(), format, flags, position))
+  {
+    throw std::runtime_error(
+      "Failed to seek element " + getName() + " to position " + std::to_string(position)
+    );
+  }
 }
 
 void Element::unlink(Element& other)
