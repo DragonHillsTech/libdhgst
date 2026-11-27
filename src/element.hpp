@@ -224,13 +224,16 @@ public:
    * @brief Sends an event to the element, e.g. to inject it into a pipeline.
    * The element takes its own reference, so event stays valid for the caller.
    * @throws std::invalid_argument if event is nullptr.
+   * @throws std::logic_error if event is an end-of-stream that would deadlock, see
+   *         sendEndOfStream().
    * @throws std::runtime_error if the element does not handle the event.
    */
   void sendEvent(const GstEventSPtr& event);
 
   /**
    * @brief Sends an end-of-stream event.
-   * Call it only after the change to PLAYING has completed, otherwise it deadlocks.
+   * @throws std::logic_error if the element is not live and PAUSED or changing its state: the
+   *         call would deadlock.
    * @throws std::runtime_error if the element does not handle the event.
    */
   void sendEndOfStream();

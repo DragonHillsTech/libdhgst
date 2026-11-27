@@ -293,11 +293,49 @@ BOOST_FIXTURE_TEST_CASE(SendEndOfStreamPostsEosMessage, ElementTest)
 {
   auto pipeline = Pipeline::fromDescription("videotestsrc ! fakesink");
   BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_ASYNC);
-  // ASYNC_DONE already comes after preroll, an EOS sent before PLAYING deadlocks
+  // ASYNC_DONE already comes after preroll, sendEndOfStream() throws until PLAYING is reached
   BOOST_REQUIRE_EQUAL(pipeline->getState(asyncDoneTimeout), GST_STATE_PLAYING);
 
   pipeline->sendEndOfStream();
   BOOST_CHECK(pipeline->getBus()->timedPop(asyncDoneTimeout, GST_MESSAGE_EOS));
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(SendEndOfStreamThrowsIfPaused, ElementTest)
+{
+  auto pipeline = Pipeline::fromDescription("videotestsrc ! fakesink");
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+  BOOST_REQUIRE_EQUAL(pipeline->getState(asyncDoneTimeout), GST_STATE_PAUSED);
+
+  BOOST_CHECK_THROW(pipeline->sendEndOfStream(), std::logic_error);
+  BOOST_CHECK_THROW(
+    pipeline->sendEvent(makeGstSharedPtr(gst_event_new_eos(), TransferType::full)),
+    std::logic_error
+  );
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(SendEndOfStreamThrowsDuringStateChange, ElementTest)
+{
+  // a sink without data never prerolls, so the change to PAUSED stays pending
+  auto pipeline = Pipeline::create("test_pipeline");
+  pipeline->addElement(*ElementFactory::makeElement("fakesink", "test_sink"));
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_ASYNC);
+
+  BOOST_CHECK_THROW(pipeline->sendEndOfStream(), std::logic_error);
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(SendEndOfStreamToPausedLivePipeline, ElementTest)
+{
+  // a live source does not preroll, so nothing blocks the event
+  auto pipeline = Pipeline::fromDescription("videotestsrc is-live=true ! fakesink");
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PAUSED), GST_STATE_CHANGE_NO_PREROLL);
+
+  BOOST_CHECK_NO_THROW(pipeline->sendEndOfStream());
 
   pipeline->setState(GST_STATE_NULL);
 }

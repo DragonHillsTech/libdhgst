@@ -66,6 +66,19 @@ std::optional<std::int64_t> toQueryResult(gboolean answered, gint64 value)
   return value;
 }
 
+/**
+ * @brief Whether sending an end-of-stream event in this state deadlocks: a prerolled, non-live
+ * sink blocks the source until PLAYING, while the send holds the state lock PLAYING needs.
+ */
+bool endOfStreamWouldDeadlock(const Element::StateQuery& state)
+{
+  const bool live{state.result == GST_STATE_CHANGE_NO_PREROLL};
+  const bool pausedOrChanging{
+    state.current == GST_STATE_PAUSED || state.pending != GST_STATE_VOID_PENDING
+  };
+  return !live && pausedOrChanging;
+}
+
 } // namespace
 
 Element::Element(GstElement* gstElement, TransferType transferType)
@@ -262,6 +275,18 @@ void Element::sendEvent(const GstEventSPtr& event)
   if (!event)
   {
     throw std::invalid_argument("sendEvent: event must not be nullptr");
+  }
+  if (GST_EVENT_TYPE(event.get()) == GST_EVENT_EOS)
+  {
+    const StateQuery state{queryState()};
+    if (endOfStreamWouldDeadlock(state))
+    {
+      throw std::logic_error(
+        "Sending end-of-stream to element " + getName() + " would deadlock (state "
+        + gst_element_state_get_name(state.current) + ", pending "
+        + gst_element_state_get_name(state.pending) + ")"
+      );
+    }
   }
   // gst_element_send_event takes ownership (transfer full), the caller keeps its reference
   if (!gst_element_send_event(getRawGstElement(), gst_event_ref(event.get())))
