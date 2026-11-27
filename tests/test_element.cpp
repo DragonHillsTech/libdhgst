@@ -340,6 +340,20 @@ BOOST_FIXTURE_TEST_CASE(SendEndOfStreamToPausedLivePipeline, ElementTest)
   pipeline->setState(GST_STATE_NULL);
 }
 
+#if DH_GST_HAS_PIPELINE_IS_LIVE
+BOOST_FIXTURE_TEST_CASE(SendEndOfStreamToStartingLivePipeline, ElementTest)
+{
+  auto pipeline = Pipeline::fromDescription("videotestsrc is-live=true ! fakesink");
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_ASYNC);
+
+  // no wait for PLAYING: a live pipeline does not deadlock during the state change
+  BOOST_CHECK_NO_THROW(pipeline->sendEndOfStream());
+  BOOST_CHECK(pipeline->getBus()->timedPop(asyncDoneTimeout, GST_MESSAGE_EOS));
+
+  pipeline->setState(GST_STATE_NULL);
+}
+#endif
+
 BOOST_FIXTURE_TEST_CASE(SendEventKeepsCallerReference, ElementTest)
 {
   const auto event = makeGstSharedPtr(gst_event_new_eos(), TransferType::full);

@@ -22,6 +22,7 @@
 #include "element.hpp"
 #include "elementfactory.hpp"
 #include "object.hpp"
+#include "pipeline.hpp"
 #include "sharedptrs.hpp"
 #include "signalconnection.hpp"
 #include "transfertype.hpp"
@@ -66,13 +67,28 @@ std::optional<std::int64_t> toQueryResult(gboolean answered, gint64 value)
   return value;
 }
 
+bool isLive(GstElement& element, const Element::StateQuery& state)
+{
+  if (state.result == GST_STATE_CHANGE_NO_PREROLL)
+  {
+    return true;
+  }
+#if DH_GST_HAS_PIPELINE_IS_LIVE
+  // during a state change, the result is ASYNC also for live elements, only a pipeline still knows
+  return GST_IS_PIPELINE(&element) && gst_pipeline_is_live(GST_PIPELINE(&element));
+#else
+  (void)element;
+  return false;
+#endif
+}
+
 /**
  * @brief Whether sending an end-of-stream event in this state deadlocks: a prerolled, non-live
  * sink blocks the source until PLAYING, while the send holds the state lock PLAYING needs.
  */
-bool endOfStreamWouldDeadlock(const Element::StateQuery& state)
+bool endOfStreamWouldDeadlock(GstElement& element, const Element::StateQuery& state)
 {
-  const bool live{state.result == GST_STATE_CHANGE_NO_PREROLL};
+  const bool live{isLive(element, state)};
   const bool pausedOrChanging{
     state.current == GST_STATE_PAUSED || state.pending != GST_STATE_VOID_PENDING
   };
@@ -279,7 +295,7 @@ void Element::sendEvent(const GstEventSPtr& event)
   if (GST_EVENT_TYPE(event.get()) == GST_EVENT_EOS)
   {
     const StateQuery state{queryState()};
-    if (endOfStreamWouldDeadlock(state))
+    if (endOfStreamWouldDeadlock(*getRawGstElement(), state))
     {
       throw std::logic_error(
         "Sending end-of-stream to element " + getName() + " would deadlock (state "

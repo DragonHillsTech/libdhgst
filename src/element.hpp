@@ -233,7 +233,8 @@ public:
   /**
    * @brief Sends an end-of-stream event.
    * @throws std::logic_error if the element is not live and PAUSED or changing its state: the
-   *         call would deadlock.
+   *         call would deadlock. During a state change, only a pipeline with GStreamer >= 1.24
+   *         is recognized as live.
    * @throws std::runtime_error if the element does not handle the event.
    */
   void sendEndOfStream();
