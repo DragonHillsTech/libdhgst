@@ -257,6 +257,27 @@ void Element::seek(std::int64_t position, GstSeekFlags flags, GstFormat format)
   }
 }
 
+void Element::sendEvent(const GstEventSPtr& event)
+{
+  if (!event)
+  {
+    throw std::invalid_argument("sendEvent: event must not be nullptr");
+  }
+  // gst_element_send_event takes ownership (transfer full), the caller keeps its reference
+  if (!gst_element_send_event(getRawGstElement(), gst_event_ref(event.get())))
+  {
+    throw std::runtime_error(
+      std::string("Element ") + getName() + " did not handle the event "
+      + GST_EVENT_TYPE_NAME(event.get())
+    );
+  }
+}
+
+void Element::sendEndOfStream()
+{
+  sendEvent(makeGstSharedPtr(gst_event_new_eos(), TransferType::full));
+}
+
 void Element::unlink(Element& other)
 {
   gst_element_unlink(getRawGstElement(), other.getRawGstElement());

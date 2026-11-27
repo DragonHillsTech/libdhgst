@@ -221,6 +221,21 @@ public:
   );
 
   /**
+   * @brief Sends an event to the element, e.g. to inject it into a pipeline.
+   * The element takes its own reference, so event stays valid for the caller.
+   * @throws std::invalid_argument if event is nullptr.
+   * @throws std::runtime_error if the element does not handle the event.
+   */
+  void sendEvent(const GstEventSPtr& event);
+
+  /**
+   * @brief Sends an end-of-stream event.
+   * Call it only after the change to PLAYING has completed, otherwise it deadlocks.
+   * @throws std::runtime_error if the element does not handle the event.
+   */
+  void sendEndOfStream();
+
+  /**
    * @brief Unlinks the element from another element.
    * @param other The Element to unlink from.
    */

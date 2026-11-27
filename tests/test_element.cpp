@@ -289,6 +289,48 @@ BOOST_FIXTURE_TEST_CASE(SeekChangesPosition, ElementTest)
   pipeline->setState(GST_STATE_NULL);
 }
 
+BOOST_FIXTURE_TEST_CASE(SendEndOfStreamPostsEosMessage, ElementTest)
+{
+  auto pipeline = Pipeline::fromDescription("videotestsrc ! fakesink");
+  BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_ASYNC);
+  // ASYNC_DONE already comes after preroll, an EOS sent before PLAYING deadlocks
+  BOOST_REQUIRE_EQUAL(pipeline->getState(asyncDoneTimeout), GST_STATE_PLAYING);
+
+  pipeline->sendEndOfStream();
+  BOOST_CHECK(pipeline->getBus()->timedPop(asyncDoneTimeout, GST_MESSAGE_EOS));
+
+  pipeline->setState(GST_STATE_NULL);
+}
+
+BOOST_FIXTURE_TEST_CASE(SendEventKeepsCallerReference, ElementTest)
+{
+  const auto event = makeGstSharedPtr(gst_event_new_eos(), TransferType::full);
+  {
+    // in PLAYING: GStreamer never releases an EOS that a source receives in NULL
+    auto pipeline = Pipeline::fromDescription("videotestsrc ! fakesink");
+    BOOST_REQUIRE_EQUAL(pipeline->setState(GST_STATE_PLAYING), GST_STATE_CHANGE_ASYNC);
+    BOOST_REQUIRE_EQUAL(pipeline->getState(asyncDoneTimeout), GST_STATE_PLAYING);
+    pipeline->sendEvent(event);
+    pipeline->setState(GST_STATE_NULL);
+  }
+  BOOST_CHECK_EQUAL(GST_MINI_OBJECT_REFCOUNT_VALUE(event.get()), 1);
+}
+
+BOOST_FIXTURE_TEST_CASE(SendEventThrowsIfNotHandled, ElementTest)
+{
+  // in NULL state, the sink pad of identity is inactive and rejects the event
+  const auto identity = ElementFactory::makeElement("identity", "test_identity");
+
+  BOOST_CHECK_THROW(identity->sendEndOfStream(), std::runtime_error);
+}
+
+BOOST_FIXTURE_TEST_CASE(SendEventThrowsOnNullptr, ElementTest)
+{
+  const auto identity = ElementFactory::makeElement("identity", "test_identity");
+
+  BOOST_CHECK_THROW(identity->sendEvent(nullptr), std::invalid_argument);
+}
+
 BOOST_FIXTURE_TEST_CASE(GetPads, ElementTest)
 {
   auto element =
