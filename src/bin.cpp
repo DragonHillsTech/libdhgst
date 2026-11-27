@@ -116,7 +116,7 @@ std::shared_ptr<Element> Bin::getElementByName(const std::string& name)
   GstElement* gstElement = gst_bin_get_by_name(GST_BIN(getRawGstBin()), name.c_str());
   if (!gstElement)
   {
-    throw std::runtime_error("Element with name '" + name + "' not found.");
+    return nullptr;
   }
 
   return Element::create(gstElement, TransferType::full);
@@ -129,7 +129,7 @@ std::shared_ptr<Element> Bin::getElementByNameRecurseUp(const std::string& name)
   GstElement* gstElement = gst_bin_get_by_name_recurse_up(GST_BIN(getRawGstBin()), name.c_str());
   if (!gstElement)
   {
-    throw std::runtime_error("Element with name '" + name + "' not found.");
+    return nullptr;
   }
 
   return Element::create(gstElement, TransferType::full);

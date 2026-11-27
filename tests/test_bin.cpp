@@ -130,11 +130,12 @@ BOOST_FIXTURE_TEST_CASE(GetElementByName, BinTest)
   // find existing
   bin1->addElement(*element1);
   auto element2 = bin1->getElementByName(element1->getName());
+  BOOST_REQUIRE(element2);
   BOOST_CHECK_EQUAL(element2->getName(), element1->getName());
   BOOST_CHECK_EQUAL(element2->getGstElement(), element1->getGstElement());
 
   // find not existing
-  BOOST_CHECK_THROW((void)bin1->getElementByName("DoesNotExist"), std::runtime_error);
+  BOOST_CHECK(!bin1->getElementByName("DoesNotExist"));
 }
 
 BOOST_FIXTURE_TEST_CASE(GetElementByNameRecurseUp, BinTest)
@@ -146,11 +147,12 @@ BOOST_FIXTURE_TEST_CASE(GetElementByNameRecurseUp, BinTest)
   // find existing
   bin1->addElement(*element1);
   auto element2 = bin1->getElementByNameRecurseUp(element1->getName());
+  BOOST_REQUIRE(element2);
   BOOST_CHECK_EQUAL(element2->getName(), element1->getName());
   BOOST_CHECK_EQUAL(element2->getGstElement(), element1->getGstElement());
 
   // find not existing
-  BOOST_CHECK_THROW((void)bin1->getElementByNameRecurseUp("DoesNotExist"), std::runtime_error);
+  BOOST_CHECK(!bin1->getElementByNameRecurseUp("DoesNotExist"));
 }
 
 BOOST_FIXTURE_TEST_CASE(FromDescriptionValidPipeline, BinTest)
